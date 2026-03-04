@@ -1,0 +1,120 @@
+/* Premium Modern Blue Dashboard - SMK Bakti Nusantara 666 */
+:root {
+    --primary-color: #2563eb;
+    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --surface-glass: rgba(255, 255, 255, 0.85);
+}
+
+/* Sidebar Modernization */
+.fi-sidebar {
+    background: #f8fafc !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+.fi-sidebar-header {
+    margin-bottom: 2rem !important;
+    padding: 1.5rem !important;
+}
+
+.fi-sidebar-header-brand {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025em !important;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.fi-sidebar-nav {
+    padding: 0 1rem !important;
+}
+
+.fi-sidebar-item-active {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.fi-sidebar-item-active .fi-sidebar-item-icon {
+    color: white !important;
+}
+
+.fi-sidebar-item-button:hover:not(.fi-sidebar-item-active) {
+    background: #eff6ff !important;
+    border-radius: 12px !important;
+    color: var(--primary-color) !important;
+    transform: translateX(4px);
+}
+
+/* Topbar Glassmorphism */
+.fi-topbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5) !important;
+}
+
+/* General Layout & Cards */
+.fi-main {
+    background: #ffffff;
+}
+
+.fi-section {
+    border-radius: 20px !important;
+    border: 1px solid #f1f5f9 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+    background: white !important;
+}
+
+.fi-ta-content {
+    border-radius: 16px !important;
+}
+
+/* Dashboard Stat Cards */
+.fi-wi-stats-overview-stat {
+    border-radius: 1.5rem !important;
+    border: 1px solid #f1f5f9 !important;
+    transition: all 0.4s ease !important;
+    background: #ffffff !important;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Custom Scrollbar for Chrome/Safari */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Animation for loading states */
+.fi-btn-spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
