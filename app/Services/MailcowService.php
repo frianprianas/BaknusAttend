@@ -34,7 +34,7 @@ class MailcowService
         $syncedCount = 0;
 
         // Default ClassRoom if not specified
-        $defaultClass = ClassRoom::firstOrCreate(['name' => 'Belum Ditentukan']);
+        $defaultClass = ClassRoom::firstOrCreate(['kelas' => 'Belum Ditentukan'], ['id_prodi' => 1]);
 
         foreach ($mailboxes as $mailbox) {
             $email = $mailbox['username'] ?? null;
@@ -106,7 +106,7 @@ class MailcowService
         );
 
         if ($role === 'Siswa') {
-            $defaultClass = ClassRoom::firstOrCreate(['name' => 'Belum Ditentukan']);
+            $defaultClass = ClassRoom::firstOrCreate(['kelas' => 'Belum Ditentukan'], ['id_prodi' => 1]);
             Student::updateOrCreate(
                 ['nis' => $this->extractNis($email, $comment)],
                 [
@@ -121,19 +121,19 @@ class MailcowService
 
     protected function determineRole($tags, $comment, $email)
     {
-        $searchable = array_map('strtolower', array_merge((array) $tags, explode(' ', $comment)));
+        $searchable = array_map('strtolower', array_merge((array) $tags, explode(' ', (string) $comment)));
 
         if (in_array('admin', $searchable))
             return 'Admin';
         if (in_array('guru', $searchable))
             return 'Guru';
-        if (in_array('siswa', $searchable))
-            return 'Siswa';
         if (in_array('tu', $searchable))
             return 'TU';
+        if (in_array('siswa', $searchable))
+            return 'Siswa';
 
-        // Default based on email patterns if no tag
-        if (str_contains(strtolower($comment), 'siswa'))
+        // Deprecated checks if no tags found
+        if (str_contains(strtolower((string) $comment), 'siswa'))
             return 'Siswa';
         if (preg_match('/^[0-9]+@/i', $email))
             return 'Siswa';
