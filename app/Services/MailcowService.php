@@ -23,6 +23,9 @@ class MailcowService
 
     public function syncUsers()
     {
+        // Berikan waktu lebih lama untuk sinkronisasi jika data banyak
+        set_time_limit(180);
+
         $response = Http::withHeaders([
             'X-API-Key' => $this->apiKey,
         ])->timeout(60)->get("{$this->baseUrl}/api/v1/get/mailbox/all");
