@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\ClassRoom;
+use App\Models\ProgramStudi;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -33,8 +34,17 @@ class MailcowService
         $mailboxes = $response->json();
         $syncedCount = 0;
 
+        // Ensure a default ProgramStudi exists to avoid foreign key failure
+        $defaultProdi = ProgramStudi::firstOrCreate(
+            ['program_studi' => 'Belum Ditentukan'],
+            ['id_prodi' => 1]
+        );
+
         // Default ClassRoom if not specified
-        $defaultClass = ClassRoom::firstOrCreate(['kelas' => 'Belum Ditentukan'], ['id_prodi' => 1]);
+        $defaultClass = ClassRoom::firstOrCreate(
+            ['kelas' => 'Belum Ditentukan'],
+            ['id_prodi' => $defaultProdi->id_prodi]
+        );
 
         foreach ($mailboxes as $mailbox) {
             $email = $mailbox['username'] ?? null;
@@ -106,7 +116,16 @@ class MailcowService
         );
 
         if ($role === 'Siswa') {
-            $defaultClass = ClassRoom::firstOrCreate(['kelas' => 'Belum Ditentukan'], ['id_prodi' => 1]);
+            $defaultProdi = ProgramStudi::firstOrCreate(
+                ['program_studi' => 'Belum Ditentukan'],
+                ['id_prodi' => 1]
+            );
+
+            $defaultClass = ClassRoom::firstOrCreate(
+                ['kelas' => 'Belum Ditentukan'],
+                ['id_prodi' => $defaultProdi->id_prodi]
+            );
+
             Student::updateOrCreate(
                 ['nis' => $this->extractNis($email, $comment)],
                 [
