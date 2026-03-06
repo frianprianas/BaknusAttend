@@ -503,8 +503,16 @@
 
             {{-- Mobile header --}}
             <div class="login-mobile-header">
-                <img src="/images/BD_logo.png" alt="Logo"
-                    onerror="this.src='https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600'">
+                <div
+                    style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                        style="width:36px;height:36px;">
+                        <path d="M3 21V9l9-6 9 6v12" />
+                        <path d="M9 21V12h6v9" />
+                        <path d="M12 3v3" />
+                    </svg>
+                </div>
                 <h1>BaknusAttend</h1>
                 <p>SMK Bakti Nusantara 666</p>
             </div>
