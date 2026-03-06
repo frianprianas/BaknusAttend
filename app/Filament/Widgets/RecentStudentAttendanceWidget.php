@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\KehadiranSiswa;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Carbon;
@@ -11,42 +12,81 @@ use Illuminate\Support\Carbon;
 class RecentStudentAttendanceWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
-    protected int|string|array $columnSpan = [
-        'md' => 2,
-        'xl' => 2,
-    ];
-    protected static ?string $heading = 'Kehadiran Siswa Terbaru';
+
+    protected int|string|array $columnSpan = 'full';
+
+    protected static ?string $heading = 'Rekap Kehadiran Siswa Hari Ini';
+
+    // Widget bisa di-expand / di-collapse oleh user
+    protected static bool $isLazy = true;
 
     public function table(Table $table): Table
     {
+        $today = Carbon::today();
+
         return $table
             ->query(
                 fn() =>
                 KehadiranSiswa::with('student')
-                    ->whereDate('waktu_tap', Carbon::today())
+                    ->whereDate('waktu_tap', $today)
                     ->latest('waktu_tap')
-                    ->limit(10)
             )
             ->columns([
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
-                    ->default('–')
-                    ->searchable(),
+                    ->default('Data tidak ditemukan')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('nis')
-                    ->label('NIS'),
+                    ->label('NIS')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('student.classRoom.kelas')
+                    ->label('Kelas')
+                    ->default('–')
+                    ->badge()
+                    ->color('gray'),
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
                     ->colors([
                         'success' => 'Hadir',
                         'warning' => 'Terlambat',
                         'danger' => 'Alpa',
-                        'info' => ['Izin', 'Sakit'],
+                        'primary' => 'Izin',
+                        'info' => 'Sakit',
                     ]),
+
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Waktu')
+                    ->label('Jam Tap')
                     ->dateTime('H:i:s')
-                    ->timezone('Asia/Jakarta'),
+                    ->timezone('Asia/Jakarta')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('keterangan')
+                    ->label('Keterangan')
+                    ->default('–')
+                    ->limit(30)
+                    ->tooltip(fn($record) => $record->keterangan),
             ])
-            ->paginated(false);
+            ->filters([
+                SelectFilter::make('status')
+                    ->label('Filter Status')
+                    ->options([
+                        'Hadir' => 'Hadir',
+                        'Terlambat' => 'Terlambat',
+                        'Izin' => 'Izin',
+                        'Sakit' => 'Sakit',
+                        'Alpa' => 'Alpa',
+                    ]),
+            ])
+            ->defaultSort('waktu_tap', 'desc')
+            ->paginated([10, 25, 50, 100])
+            ->defaultPaginationPageOption(25)
+            ->striped()
+            ->emptyStateHeading('Belum ada kehadiran hari ini')
+            ->emptyStateDescription('Data akan muncul setelah siswa melakukan tap RFID.')
+            ->emptyStateIcon('heroicon-o-clock');
     }
 }
