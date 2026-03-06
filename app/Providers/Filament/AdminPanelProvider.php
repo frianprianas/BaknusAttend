@@ -31,9 +31,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
                 'gray' => Color::Slate,
             ])
-            ->font('Outfit')
             ->brandName('BaknusAttend')
-            ->favicon(asset('favicon.ico'))
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('18rem')
             ->maxContentWidth('full')
