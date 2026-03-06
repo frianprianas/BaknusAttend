@@ -18,7 +18,7 @@ class RecentStudentAttendanceWidget extends BaseWidget
     protected static ?string $heading = 'Rekap Kehadiran Siswa Hari Ini';
 
     // Override default Filament widget (default-nya 10)
-    protected int $defaultTableRecordsPerPageSelectOption = 25;
+    protected int|string|null $defaultTableRecordsPerPageSelectOption = 25;
 
     // Widget bisa di-expand / di-collapse oleh user
     protected static bool $isLazy = true;
