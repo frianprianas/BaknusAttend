@@ -17,6 +17,9 @@ class RecentStudentAttendanceWidget extends BaseWidget
 
     protected static ?string $heading = 'Rekap Kehadiran Siswa Hari Ini';
 
+    // Override default Filament widget (default-nya 10)
+    protected int $defaultTableRecordsPerPageSelectOption = 25;
+
     // Widget bisa di-expand / di-collapse oleh user
     protected static bool $isLazy = true;
 
@@ -82,8 +85,7 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ]),
             ])
             ->defaultSort('waktu_tap', 'desc')
-            ->paginated([10, 25, 50, 100])
-            ->defaultPaginationPageOption(25)
+            ->paginated([25, 50, 100, 'all'])
             ->striped()
             ->emptyStateHeading('Belum ada kehadiran hari ini')
             ->emptyStateDescription('Data akan muncul setelah siswa melakukan tap RFID.')

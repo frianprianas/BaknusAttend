@@ -18,6 +18,8 @@ class RecentGuruAttendanceWidget extends BaseWidget
 
     protected static ?string $heading = 'Rekap Kehadiran Guru & TU Hari Ini';
 
+    protected int $defaultTableRecordsPerPageSelectOption = 25;
+
     public function table(Table $table): Table
     {
         $today = Carbon::today();
