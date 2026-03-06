@@ -79,13 +79,15 @@ class Login extends BaseLogin
             $user->save();
         }
 
-        // 7. Regenerate session (WAJIB untuk keamanan dan persistensi session)
+        // 7. Regenerate session
         session()->regenerate();
 
-        // 8. Login ke session Laravel via guard Filament
+        // 8. Login ke session Laravel
         Auth::guard(Filament::getAuthGuard())->login($user, $data['remember'] ?? false);
 
-        // 9. Return LoginResponse agar Filament/Livewire menangani redirect dengan benar
+        Log::info('BaknusAttend Login: sukses, user=' . $email . ', guard=' . Filament::getAuthGuard() . ', auth_check=' . (Auth::guard(Filament::getAuthGuard())->check() ? 'true' : 'false'));
+
+        // 9. Redirect ke dashboard
         return app(LoginResponse::class);
     }
 

@@ -10,17 +10,7 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request): RedirectResponse|Redirector
     {
-        $user = auth()->user();
-
-        // Custom Flash Message based on Role
-        $roleName = $user->role ?? 'Staf';
-        session()->flash('notification', [
-            'message' => "Selamat Datang Kembali, {$roleName}!",
-            'type' => 'success'
-        ]);
-
-        // All users use the /admin path in this setup (to keep it "tanpa ribet")
-        // but we will filter their view based on role in the resources.
-        return redirect()->intended('/admin');
+        // Langsung redirect ke admin - simple dan reliable
+        return redirect('/admin');
     }
 }
