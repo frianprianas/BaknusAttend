@@ -439,6 +439,12 @@
         color: #64748b;
         margin: 0;
     }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
 </style>
 
 <div class="login-wrapper">
@@ -523,14 +529,10 @@
                     {{ $this->form }}
                 </div>
 
-                <button type="submit" class="login-btn">
-                    <span wire:loading.remove>Masuk Sekarang</span>
-                    <svg wire:loading.remove style="width:18px;height:18px;" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                    <span wire:loading style="display:flex;align-items:center;gap:8px;">
+                <button type="submit" class="login-btn" wire:loading.attr="disabled"
+                    wire:loading.class="login-btn-loading">
+                    <span wire:loading.remove wire:target="authenticate">Masuk Sekarang &nbsp;→</span>
+                    <span wire:loading wire:target="authenticate" style="display:flex;align-items:center;gap:8px;">
                         <svg style="animation:spin 1s linear infinite;width:18px;height:18px;"
                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle style="opacity:.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
@@ -542,8 +544,6 @@
                         Memverifikasi...
                     </span>
                 </button>
-
-                @keyframes spin { to { transform: rotate(360deg); } }
             </form>
 
             <p class="login-help">
