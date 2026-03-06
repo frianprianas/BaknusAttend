@@ -44,7 +44,12 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->widgets([])
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->widgets([
+                \App\Filament\Widgets\DashboardStatsWidget::class,
+                \App\Filament\Widgets\RecentStudentAttendanceWidget::class,
+                \App\Filament\Widgets\RecentGuruAttendanceWidget::class,
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
