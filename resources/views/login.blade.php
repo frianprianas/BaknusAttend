@@ -1,7 +1,4 @@
 {{-- resources/views/login.blade.php --}}
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-
 <style>
     * {
         box-sizing: border-box;
@@ -11,13 +8,13 @@
     html {
         margin: 0;
         padding: 0;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
     .login-wrapper {
         display: flex;
         min-height: 100vh;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
     /* ======================= LEFT PANEL ======================= */
