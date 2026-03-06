@@ -456,7 +456,13 @@
         {{-- Logo bar --}}
         <div class="login-logo-bar">
             <div class="login-logo-box">
-                <img src="/images/BD_logo.png" alt="Logo BN666" onerror="this.style.display='none'">
+                {{-- SVG ikon gedung - tanpa file gambar eksternal --}}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;">
+                    <path d="M3 21V9l9-6 9 6v12" />
+                    <path d="M9 21V12h6v9" />
+                    <path d="M12 3v3" />
+                </svg>
             </div>
             <span class="login-brand-name">Baknus<span>Attend</span></span>
         </div>
