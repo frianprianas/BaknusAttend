@@ -2,14 +2,13 @@
 
 namespace App\Http\Middleware;
 
-use Filament\Http\Middleware\Authenticate as FilamentAuthenticate;
+use Filament\Http\Middleware\Authenticate as BaseAuthenticate;
 
 /**
  * Override Filament's Authenticate middleware agar redirect
- * ke halaman login HTML kita yang sederhana (/login),
- * bukan ke /admin/login milik Filament yang pakai Livewire.
+ * ke halaman login HTML kita yang sederhana (/login).
  */
-class FilamentAuthenticate extends FilamentAuthenticate
+class CustomAuthenticate extends BaseAuthenticate
 {
     protected function redirectTo($request): ?string
     {
