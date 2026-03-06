@@ -165,15 +165,17 @@ class MailcowService
 
     protected function extractNis($email, $comment)
     {
-        // Try to get NIS from email name part (usually starts with numbers) or comment
-        preg_match('/([0-9]{4,10})/', $email, $matches);
-        if (isset($matches[1]))
+        // Paling aman: ambil angka yang ada tepat sebelum @
+        if (preg_match('/^([0-9]+)@/', $email, $matches)) {
             return $matches[1];
+        }
 
-        preg_match('/NIS:\s*([0-9]+)/i', $comment, $matches);
-        if (isset($matches[1]))
+        // Kalau tidak ada, cari label "NIS:" di comment
+        if (preg_match('/NIS:\s*([0-9]+)/i', $comment, $matches)) {
             return $matches[1];
+        }
 
-        return explode('@', $email)[0]; // Fallback to email username part
+        // Kalau gagal semua, gunakan string apapun sebelum @
+        return explode('@', $email)[0];
     }
 }
