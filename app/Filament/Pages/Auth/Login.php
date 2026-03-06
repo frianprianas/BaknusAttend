@@ -5,7 +5,7 @@ namespace App\Filament\Pages\Auth;
 use App\Models\User;
 use App\Services\MailcowAuth;
 use Filament\Facades\Filament;
-use Filament\Notifications\Notification;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -26,7 +26,7 @@ class Login extends BaseLogin
      * Override authenticate untuk menangani login langsung via Mailcow IMAP
      * tanpa melalui jalur provider yang kompleks.
      */
-    public function authenticate(): void
+    public function authenticate(): ?LoginResponse
     {
         // 1. Ambil data form (email & password)
         $data = $this->form->getState();
@@ -35,7 +35,7 @@ class Login extends BaseLogin
 
         if (!$email || !$password) {
             $this->throwFailure('Email dan password tidak boleh kosong.');
-            return;
+            return null;
         }
 
         // 2. Cari user di database lokal
@@ -52,7 +52,7 @@ class Login extends BaseLogin
 
             if (!$user) {
                 $this->throwFailure('Akun tidak ditemukan. Pastikan email Mailcow Anda terdaftar.');
-                return;
+                return null;
             }
         }
 
@@ -69,7 +69,7 @@ class Login extends BaseLogin
             if (!Hash::check($password, $user->password)) {
                 Log::warning('Login: Autentikasi gagal (IMAP + local)', ['email' => $email]);
                 $this->throwFailure('Email atau password salah. Pastikan Anda menggunakan password Mailcow sekolah.');
-                return;
+                return null;
             }
         }
 
@@ -86,6 +86,8 @@ class Login extends BaseLogin
         session()->flash('status', 'Selamat datang, ' . $user->name . '!');
 
         $this->redirect('/admin');
+
+        return null;
     }
 
     /**
