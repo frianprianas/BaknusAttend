@@ -24,13 +24,13 @@ class ListUsers extends ListRecords
                         $count = $mailcowService->syncUsers();
                         Notification::make()
                             ->title('Sinkronisasi Berhasil')
-                            ->description("Berhasil menyinkronkan {$count} akun dari Mailcow.")
+                            ->body("Berhasil menyinkronkan {$count} akun dari Mailcow.")
                             ->success()
                             ->send();
                     } catch (\Exception $e) {
                         Notification::make()
                             ->title('Sinkronisasi Gagal')
-                            ->description($e->getMessage())
+                            ->body($e->getMessage())
                             ->danger()
                             ->send();
                     }
