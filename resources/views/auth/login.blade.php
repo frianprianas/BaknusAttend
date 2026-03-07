@@ -371,6 +371,59 @@
             letter-spacing: .12em;
             color: #cbd5e1;
         }
+
+        @media (prefers-color-scheme: dark) {
+            .right {
+                background: #0f172a;
+            }
+
+            .right::before {
+                background: radial-gradient(circle at top right, #1e293b, transparent 65%);
+            }
+
+            .title {
+                color: #f8fafc;
+            }
+
+            .tagline {
+                color: #94a3b8;
+            }
+
+            .subtitle {
+                color: #818cf8;
+            }
+
+            .field label {
+                color: #cbd5e1;
+            }
+
+            .field input {
+                background: #1e293b;
+                border-color: #334155;
+                color: #f8fafc;
+            }
+
+            .field input:focus {
+                background: #0f172a;
+                border-color: #818cf8;
+                box-shadow: 0 0 0 4px rgba(129, 140, 248, .15);
+            }
+
+            .remember {
+                color: #94a3b8;
+            }
+
+            .footer {
+                border-top-color: #1e293b;
+                color: #475569;
+            }
+
+            .alert {
+                background: rgba(220, 38, 38, 0.1);
+                border-color: rgba(220, 38, 38, 0.2);
+                color: #f87171;
+            }
+        }
     </style>
 </head>
 

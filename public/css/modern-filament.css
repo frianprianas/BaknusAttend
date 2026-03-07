@@ -5,8 +5,12 @@
     --surface-glass: rgba(255, 255, 255, 0.85);
 }
 
+.dark {
+    --surface-glass: rgba(15, 23, 42, 0.85);
+}
+
 /* Sidebar Modernization */
-.fi-sidebar {
+html:not(.dark) .fi-sidebar {
     background: #f8fafc !important;
     border-right: 1px solid #e2e8f0 !important;
 }
@@ -22,6 +26,7 @@
     letter-spacing: -0.025em !important;
     background: var(--primary-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -41,31 +46,53 @@
     color: white !important;
 }
 
-.fi-sidebar-item-button:hover:not(.fi-sidebar-item-active) {
+html:not(.dark) .fi-sidebar-item-button:hover:not(.fi-sidebar-item-active) {
     background: #eff6ff !important;
     border-radius: 12px !important;
     color: var(--primary-color) !important;
     transform: translateX(4px);
 }
 
+html.dark .fi-sidebar-item-button:hover:not(.fi-sidebar-item-active) {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border-radius: 12px !important;
+    transform: translateX(4px);
+}
+
 /* Topbar Glassmorphism */
-.fi-topbar {
+html:not(.dark) .fi-topbar {
     background: rgba(255, 255, 255, 0.8) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
     border-bottom: 1px solid rgba(226, 232, 240, 0.5) !important;
 }
 
+html.dark .fi-topbar {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.5) !important;
+}
+
 /* General Layout & Cards */
-.fi-main {
+html:not(.dark) .fi-main {
     background: #ffffff;
 }
 
-.fi-section {
+html:not(.dark) .fi-section,
+html:not(.dark) .fi-wi-stats-overview-stat {
     border-radius: 20px !important;
     border: 1px solid #f1f5f9 !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
     background: white !important;
+}
+
+html.dark .fi-section,
+html.dark .fi-wi-stats-overview-stat {
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+    background: rgba(30, 41, 59, 1) !important;
 }
 
 .fi-ta-content {
@@ -74,10 +101,7 @@
 
 /* Dashboard Stat Cards */
 .fi-wi-stats-overview-stat {
-    border-radius: 1.5rem !important;
-    border: 1px solid #f1f5f9 !important;
     transition: all 0.4s ease !important;
-    background: #ffffff !important;
 }
 
 .fi-wi-stats-overview-stat:hover {
@@ -85,26 +109,39 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Custom Scrollbar for Chrome/Safari */
+html.dark .fi-wi-stats-overview-stat:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
+html:not(.dark) ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
 
-/* Animation for loading states */
+html.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 10px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Animation */
 .fi-btn-spinning {
     animation: spin 1s linear infinite;
 }
