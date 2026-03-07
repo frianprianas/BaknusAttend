@@ -23,15 +23,17 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required|string',
         ], [
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
+            'email.required' => 'Email atau Username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $email = $request->input('email');
+        $email = trim($request->input('email'));
+        if (!str_contains($email, '@')) {
+            $email .= '@smk.baktinusantara666.sch.id';
+        }
         $password = $request->input('password');
 
         // Cari user di database

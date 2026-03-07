@@ -480,9 +480,9 @@
             <form method="POST" action="{{ route('login.post') }}">
                 @csrf
                 <div class="field">
-                    <label for="email">Alamat Email</label>
-                    <input type="email" id="email" name="email" value="{{ old('email') }}"
-                        placeholder="nama@smk.baktinusantara666.sch.id" required autofocus>
+                    <label for="email">Username atau Email</label>
+                    <input type="text" id="email" name="email" value="{{ old('email') }}"
+                        placeholder="Contoh: 21221001 atau nama@..." required autofocus>
                 </div>
                 <div class="field">
                     <label for="password">Kata Sandi</label>
