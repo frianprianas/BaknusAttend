@@ -436,13 +436,10 @@
         <div class="blob b2"></div>
 
         <div class="brand">
-            <div class="brand-icon">
-                <svg width="26" height="26" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"
-                    stroke-linejoin="round" viewBox="0 0 24 24">
-                    <path d="M3 21V9l9-6 9 6v12" />
-                    <path d="M9 21V12h6v9" />
-                    <path d="M12 3v3" />
-                </svg>
+            <div class="brand-icon"
+                style="background:transparent; border:none; width:auto; height: 55px; border-radius:0;">
+                <img src="{{ asset('images/logo_BG.png') }}" alt="Logo"
+                    style="height: 100%; width: auto; object-fit: contain;">
             </div>
             <span class="brand-name">Baknus<span>Attend</span></span>
         </div>

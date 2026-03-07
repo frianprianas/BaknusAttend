@@ -31,6 +31,8 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => Color::Slate,
             ])
             ->brandName('BaknusAttend')
+            ->brandLogo(fn() => asset('images/logo_BG.png'))
+            ->brandLogoHeight('3.5rem')
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('18rem')
             ->maxContentWidth('full')
