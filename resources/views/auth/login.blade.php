@@ -21,7 +21,8 @@
         /* LEFT PANEL */
         .left {
             width: 55%;
-            background: linear-gradient(150deg, #0d1b3e 0%, #0f2044 60%, #1a105e 100%);
+            background: linear-gradient(150deg, rgba(13, 27, 62, 0.85) 0%, rgba(15, 32, 68, 0.85) 60%, rgba(26, 16, 94, 0.85) 100%),
+                        url("{{ asset('images/BA.png') }}") no-repeat center center / cover;
             display: flex;
             flex-direction: column;
             padding: 52px;
