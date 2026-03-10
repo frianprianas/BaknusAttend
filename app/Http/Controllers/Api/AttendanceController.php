@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\KehadiranGuruTu;
-use App\Models\KehadiranSiswa;
+use App\Models\KehadiranGuru;
+use App\Models\Kehadiran;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -62,41 +62,50 @@ class AttendanceController extends Controller
 
     private function processStudentAttendance($student, $today, $now, $statusHadir, $machineId)
     {
-        // Cek apakah sudah tap hari ini
-        $alreadyTapped = KehadiranSiswa::where('nis', $student->nis)
+        // Cek jumlah tap hari ini (untuk menentukan Masuk/Pulang)
+        $tapsHariIni = Kehadiran::where('nis', $student->nis)
             ->whereDate('waktu_tap', $today)
-            ->first();
+            ->get();
 
-        if ($alreadyTapped) {
+        $statusAbsen = 'Masuk';
+        $keteranganAbsen = $statusHadir;
+
+        if ($tapsHariIni->count() === 1) {
+            $statusAbsen = 'Pulang';
+            $keteranganAbsen = 'Pulang';
+        } elseif ($tapsHariIni->count() >= 2) {
             return response()->json([
                 'status' => 'info',
-                'message' => 'Sudah Tap Hari Ini',
+                'message' => 'Sudah Tap Pulang Hari Ini',
                 'name' => $student->name,
                 'role' => 'Siswa'
             ]);
         }
 
         // Simpan kehadiran
-        KehadiranSiswa::create([
+        Kehadiran::create([
             'nis' => $student->nis,
-            'rfid_uid' => $student->rfid,
+            'rfid' => $student->rfid,
             'waktu_tap' => $now,
-            'status' => $statusHadir,
-            'keterangan' => 'Tap via ' . $machineId,
+            'status' => $statusAbsen,
+            'keterangan' => $keteranganAbsen . ' (' . $machineId . ')',
         ]);
 
         // Kirim ke API BaknusDrive
         try {
+            $driveUrl = env('BAKNUSDRIVE_URL') . '/api/attend/upload';
+            $apiKey = env('BAKNUS_ATTEND_API_KEY');
+
             $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-Attend-API-Key' => env('BAKNUS_ATTEND_SECRET', 'BAKNUS_ATTEND_SECRET')
-            ])->asForm()->post('https://baknusdrive.smkbn666.sch.id/api/attend/upload', [
+                'X-Attend-API-Key' => $apiKey
+            ])->asForm()->post($driveUrl, [
                         'NIS' => $student->nis,
                         'Nama' => $student->name,
                         'kelas' => $student->classRoom ? $student->classRoom->name : '-',
                         'role' => 'siswa',
                         'waktu_tap' => $now->format('H:i:s'),
-                        'status' => 'Masuk',
-                        'keterangan' => $statusHadir,
+                        'status' => $statusAbsen,
+                        'keterangan' => $keteranganAbsen,
                     ]);
 
             if ($response->failed()) {
@@ -119,27 +128,33 @@ class AttendanceController extends Controller
 
     private function processGuruTuAttendance($user, $today, $now, $statusHadir, $machineId)
     {
-        // Cek apakah sudah tap hari ini
-        $alreadyTapped = KehadiranGuruTu::where('nipy', $user->nipy)
+        // Cek jumlah tap hari ini
+        $tapsHariIni = KehadiranGuru::where('nipy', $user->nipy)
             ->whereDate('waktu_tap', $today)
-            ->first();
+            ->get();
 
-        if ($alreadyTapped) {
+        $statusAbsen = 'Masuk';
+        $keteranganAbsen = $statusHadir;
+
+        if ($tapsHariIni->count() === 1) {
+            $statusAbsen = 'Pulang';
+            $keteranganAbsen = 'Pulang';
+        } elseif ($tapsHariIni->count() >= 2) {
             return response()->json([
                 'status' => 'info',
-                'message' => 'Sudah Tap Hari Ini',
+                'message' => 'Sudah Tap Pulang Hari Ini',
                 'name' => $user->name,
                 'role' => $user->role
             ]);
         }
 
         // Simpan kehadiran
-        KehadiranGuruTu::create([
+        KehadiranGuru::create([
             'nipy' => $user->nipy,
-            'rfid_uid' => $user->rfid,
+            'rfid' => $user->rfid,
             'waktu_tap' => $now,
-            'status' => $statusHadir,
-            'keterangan' => 'Tap via ' . $machineId,
+            'status' => $statusAbsen,
+            'keterangan' => $keteranganAbsen . ' (' . $machineId . ')',
         ]);
 
         // Kirim ke API BaknusDrive
@@ -152,16 +167,19 @@ class AttendanceController extends Controller
                 $roleInApi = 'guru';
             }
 
+            $driveUrl = env('BAKNUSDRIVE_URL') . '/api/attend/upload';
+            $apiKey = env('BAKNUS_ATTEND_API_KEY');
+
             $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-Attend-API-Key' => env('BAKNUS_ATTEND_SECRET', 'BAKNUS_ATTEND_SECRET')
-            ])->asForm()->post('https://baknusdrive.smkbn666.sch.id/api/attend/upload', [
+                'X-Attend-API-Key' => $apiKey
+            ])->asForm()->post($driveUrl, [
                         'NIS' => $user->nipy,
                         'Nama' => $user->name,
                         'kelas' => '-',
                         'role' => $roleInApi,
                         'waktu_tap' => $now->format('H:i:s'),
-                        'status' => 'Masuk',
-                        'keterangan' => $statusHadir,
+                        'status' => $statusAbsen,
+                        'keterangan' => $keteranganAbsen,
                     ]);
 
             if ($response->failed()) {
