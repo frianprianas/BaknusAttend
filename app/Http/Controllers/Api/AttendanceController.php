@@ -139,7 +139,12 @@ class AttendanceController extends Controller
         // Kirim ke API BaknusDrive
         try {
             // Role di BaknusDrive API harus 'guru', 'TU', atau 'siswa'
-            $roleInApi = in_array(strtolower($user->role), ['guru', 'tu']) ? strtolower($user->role) : 'guru';
+            $roleInApi = 'guru'; // default
+            if (strtolower($user->role) === 'tu') {
+                $roleInApi = 'TU';
+            } elseif (strtolower($user->role) === 'guru') {
+                $roleInApi = 'guru';
+            }
 
             \Illuminate\Support\Facades\Http::withHeaders([
                 'X-Attend-API-Key' => env('BAKNUS_ATTEND_SECRET', 'BAKNUS_ATTEND_SECRET')
