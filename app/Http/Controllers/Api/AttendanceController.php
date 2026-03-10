@@ -87,7 +87,7 @@ class AttendanceController extends Controller
 
         // Kirim ke API BaknusDrive
         try {
-            \Illuminate\Support\Facades\Http::withHeaders([
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
                 'X-Attend-API-Key' => env('BAKNUS_ATTEND_SECRET', 'BAKNUS_ATTEND_SECRET')
             ])->asForm()->post('https://baknusdrive.smkbn666.sch.id/api/attend/upload', [
                         'NIS' => $student->nis,
@@ -98,6 +98,12 @@ class AttendanceController extends Controller
                         'status' => 'Masuk',
                         'keterangan' => $statusHadir,
                     ]);
+
+            if ($response->failed()) {
+                \Illuminate\Support\Facades\Log::error('API BaknusDrive error (Siswa): ' . $response->body());
+            } else {
+                \Illuminate\Support\Facades\Log::info('API BaknusDrive sukses (Siswa): ' . $response->body());
+            }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Gagal kirim ke BaknusDrive (Siswa): ' . $e->getMessage());
         }
@@ -146,7 +152,7 @@ class AttendanceController extends Controller
                 $roleInApi = 'guru';
             }
 
-            \Illuminate\Support\Facades\Http::withHeaders([
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
                 'X-Attend-API-Key' => env('BAKNUS_ATTEND_SECRET', 'BAKNUS_ATTEND_SECRET')
             ])->asForm()->post('https://baknusdrive.smkbn666.sch.id/api/attend/upload', [
                         'NIS' => $user->nipy,
@@ -157,6 +163,12 @@ class AttendanceController extends Controller
                         'status' => 'Masuk',
                         'keterangan' => $statusHadir,
                     ]);
+
+            if ($response->failed()) {
+                \Illuminate\Support\Facades\Log::error('API BaknusDrive error (Guru/TU): ' . $response->body());
+            } else {
+                \Illuminate\Support\Facades\Log::info('API BaknusDrive sukses (Guru/TU): ' . $response->body());
+            }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Gagal kirim ke BaknusDrive (Guru/TU): ' . $e->getMessage());
         }
