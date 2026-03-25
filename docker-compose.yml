@@ -24,6 +24,19 @@ services:
         depends_on:
             - mysql
             - redis
+    laravel.worker:
+        image: sail-8.2/app
+        command: php artisan queue:work
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - mysql
+            - redis
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
