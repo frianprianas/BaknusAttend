@@ -29,25 +29,21 @@ class KehadiranSiswa extends Model
         static::created(function ($kehadiran) {
             try {
                 $student = \App\Models\Student::with('classRoom')->where('nis', $kehadiran->nis)->first();
-                if (!$student)
-                    return;
+                if (!$student) return;
 
-                $driveUrl = env('BAKNUSDRIVE_URL', 'https://baknusdrive.smkbn666.sch.id') . '/api/attend/upload';
-                $apiKey = env('BAKNUS_ATTEND_API_KEY', 'BAKNUS_ATTEND_SECRET');
+                $data = [
+                    'NIS' => $student->nis,
+                    'Nama' => $student->name,
+                    'kelas' => $student->classRoom ? $student->classRoom->kelas : '-',
+                    'role' => 'siswa',
+                    'waktu_tap' => \Carbon\Carbon::parse($kehadiran->waktu_tap ?? now())->format('H:i:s'),
+                    'status' => 'Masuk', // Default Masuk via Tap RFID
+                    'keterangan' => $kehadiran->keterangan ?? $kehadiran->status ?? 'Hadir',
+                ];
 
-                \Illuminate\Support\Facades\Http::withHeaders([
-                    'X-Attend-API-Key' => $apiKey
-                ])->asForm()->post($driveUrl, [
-                            'NIS' => $student->nis,
-                            'Nama' => $student->name,
-                            'kelas' => $student->classRoom ? $student->classRoom->kelas : '-',
-                            'role' => 'siswa',
-                            'waktu_tap' => \Carbon\Carbon::parse($kehadiran->waktu_tap ?? now())->format('H:i:s'),
-                            'status' => 'Masuk',
-                            'keterangan' => $kehadiran->keterangan ?? $kehadiran->status ?? 'Hadir',
-                        ]);
+                \App\Jobs\SyncAttendanceToBaknusDrive::dispatch($data);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('BaknusDrive Sync Error (KehadiranSiswa manual): ' . $e->getMessage());
+                \Log::error('BaknusDrive Queue Error (Siswa): ' . $e->getMessage());
             }
         });
     }
