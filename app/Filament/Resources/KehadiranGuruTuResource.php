@@ -56,21 +56,23 @@ class KehadiranGuruTuResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('nipy')
-                    ->label('NIPY')
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Nama Pegawai')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('nipy')
+                    ->label('NIPY')
+                    ->searchable()
+                    ->sortable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('rfid_uid')
                     ->label('RFID UID')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Waktu Tap')
-                    ->dateTime()
+                    ->label('Jam Tap')
+                    ->dateTime('H:i:s')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

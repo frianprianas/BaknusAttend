@@ -39,11 +39,13 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ->label('Nama Siswa')
                     ->default('Data tidak ditemukan')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->limit(20),
 
                 Tables\Columns\TextColumn::make('nis')
                     ->label('NIS')
-                    ->searchable(),
+                    ->searchable()
+                    ->hiddenFrom('md'),
 
                 Tables\Columns\TextColumn::make('student.classRoom.kelas')
                     ->label('Kelas')
@@ -62,16 +64,17 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ]),
 
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Jam Tap')
-                    ->dateTime('H:i:s')
+                    ->label('Jam')
+                    ->dateTime('H:i')
                     ->timezone('Asia/Jakarta')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('keterangan')
-                    ->label('Keterangan')
+                    ->label('Ket')
                     ->default('–')
-                    ->limit(30)
-                    ->tooltip(fn($record) => $record->keterangan),
+                    ->limit(15)
+                    ->tooltip(fn($record) => $record->keterangan)
+                    ->hiddenFrom('md'),
             ])
             ->filters([
                 SelectFilter::make('status')

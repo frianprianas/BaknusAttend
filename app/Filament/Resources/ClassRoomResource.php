@@ -56,22 +56,29 @@ class ClassRoomResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('kelas')
+                    ->label('Nama Kelas')
+                    ->searchable()
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('programStudi.program_studi')
                     ->label('Program Studi')
                     ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('kelas')
-                    ->label('Nama Kelas')
-                    ->searchable(),
+                    ->searchable()
+                    ->limit(20)
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('nipy')
                     ->label('NIPY / Wali Kelas')
-                    ->searchable(),
+                    ->searchable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('km')
                     ->label('Ketua Murid')
-                    ->searchable(),
+                    ->searchable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('wkm')
                     ->label('Wakil KM')
-                    ->searchable(),
+                    ->searchable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime()

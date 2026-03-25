@@ -63,15 +63,19 @@ class StudentResource extends Resource
                 Tables\Columns\TextColumn::make('nis')
                     ->label('NIS')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('classRoom.kelas')
                     ->label('Kelas')
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('primary'),
                 Tables\Columns\TextColumn::make('rfid')
                     ->label('Kode RFID')
                     ->searchable()
                     ->sortable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

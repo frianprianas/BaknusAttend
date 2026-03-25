@@ -85,14 +85,16 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('nipy')
                     ->label('NIPY')
                     ->searchable()
                     ->sortable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('role')
-                    ->label('Role')
+                    ->label('Jabatan')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'Admin' => 'danger',
@@ -105,7 +107,8 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('rfid')
                     ->label('Kode RFID')
                     ->searchable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->hiddenFrom('md'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')

@@ -40,12 +40,15 @@ class ProgramStudiResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id_prodi')
-                    ->label('ID Prodi')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('program_studi')
                     ->label('Program Studi')
-                    ->searchable(),
+                    ->searchable()
+                    ->badge()
+                    ->color('primary'),
+                Tables\Columns\TextColumn::make('id_prodi')
+                    ->label('ID Prodi')
+                    ->sortable()
+                    ->hiddenFrom('md'),
             ])
             ->filters([
                 //

@@ -57,21 +57,23 @@ class KehadiranSiswaResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('nis')
-                    ->label('NIS')
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('nis')
+                    ->label('NIS')
+                    ->searchable()
+                    ->sortable()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('rfid_uid')
                     ->label('RFID UID')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Waktu Tap')
-                    ->dateTime()
+                    ->label('Jam Tap')
+                    ->dateTime('H:i:s')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

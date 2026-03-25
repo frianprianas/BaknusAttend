@@ -82,11 +82,9 @@ class AttendanceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('attendable.name')
                     ->label('Nama')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('attendable_type')
-                    ->label('Tipe')
-                    ->formatStateUsing(fn($state) => str_contains($state, 'Student') ? 'Siswa' : 'Guru/Staff')
-                    ->badge(),
+                    ->searchable()
+                    ->limit(20)
+                    ->tooltip(fn($record) => $record->attendable?->name),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
@@ -97,6 +95,11 @@ class AttendanceResource extends Resource
                         'Terlambat' => 'gray',
                         default => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('attendable_type')
+                    ->label('Tipe')
+                    ->formatStateUsing(fn($state) => str_contains($state, 'Student') ? 'Siswa' : 'Guru/Staff')
+                    ->badge()
+                    ->hiddenFrom('md'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

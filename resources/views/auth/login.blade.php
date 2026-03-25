@@ -234,6 +234,18 @@
             position: relative;
         }
 
+        @media(max-width: 600px) {
+            .right {
+                padding: 32px 24px;
+            }
+            .title {
+                font-size: 1.5rem !important;
+            }
+            .form-box {
+                padding: 0 10px;
+            }
+        }
+
         .right::before {
             content: '';
             position: absolute;

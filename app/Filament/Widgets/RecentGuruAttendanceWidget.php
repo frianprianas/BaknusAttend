@@ -31,17 +31,18 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ->whereDate('waktu_tap', $today)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('nipy')
-                    ->label('NIPY')
-                    ->searchable(),
-
-                // Join ke tabel users berdasarkan nipy
                 Tables\Columns\TextColumn::make('user_name')
                     ->label('Nama')
+                    ->limit(20)
                     ->getStateUsing(function ($record) {
                         $user = User::where('nipy', $record->nipy)->first();
                         return $user?->name ?? '–';
                     }),
+
+                Tables\Columns\TextColumn::make('nipy')
+                    ->label('NIPY')
+                    ->searchable()
+                    ->hiddenFrom('md'),
 
                 Tables\Columns\TextColumn::make('user_role')
                     ->label('Jabatan')
@@ -50,7 +51,8 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ->getStateUsing(function ($record) {
                         $user = User::where('nipy', $record->nipy)->first();
                         return $user?->role ?? '–';
-                    }),
+                    })
+                    ->hiddenFrom('md'),
 
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
@@ -63,15 +65,16 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ]),
 
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Jam Tap')
-                    ->dateTime('H:i:s')
+                    ->label('Jam')
+                    ->dateTime('H:i')
                     ->timezone('Asia/Jakarta')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('keterangan')
-                    ->label('Keterangan')
+                    ->label('Ket')
                     ->default('–')
-                    ->limit(30),
+                    ->limit(15)
+                    ->hiddenFrom('md'),
             ])
             ->filters([
                 SelectFilter::make('status')
