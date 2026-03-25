@@ -30,16 +30,6 @@
             overflow: hidden;
         }
 
-        @media(max-width:900px) {
-            .left {
-                display: none;
-            }
-
-            .right {
-                width: 100%;
-            }
-        }
-
         .blob {
             position: absolute;
             border-radius: 50%;
@@ -66,27 +56,13 @@
         }
 
         @keyframes fa {
-
-            0%,
-            100% {
-                transform: translateY(0)
-            }
-
-            50% {
-                transform: translateY(-20px)
-            }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
         }
 
         @keyframes fb {
-
-            0%,
-            100% {
-                transform: translateY(0)
-            }
-
-            50% {
-                transform: translateY(20px)
-            }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(20px); }
         }
 
         .grid-bg {
@@ -122,9 +98,7 @@
             font-size: 1.1rem;
         }
 
-        .brand-name span {
-            color: #a5b4fc;
-        }
+        .brand-name span { color: #a5b4fc; }
 
         .hero {
             margin-top: auto;
@@ -155,17 +129,8 @@
         }
 
         @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1)
-            }
-
-            50% {
-                opacity: .5;
-                transform: scale(1.3)
-            }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(1.3); }
         }
 
         h1 {
@@ -232,18 +197,6 @@
             justify-content: center;
             padding: 48px 52px;
             position: relative;
-        }
-
-        @media(max-width: 600px) {
-            .right {
-                padding: 32px 24px;
-            }
-            .title {
-                font-size: 1.5rem !important;
-            }
-            .form-box {
-                padding: 0 10px;
-            }
         }
 
         .right::before {
@@ -386,56 +339,29 @@
         }
 
         @media (prefers-color-scheme: dark) {
-            .right {
-                background: #0f172a;
-            }
+            .right { background: #0f172a; }
+            .right::before { background: radial-gradient(circle at top right, #1e293b, transparent 65%); }
+            .title { color: #f8fafc; }
+            .tagline { color: #94a3b8; }
+            .subtitle { color: #818cf8; }
+            .field label { color: #cbd5e1; }
+            .field input { background: #1e293b; border-color: #334155; color: #f8fafc; }
+            .field input:focus { background: #0f172a; border-color: #818cf8; box-shadow: 0 0 0 4px rgba(129, 140, 248, .15); }
+            .remember { color: #94a3b8; }
+            .footer { border-top-color: #1e293b; color: #475569; }
+            .alert { background: rgba(220, 38, 38, 0.1); border-color: rgba(220, 38, 38, 0.2); color: #f87171; }
+        }
 
-            .right::before {
-                background: radial-gradient(circle at top right, #1e293b, transparent 65%);
-            }
+        /* RESPONSIVE OVERRIDES (MOBILE FIRST AT BOTTOM) */
+        @media(max-width: 900px) {
+            .left { display: none !important; }
+            .right { width: 100% !important; padding: 40px 24px !important; }
+            .form-box { max-width: 100% !important; }
+        }
 
-            .title {
-                color: #f8fafc;
-            }
-
-            .tagline {
-                color: #94a3b8;
-            }
-
-            .subtitle {
-                color: #818cf8;
-            }
-
-            .field label {
-                color: #cbd5e1;
-            }
-
-            .field input {
-                background: #1e293b;
-                border-color: #334155;
-                color: #f8fafc;
-            }
-
-            .field input:focus {
-                background: #0f172a;
-                border-color: #818cf8;
-                box-shadow: 0 0 0 4px rgba(129, 140, 248, .15);
-            }
-
-            .remember {
-                color: #94a3b8;
-            }
-
-            .footer {
-                border-top-color: #1e293b;
-                color: #475569;
-            }
-
-            .alert {
-                background: rgba(220, 38, 38, 0.1);
-                border-color: rgba(220, 38, 38, 0.2);
-                color: #f87171;
-            }
+        @media(max-width: 600px) {
+            .title { font-size: 1.5rem !important; }
+            .hero h1 { font-size: 1.8rem !important; }
         }
     </style>
 </head>
