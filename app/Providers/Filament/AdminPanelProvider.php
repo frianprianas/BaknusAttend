@@ -51,6 +51,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\DashboardStatsWidget::class,
                 \App\Filament\Widgets\RecentStudentAttendanceWidget::class,
                 \App\Filament\Widgets\RecentGuruAttendanceWidget::class,
+                \App\Filament\Widgets\PresensiMandiriWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

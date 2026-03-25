@@ -14,6 +14,9 @@ class KehadiranSiswa extends Model
         'waktu_tap',
         'status',
         'keterangan',
+        'lat',
+        'long',
+        'photo',
     ];
 
     public function student()
