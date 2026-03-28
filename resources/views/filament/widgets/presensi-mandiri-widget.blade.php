@@ -27,28 +27,32 @@
 
                 function getGPS() {
                     if (navigator.geolocation) {
-                        status.textContent = '📍 Mencari Lokasi GPS...';
+                        status.innerHTML = '<span class="animate-pulse">📍 Sedang Mencari Lokasi GPS Anda...</span>';
+                        status.className = 'mt-2 text-xs text-center text-orange-500 font-bold';
                         btn.disabled = true;
 
                         navigator.geolocation.getCurrentPosition(
                             (position) => {
                                 @this.set('data.lat', position.coords.latitude);
                                 @this.set('data.long', position.coords.longitude);
-                                status.textContent = '✅ Lokasi Terkunci (' + position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6) + ')';
+                                status.innerHTML = '✅ Lokasi Terkunci (' + position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6) + ')';
+                                status.className = 'mt-2 text-xs text-center text-green-600 font-bold';
                                 btn.disabled = false;
-                                console.log('Location Found:', position.coords.latitude, position.coords.longitude);
                             },
                             (error) => {
                                 console.error('GPS Error:', error);
-                                status.textContent = '❌ Gagal mendapatkan lokasi. Harap izinkan akses GPS.';
                                 btn.disabled = true;
                                 if (error.code === 1) {
-                                    alert('Izin GPS ditolak. Anda wajib mengaktifkan GPS untuk absensi.');
+                                    status.innerHTML = '❌ Izin GPS Ditolak! <br> <span class="text-[10px] text-gray-500 font-normal">Harap aktifkan GPS & muat ulang halaman ini.</span>';
+                                    alert('Peringatan: Presensi Mandiri WAJIB menggunakan GPS. Mohon aktifkan izin lokasi di browser Anda.');
+                                } else {
+                                    status.innerHTML = '❌ Gagal mendapatkan lokasi. <br> <a href="javascript:location.reload()" class="underline text-indigo-600">Klik untuk Coba Lagi</a>';
                                 }
+                                status.className = 'mt-2 text-xs text-center text-red-500 font-bold';
                             },
                             {
                                 enableHighAccuracy: true,
-                                timeout: 15000,
+                                timeout: 10000,
                                 maximumAge: 0
                             }
                         );
@@ -61,8 +65,13 @@
                 // Jalankan saat load
                 getGPS();
 
-                // Cek ulang setiap 30 detik
-                setInterval(getGPS, 30000);
+                // Cek ulang setiap 60 detik jika belum ada koordinat
+                const gpsInterval = setInterval(() => {
+                    const lat = @this.get('data.lat');
+                    if (!lat) {
+                        getGPS();
+                    }
+                }, 60000);
             });
         </script>
     </x-filament::section>
