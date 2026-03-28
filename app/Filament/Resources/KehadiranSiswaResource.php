@@ -17,9 +17,9 @@ class KehadiranSiswaResource extends Resource
 {
     protected static ?string $model = KehadiranSiswa::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-check-circle';
-    protected static ?string $navigationLabel = 'Kehadiran Siswa';
-    protected static ?string $navigationGroup = 'Laporan Presensi';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static ?string $navigationLabel = 'Laporan Kehadiran';
+    protected static ?string $navigationGroup = null;
 
     public static function canViewAny(): bool
     {
@@ -153,17 +153,31 @@ class KehadiranSiswaResource extends Resource
             ])
             ->defaultSort('waktu_tap', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('waktu_tap')
+                    ->label('Periode')
+                    ->options([
+                        'today'  => 'Hari Ini',
+                        'week'   => 'Minggu Ini',
+                        'month'  => 'Bulan Ini',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'today' => $query->whereDate('waktu_tap', now()),
+                            'week'  => $query->whereBetween('waktu_tap', [now()->startOfWeek(), now()->endOfWeek()]),
+                            'month' => $query->whereMonth('waktu_tap', now()->month)->whereYear('waktu_tap', now()->year),
+                            default => $query,
+                        };
+                    }),
             ])
-            ->actions([
+            ->actions(auth()->user()?->role === 'Admin' ? [
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
+            ] : [])
+            ->bulkActions(auth()->user()?->role === 'Admin' ? [
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
+            ] : [])
             ->paginated([10, 25, 50, 100, 'all'])
             ->defaultPaginationPageOption(25);
     }

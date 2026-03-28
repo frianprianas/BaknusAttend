@@ -5,6 +5,7 @@ namespace App\Filament\Resources\KehadiranGuruTuResource\Pages;
 use App\Filament\Resources\KehadiranGuruTuResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
+use Illuminate\Contracts\Support\Htmlable;
 
 class ManageKehadiranGuruTus extends ManageRecords
 {
@@ -14,4 +15,23 @@ class ManageKehadiranGuruTus extends ManageRecords
     {
         return [];
     }
+
+    public function getTitle(): string|Htmlable
+    {
+        $user = auth()->user();
+        if ($user && $user->role !== 'Admin') {
+            return 'Laporan Kehadiran — ' . $user->name;
+        }
+        return 'Laporan Kehadiran Guru & TU';
+    }
+
+    public function getSubheading(): string|Htmlable|null
+    {
+        $user = auth()->user();
+        if ($user && $user->role !== 'Admin') {
+            return $user->email;
+        }
+        return null;
+    }
 }
+
