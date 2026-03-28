@@ -57,6 +57,17 @@ class KehadiranSiswaResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('photo')
+                    ->label('Foto Selfie')
+                    ->circular()
+                    ->defaultImageUrl(url('/images/user-placeholder.png'))
+                    ->action(
+                        Tables\Actions\Action::make('view_photo')
+                            ->modalHeading('Foto Presensi')
+                            ->modalContent(fn ($record) => view('components.image-modal', ['imageUrl' => $record->photo ? asset('storage/' . $record->photo) : null]))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                    ),
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
                     ->searchable()

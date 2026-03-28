@@ -20,16 +20,27 @@ class RecentGuruAttendanceWidget extends BaseWidget
 
     protected int|string|null $defaultTableRecordsPerPageSelectOption = 25;
 
+    public static function canView(): bool
+    {
+        return auth()->user()?->role !== 'Siswa';
+    }
+
     public function table(Table $table): Table
     {
         $today = Carbon::today();
 
         return $table
-            ->query(
-                fn() =>
-                KehadiranGuruTu::latest('waktu_tap')
-                    ->whereDate('waktu_tap', $today)
-            )
+            ->query(function () use ($today) {
+                $query = KehadiranGuruTu::latest('waktu_tap')
+                    ->whereDate('waktu_tap', $today);
+                $user = auth()->user();
+                if ($user && $user->role !== 'Admin') {
+                    $query->where(function($q) use ($user) {
+                        $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+                    });
+                }
+                return $query;
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('user_name')
                     ->label('Nama')

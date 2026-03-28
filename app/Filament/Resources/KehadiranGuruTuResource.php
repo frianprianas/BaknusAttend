@@ -56,10 +56,26 @@ class KehadiranGuruTuResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')
+                Tables\Columns\ImageColumn::make('photo')
+                    ->label('Foto Selfie')
+                    ->circular()
+                    ->defaultImageUrl(url('/images/user-placeholder.png'))
+                    ->action(
+                        Tables\Actions\Action::make('view_photo')
+                            ->modalHeading('Foto Presensi')
+                            ->modalContent(fn ($record) => view('components.image-modal', ['imageUrl' => $record->photo ? asset('storage/' . $record->photo) : null]))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                    ),
+                Tables\Columns\TextColumn::make('pegawai_name')
                     ->label('Nama Pegawai')
-                    ->searchable()
-                    ->sortable(),
+                    ->getStateUsing(function ($record) {
+                        $user = \App\Models\User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
+                        return $user ? $user->name : $record->nipy;
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('nipy', 'like', "%{$search}%");
+                    }),
                 Tables\Columns\TextColumn::make('nipy')
                     ->label('NIPY')
                     ->searchable()

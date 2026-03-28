@@ -78,8 +78,12 @@
                     <button type="submit" 
                         wire:loading.attr="disabled"
                         x-bind:disabled="!$wire.data.lat || isSearching"
-                        class="w-full px-6 py-3 text-white font-bold bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-lg transition duration-200 disabled:cursor-not-allowed">
-                        Kirim Presensi Sekarang
+                        class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-2xl transition duration-200 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        KAMERA & KIRIM PRESENSI
                     </button>
                     
                     <!-- GPS Status Display -->

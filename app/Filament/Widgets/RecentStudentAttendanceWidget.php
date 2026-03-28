@@ -23,17 +23,35 @@ class RecentStudentAttendanceWidget extends BaseWidget
     // Widget bisa di-expand / di-collapse oleh user
     protected static bool $isLazy = true;
 
+    public static function canView(): bool
+    {
+        $user = auth()->user();
+        return $user?->role === 'Admin' || $user?->role === 'Siswa';
+    }
+
     public function table(Table $table): Table
     {
         $today = Carbon::today();
 
         return $table
-            ->query(
-                fn() =>
-                KehadiranSiswa::with('student')
+            ->query(function () use ($today) {
+                $query = KehadiranSiswa::with('student')
                     ->whereDate('waktu_tap', $today)
-                    ->latest('waktu_tap')
-            )
+                    ->latest('waktu_tap');
+                
+                $user = auth()->user();
+                if ($user && $user->role === 'Siswa') {
+                    $student = \App\Models\Student::where('email', $user->email)->first();
+                    if ($student) {
+                        $query->where('nis', $student->nis);
+                    } else {
+                        // Jika bukan admin dan tidak ada data siswa terhubung, kosongkan hasil
+                        $query->where('nis', 'none'); 
+                    }
+                }
+                
+                return $query;
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
