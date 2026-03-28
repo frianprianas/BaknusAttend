@@ -42,7 +42,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 FileUpload::make('photo')
                     ->label('Ambil Foto Selfie')
                     ->image()
-                    ->camera()
+                    ->extraInputAttributes(['capture' => 'user'])
                     ->required()
                     ->imageResizeTargetWidth('800')
                     ->imageResizeTargetHeight('600')
