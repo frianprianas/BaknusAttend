@@ -7,7 +7,7 @@ use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
 use App\Models\SchoolSetting;
 use App\Models\Student;
-use App\Services\AzureFaceService;
+use App\Services\AwsFaceService;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -165,7 +165,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         }
 
         // --- FACE RECOGNITION LOGIC ---
-        $faceService = new AzureFaceService();
+        $faceService = new AwsFaceService();
         $isInitializing = false;
         
         $model = $user;
@@ -177,8 +177,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
         if (!$model->face_reference) {
             $isInitializing = true;
             // Deteksi apakah ada wajah di foto ini
-            $faceId = $faceService->detectFace($formData['photo']);
-            if (!$faceId) {
+            $hasFace = $faceService->detectFace($formData['photo']);
+            if (!$hasFace) {
                 // Hapus fotonya karena gagal
                 Storage::disk('public')->delete($formData['photo']);
                 Notification::make()
