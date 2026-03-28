@@ -81,7 +81,7 @@ class KehadiranSiswaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('photo')
-                    ->label('Foto Selfie')
+                    ->label('Foto')
                     ->circular()
                     ->defaultImageUrl(url('/images/user-placeholder.png'))
                     ->action(
@@ -91,24 +91,19 @@ class KehadiranSiswaResource extends Resource
                             ->modalSubmitAction(false)
                             ->modalCancelAction(false)
                     ),
+
+                // Nama hanya terlihat oleh Admin
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
                     ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('nis')
-                    ->label('NIS')
-                    ->searchable()
                     ->sortable()
-                    ->hiddenFrom('md'),
-                Tables\Columns\TextColumn::make('rfid_uid')
-                    ->label('RFID UID')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->hiddenFrom('md'),
+                    ->visible(fn () => auth()->user()?->role === 'Admin'),
+
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Jam Tap')
+                    ->label('Jam')
                     ->dateTime('H:i:s')
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('tipe_absen')
                     ->label('Tipe')
                     ->getStateUsing(function ($record) {
@@ -122,14 +117,12 @@ class KehadiranSiswaResource extends Resource
                         'Pulang' => 'warning',
                         default => 'gray',
                     }),
+
                 Tables\Columns\TextColumn::make('sumber_presensi')
                     ->label('Alat Presensi')
                     ->getStateUsing(function ($record) {
-                        if (str_contains(strtolower($record->keterangan ?? ''), 'mandiri')) {
-                            return 'HP / GPS';
-                        } elseif (str_contains(strtolower($record->keterangan ?? ''), 'rfid')) {
-                            return 'Mesin RFID';
-                        }
+                        if (str_contains(strtolower($record->keterangan ?? ''), 'mandiri')) return 'HP / GPS';
+                        if (str_contains(strtolower($record->keterangan ?? ''), 'rfid')) return 'Mesin RFID';
                         return 'Manual';
                     })
                     ->badge()
@@ -138,6 +131,7 @@ class KehadiranSiswaResource extends Resource
                         'Mesin RFID' => 'info',
                         default => 'gray',
                     }),
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()

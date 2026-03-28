@@ -77,7 +77,7 @@ class KehadiranGuruTuResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('photo')
-                    ->label('Foto Selfie')
+                    ->label('Foto')
                     ->circular()
                     ->defaultImageUrl(url('/images/user-placeholder.png'))
                     ->action(
@@ -87,6 +87,8 @@ class KehadiranGuruTuResource extends Resource
                             ->modalSubmitAction(false)
                             ->modalCancelAction(false)
                     ),
+
+                // Kolom Nama hanya terlihat oleh Admin
                 Tables\Columns\TextColumn::make('pegawai_name')
                     ->label('Nama Pegawai')
                     ->getStateUsing(function ($record) {
@@ -95,21 +97,14 @@ class KehadiranGuruTuResource extends Resource
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->where('nipy', 'like', "%{$search}%");
-                    }),
-                Tables\Columns\TextColumn::make('nipy')
-                    ->label('NIPY')
-                    ->searchable()
-                    ->sortable()
-                    ->hiddenFrom('md'),
-                Tables\Columns\TextColumn::make('rfid_uid')
-                    ->label('RFID UID')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->hiddenFrom('md'),
+                    })
+                    ->visible(fn () => auth()->user()?->role === 'Admin'),
+
                 Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Jam Tap')
+                    ->label('Jam')
                     ->dateTime('H:i:s')
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('tipe_absen')
                     ->label('Tipe')
                     ->getStateUsing(function ($record) {
@@ -123,14 +118,12 @@ class KehadiranGuruTuResource extends Resource
                         'Pulang' => 'warning',
                         default => 'gray',
                     }),
+
                 Tables\Columns\TextColumn::make('sumber_presensi')
                     ->label('Alat Presensi')
                     ->getStateUsing(function ($record) {
-                        if (str_contains(strtolower($record->keterangan ?? ''), 'mandiri')) {
-                            return 'HP / GPS';
-                        } elseif (str_contains(strtolower($record->keterangan ?? ''), 'rfid')) {
-                            return 'Mesin RFID';
-                        }
+                        if (str_contains(strtolower($record->keterangan ?? ''), 'mandiri')) return 'HP / GPS';
+                        if (str_contains(strtolower($record->keterangan ?? ''), 'rfid')) return 'Mesin RFID';
                         return 'Manual';
                     })
                     ->badge()
@@ -139,6 +132,7 @@ class KehadiranGuruTuResource extends Resource
                         'Mesin RFID' => 'info',
                         default => 'gray',
                     }),
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
