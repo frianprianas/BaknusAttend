@@ -13,95 +13,110 @@ class AzureFaceService
 
     public function __construct()
     {
-        $this->key = config('services.azure_face.key') ?? env('AZURE_FACE_KEY');
-        $this->endpoint = rtrim(config('services.azure_face.endpoint') ?? env('AZURE_FACE_ENDPOINT'), '/');
+        $this->key      = config('services.azure_face.key', env('AZURE_FACE_KEY', ''));
+        $this->endpoint = rtrim(config('services.azure_face.endpoint', env('AZURE_FACE_ENDPOINT', '')), '/');
     }
 
     /**
-     * Detect face and return faceId
+     * Detect face in image and return faceId string, or null if failed / no face found.
      */
     public function detectFace(string $imagePath): ?string
     {
         try {
             if (!Storage::disk('public')->exists($imagePath)) {
-                Log::error("AzureFace: File not found at $imagePath");
+                Log::error("AzureFace detectFace: file not found at [{$imagePath}]");
                 return null;
             }
 
             $imageData = Storage::disk('public')->get($imagePath);
 
+            // Use withBody() to send raw binary data (octet-stream)
             $response = Http::withHeaders([
                 'Ocp-Apim-Subscription-Key' => $this->key,
-                'Content-Type' => 'application/octet-stream',
-            ])->post($this->endpoint . '/face/v1.0/detect?returnFaceId=true&recognitionModel=recognition_04&detectionModel=detection_03', $imageData);
+            ])->withBody($imageData, 'application/octet-stream')
+              ->post($this->endpoint . '/face/v1.0/detect?returnFaceId=true&recognitionModel=recognition_04&detectionModel=detection_03');
 
             if ($response->successful()) {
-                $data = $response->json();
-                if (count($data) > 0) {
-                    return $data[0]['faceId'];
+                $faces = $response->json();
+                if (is_array($faces) && count($faces) > 0) {
+                    return $faces[0]['faceId'];
                 }
-            } else {
-                Log::error("AzureFace Detect Error: " . $response->body());
+                Log::info("AzureFace detectFace: no face found in [{$imagePath}]");
+                return null;
             }
-        } catch (\Exception $e) {
-            Log::error("AzureFace Detect Exception: " . $e->getMessage());
-        }
 
-        return null;
+            Log::error("AzureFace detectFace error [{$response->status()}]: " . $response->body());
+            return null;
+
+        } catch (\Throwable $e) {
+            Log::error("AzureFace detectFace exception: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**
-     * Verify if two faces belong to the same person
-     * Returns similarity score or null on failure
+     * Verify if two faceIds belong to the same person.
+     * Returns ['isIdentical' => bool, 'confidence' => float] or null on error.
      */
     public function verifyFaces(string $faceId1, string $faceId2): ?array
     {
         try {
             $response = Http::withHeaders([
                 'Ocp-Apim-Subscription-Key' => $this->key,
-                'Content-Type' => 'application/json',
+                'Content-Type'              => 'application/json',
             ])->post($this->endpoint . '/face/v1.0/verify', [
                 'faceId1' => $faceId1,
                 'faceId2' => $faceId2,
             ]);
 
             if ($response->successful()) {
-                return $response->json(); // contains 'isIdentical' and 'confidence'
-            } else {
-                Log::error("AzureFace Verify Error: " . $response->body());
+                return $response->json(); // ['isIdentical' => bool, 'confidence' => float]
             }
-        } catch (\Exception $e) {
-            Log::error("AzureFace Verify Exception: " . $e->getMessage());
-        }
 
-        return null;
+            Log::error("AzureFace verifyFaces error [{$response->status()}]: " . $response->body());
+            return null;
+
+        } catch (\Throwable $e) {
+            Log::error("AzureFace verifyFaces exception: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**
-     * Full flow: Compare a new selfie against a reference photo
+     * Full pipeline: detect reference face, detect selfie face, verify match.
+     * Returns ['success' => bool, 'is_identical' => bool|null, 'confidence' => float|null, 'error' => string|null]
      */
     public function compare(string $selfiePath, string $referencePath): array
     {
-        $faceId1 = $this->detectFace($referencePath);
-        if (!$faceId1) {
-            return ['success' => false, 'error' => 'Gagal mendeteksi wajah pada foto referensi master.'];
+        $refFaceId = $this->detectFace($referencePath);
+        if (!$refFaceId) {
+            return [
+                'success' => false,
+                'error'   => 'Gagal mendeteksi wajah pada foto referensi master. Hubungi Admin.',
+            ];
         }
 
-        $faceId2 = $this->detectFace($selfiePath);
-        if (!$faceId2) {
-            return ['success' => false, 'error' => 'Wajah tidak terdeteksi pada foto selfie. Pastikan wajah terlihat jelas dan pencahayaan terang.'];
+        $selfieFaceId = $this->detectFace($selfiePath);
+        if (!$selfieFaceId) {
+            return [
+                'success' => false,
+                'error'   => 'Wajah tidak terdeteksi pada foto selfie. Pastikan wajah terlihat jelas, tidak tertutup, dan pencahayaan terang.',
+            ];
         }
 
-        $result = $this->verifyFaces($faceId1, $faceId2);
+        $result = $this->verifyFaces($refFaceId, $selfieFaceId);
         if (!$result) {
-            return ['success' => false, 'error' => 'Gagal melakukan verifikasi wajah ke server AI.'];
+            return [
+                'success' => false,
+                'error'   => 'Gagal melakukan verifikasi wajah ke server Azure AI.',
+            ];
         }
 
         return [
-            'success' => true,
-            'is_identical' => $result['isIdentical'],
-            'confidence' => $result['confidence'],
-            'message' => $result['isIdentical'] ? 'Wajah Cocok!' : 'Wajah Tidak Cocok.'
+            'success'      => true,
+            'is_identical' => (bool) ($result['isIdentical'] ?? false),
+            'confidence'   => (float) ($result['confidence'] ?? 0),
+            'message'      => ($result['isIdentical'] ?? false) ? 'Wajah Cocok!' : 'Wajah Tidak Cocok.',
         ];
     }
 }
