@@ -19,7 +19,7 @@ class StudentResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user() && in_array(auth()->user()->role, ['Admin', 'TU', 'Guru']);
+        return auth()->user()?->role === 'Admin';
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';

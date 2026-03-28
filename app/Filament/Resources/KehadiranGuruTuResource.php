@@ -21,6 +21,26 @@ class KehadiranGuruTuResource extends Resource
     protected static ?string $navigationLabel = 'Kehadiran Guru/TU';
     protected static ?string $navigationGroup = 'Laporan Presensi';
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        return $user && in_array($user->role, ['Admin', 'Guru', 'TU']);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user && $user->role !== 'Admin') {
+            $query->where(function ($q) use ($user) {
+                $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+            });
+        }
+
+        return $query;
+    }
+
     public static function form(Form $form): Form
     {
         return $form

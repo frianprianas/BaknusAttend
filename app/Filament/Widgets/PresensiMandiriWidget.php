@@ -112,7 +112,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ]);
         } else {
             // Guru / TU
-            if ($currentTime->format('H:i') > '07:15') $status = 'Terlambat';
             
             KehadiranGuruTu::create([
                 'nipy' => $user->nipy ?? $user->email,

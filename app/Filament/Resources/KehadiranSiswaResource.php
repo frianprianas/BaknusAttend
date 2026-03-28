@@ -21,6 +21,29 @@ class KehadiranSiswaResource extends Resource
     protected static ?string $navigationLabel = 'Kehadiran Siswa';
     protected static ?string $navigationGroup = 'Laporan Presensi';
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        return $user && in_array($user->role, ['Admin', 'Siswa']);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user && $user->role === 'Siswa') {
+            $student = \App\Models\Student::where('email', $user->email)->first();
+            if ($student) {
+                $query->where('nis', $student->nis);
+            } else {
+                $query->where('nis', 'none');
+            }
+        }
+
+        return $query;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
