@@ -42,6 +42,13 @@ class AdminPanelProvider extends PanelProvider
                 'panels::styles.after',
                 fn(): string => '<link rel="stylesheet" href="' . asset('css/modern-filament.css') . '">'
             )
+            ->renderHook(
+                'panels::topbar.start',
+                fn(): string => '<div class="hidden md:flex flex-col justify-center px-2 leading-tight">
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium tracking-wide">Aplikasi Kehadiran Terintegrasi</span>
+                    <span class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold">SMK Bakti Nusantara 666</span>
+                </div>'
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->pages([
                 Pages\Dashboard::class,

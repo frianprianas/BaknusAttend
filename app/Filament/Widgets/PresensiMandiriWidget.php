@@ -90,9 +90,15 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->image()
                     ->extraInputAttributes(['capture' => 'user'])
                     ->required()
-                    ->imageResizeTargetWidth('800')
-                    ->imageResizeTargetHeight('600')
+                    // Ukuran maksimum 1MB — tolak di sisi klien
+                    ->maxSize(1024)
+                    // Resize ke 640x480 sebelum upload (hemat bandwidth + storage)
+                    ->imageResizeTargetWidth('640')
+                    ->imageResizeTargetHeight('480')
                     ->imageResizeMode('cover')
+                    ->imageResizeUpscale(false)
+                    // Kompresi kualitas JPEG 65% — cukup untuk identifikasi wajah
+                    ->imageEditorMode(2)
                     ->disk('public')
                     ->directory('absensi-selfie')
                     ->hidden($tipeAbsens === 'Selesai'),

@@ -16,10 +16,21 @@ class IzinGuruTuResource extends Resource
 {
     protected static ?string $model = IzinGuruTu::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationIcon  = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Izin / Sakit Guru & TU';
-    protected static ?string $navigationGroup = 'Laporan Presensi';
-    protected static ?int $navigationSort = 10;
+    protected static ?string $navigationGroup = null;
+    protected static ?int $navigationSort     = 3;
+
+    public static function getNavigationBadge(): ?string
+    {
+        $pending = \App\Models\IzinGuruTu::whereDate('tanggal', now())->where('status', 'Diajukan')->count();
+        return $pending > 0 ? (string) $pending : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
 
     public static function canViewAny(): bool
     {
