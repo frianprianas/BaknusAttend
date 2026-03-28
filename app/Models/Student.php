@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-    protected $fillable = ['name', 'nis', 'class_room_id', 'rfid'];
+    protected $fillable = ['name', 'nis', 'class_room_id', 'rfid', 'face_reference'];
 
     public function classRoom()
     {

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'role',
         'rfid',
+        'face_reference',
     ];
 
     public function attendances()

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'azure_face' => [
+        'key' => env('AZURE_FACE_KEY'),
+        'endpoint' => env('AZURE_FACE_ENDPOINT'),
+    ],
+
 ];

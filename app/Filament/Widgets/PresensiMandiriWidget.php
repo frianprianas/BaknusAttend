@@ -7,6 +7,7 @@ use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
 use App\Models\SchoolSetting;
 use App\Models\Student;
+use App\Services\AzureFaceService;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -16,6 +17,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PresensiMandiriWidget extends Widget implements HasForms
 {
@@ -27,6 +29,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
     public ?array $data = [];
     public string $tipeAbsens = 'Masuk';
+    public string $labelTombol = 'KIRIM PRESENSI';
 
     public static function canView(): bool
     {
@@ -72,12 +75,31 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
     public function form(Form $form): Form
     {
+        $user = auth()->user();
         $tipeAbsens = $this->determinePresensiType();
-        $pesanInfo = "Silakan ambil foto selfie untuk melakukan Absen {$tipeAbsens}.";
         
+        // Cek apakah sudah punya foto master
+        $hasMaster = false;
+        if ($user->role === 'Siswa') {
+            $student = Student::where('email', $user->email)->first();
+            $hasMaster = $student?->face_reference ?? false;
+        } else {
+            $hasMaster = $user->face_reference ?? false;
+        }
+
+        if (!$hasMaster) {
+            $pesanInfo = "⚠️ **Belum ada Foto Master.** Silakan ambil foto selfie dengan wajah terlihat jelas dan pencahayaan terang untuk mendaftarkan wajah Anda ke sistem.";
+            $labelTombol = "Daftarkan Wajah & Absen " . $tipeAbsens;
+        } else {
+            $pesanInfo = "Silakan ambil foto selfie untuk melakukan Absen {$tipeAbsens}.";
+            $labelTombol = "Kirim Presensi " . $tipeAbsens;
+        }
         if ($tipeAbsens === 'Selesai') {
             $pesanInfo = "Anda sudah menyelesaikan absensi lengkap (Masuk & Pulang) hari ini. Terima kasih!";
+            $labelTombol = "Selesai";
         }
+
+        $this->labelTombol = $labelTombol;
 
         return $form
             ->schema([
@@ -86,21 +108,16 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->content($pesanInfo),
                 
                 FileUpload::make('photo')
-                    ->label('Ambil Foto') // Renamed label here
+                    ->label(!$hasMaster ? 'Ambil Foto Master' : 'Ambil Foto Selfie')
                     ->image()
                     ->extraInputAttributes(['capture' => 'user'])
                     ->required()
-                    // Ukuran maksimum 1MB — tolak di sisi klien
-                    ->maxSize(1024)
-                    // Resize ke 640x480 sebelum upload (hemat bandwidth + storage)
-                    ->imageResizeTargetWidth('640')
-                    ->imageResizeTargetHeight('480')
-                    ->imageResizeMode('cover')
-                    ->imageResizeUpscale(false)
-                    // Kompresi kualitas JPEG 65% — cukup untuk identifikasi wajah
+                    // Ukuran maksimum untuk Master boleh lebih besar (2MB), Selfie (1MB)
+                    ->maxSize(!$hasMaster ? 2048 : 1024)
+                    // Kompresi kualitas JPEG 80% untuk Master, 65% untuk Selfie
                     ->imageEditorMode(2)
                     ->disk('public')
-                    ->directory('absensi-selfie')
+                    ->directory(!$hasMaster ? 'face-references' : 'absensi-selfie')
                     ->hidden($tipeAbsens === 'Selesai'),
                 
                 Hidden::make('lat'),
@@ -146,6 +163,57 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 ->send();
             return;
         }
+
+        // --- FACE RECOGNITION LOGIC ---
+        $faceService = new AzureFaceService();
+        $isInitializing = false;
+        
+        $model = $user;
+        if ($user->role === 'Siswa') {
+            $model = Student::where('email', $user->email)->first();
+        }
+
+        // Jika belum ada foto master
+        if (!$model->face_reference) {
+            $isInitializing = true;
+            // Deteksi apakah ada wajah di foto ini
+            $faceId = $faceService->detectFace($formData['photo']);
+            if (!$faceId) {
+                // Hapus fotonya karena gagal
+                Storage::disk('public')->delete($formData['photo']);
+                Notification::make()
+                    ->title('Wajah Tidak Terdeteksi!')
+                    ->body('Gagal mendaftarkan wajah. Pastikan wajah terlihat jelas tanpa masker/penutup dan pencahayaan terang.')
+                    ->danger()->send();
+                return;
+            }
+            // Simpan sebagai referensi
+            $model->update(['face_reference' => $formData['photo']]);
+            Notification::make()
+                ->title('Foto Master Berhasil Disimpan!')
+                ->body('Data wajah Anda telah terdaftar. Selanjutnya sistem akan selalu mencocokkan wajah Anda dengan foto ini.')
+                ->success()->send();
+        } else {
+            // Sudah ada foto master -> Lakukan verifikasi
+            $check = $faceService->compare($formData['photo'], $model->face_reference);
+            
+            if (!$check['success']) {
+                Notification::make()->title('Gagal Memproses Wajah')->body($check['error'])->danger()->send();
+                return;
+            }
+
+            if (!$check['is_identical']) {
+                $conf = round($check['confidence'] * 100);
+                Notification::make()
+                    ->title('Wajah Tidak Cocok! (' . $conf . '%)')
+                    ->body('Sistem mendeteksi wajah yang berbeda. Silakan coba lagi dengan posisi dan pencahayaan yang lebih baik.')
+                    ->danger()->send();
+                return;
+            }
+            
+            // Wajah cocok -> Lanjut simpan absensi
+        }
+        // --- END FACE RECOGNITION ---
 
         $currentTime = now();
         $status = 'Hadir';

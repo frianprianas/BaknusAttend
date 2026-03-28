@@ -3,7 +3,7 @@
         <style>
             /* Override Filament's default Drag & Drop text */
             .fi-fo-file-upload-dropzone .fi-fo-file-upload-dropzone-label { display: none !important; }
-            .fi-fo-file-upload-dropzone::after { content: "Ambil Foto Selfie ({{ $tipeAbsens }})"; font-weight: bold; font-size: 1rem; color: #4f46e5; display: block; margin-top: 10px; text-align: center; }
+            .fi-fo-file-upload-dropzone::after { content: "{{ $labelTombol }}"; font-weight: bold; font-size: 1rem; color: #4f46e5; display: block; margin-top: 10px; text-align: center; }
         </style>
         <div x-data="{
                 statusText: '',
@@ -89,7 +89,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        KIRIM PRESENSI
+                        {{ $labelTombol }}
                     </button>
                     @endif
                     
