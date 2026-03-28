@@ -17,6 +17,24 @@ class RecentStudentAttendanceWidget extends BaseWidget
 
     protected static ?string $heading = 'Rekap Kehadiran';
 
+    public function getHeading(): string
+    {
+        $user = auth()->user();
+        if ($user && $user->role === 'Siswa') {
+            return 'Rekap Kehadiran — ' . $user->name;
+        }
+        return 'Rekap Kehadiran Siswa – Hari Ini';
+    }
+
+    public function getDescription(): ?string
+    {
+        $user = auth()->user();
+        if ($user && $user->role === 'Siswa') {
+            return $user->email;
+        }
+        return null;
+    }
+
     // Override default Filament widget (default-nya 10)
     protected int|string|null $defaultTableRecordsPerPageSelectOption = 25;
 

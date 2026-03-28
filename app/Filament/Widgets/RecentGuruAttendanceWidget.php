@@ -18,6 +18,24 @@ class RecentGuruAttendanceWidget extends BaseWidget
 
     protected static ?string $heading = 'Rekap Kehadiran';
 
+    public function getHeading(): string
+    {
+        $user = auth()->user();
+        if ($user && $user->role !== 'Admin') {
+            return 'Rekap Kehadiran — ' . $user->name;
+        }
+        return 'Rekap Kehadiran Guru & TU – Hari Ini';
+    }
+
+    public function getDescription(): ?string
+    {
+        $user = auth()->user();
+        if ($user && $user->role !== 'Admin') {
+            return $user->email;
+        }
+        return null;
+    }
+
     protected int|string|null $defaultTableRecordsPerPageSelectOption = 25;
 
     public static function canView(): bool

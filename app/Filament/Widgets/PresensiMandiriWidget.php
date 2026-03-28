@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\IzinGuruTu;
 use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
 use App\Models\SchoolSetting;
@@ -26,6 +27,21 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
     public ?array $data = [];
     public string $tipeAbsens = 'Masuk';
+
+    public static function canView(): bool
+    {
+        // Guru/TU yang punya izin aktif hari ini tidak bisa absen
+        $user = auth()->user();
+        if (!$user) return false;
+        if ($user->role === 'Admin') return false; // Admin tidak perlu absen
+        if (in_array($user->role, ['Guru', 'TU'])) {
+            // Sembunyikan jika ada izin aktif hari ini
+            if (IzinGuruTu::hasActiveIzinToday($user->nipy ?? '', $user->email)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public function mount(): void
     {
