@@ -25,22 +25,52 @@ class PresensiMandiriWidget extends Widget implements HasForms
     protected int | string | array $columnSpan = 'full';
 
     public ?array $data = [];
+    public string $tipeAbsens = 'Masuk';
 
     public function mount(): void
     {
+        $this->tipeAbsens = $this->determinePresensiType();
         $this->form->fill();
+    }
+
+    private function determinePresensiType(): string
+    {
+        $user = auth()->user();
+        if (!$user) return 'Masuk';
+        $today = Carbon::today();
+        
+        if ($user->role === 'Siswa') {
+            $student = Student::where('email', $user->email)->first();
+            if (!$student) return 'Masuk';
+            $count = KehadiranSiswa::where('nis', $student->nis)->whereDate('waktu_tap', $today)->count();
+        } else {
+            $count = KehadiranGuruTu::where(function($q) use ($user) {
+                $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+            })->whereDate('waktu_tap', $today)->count();
+        }
+        
+        if ($count === 0) return 'Masuk';
+        if ($count === 1) return 'Pulang';
+        return 'Selesai';
     }
 
     public function form(Form $form): Form
     {
+        $tipeAbsens = $this->determinePresensiType();
+        $pesanInfo = "Silakan ambil foto selfie untuk melakukan Absen {$tipeAbsens}.";
+        
+        if ($tipeAbsens === 'Selesai') {
+            $pesanInfo = "Anda sudah menyelesaikan absensi lengkap (Masuk & Pulang) hari ini. Terima kasih!";
+        }
+
         return $form
             ->schema([
                 Placeholder::make('info')
-                    ->label('Presensi Mandiri')
-                    ->content('Silakan ambil foto selfie untuk melakukan absensi.'),
+                    ->label("Presensi Mandiri: " . ($tipeAbsens !== 'Selesai' ? "Absen $tipeAbsens" : "Selesai"))
+                    ->content($pesanInfo),
                 
                 FileUpload::make('photo')
-                    ->label('Ambil Foto Selfie')
+                    ->label('Ambil Foto') // Renamed label here
                     ->image()
                     ->extraInputAttributes(['capture' => 'user'])
                     ->required()
@@ -48,7 +78,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->imageResizeTargetHeight('600')
                     ->imageResizeMode('cover')
                     ->disk('public')
-                    ->directory('absensi-selfie'),
+                    ->directory('absensi-selfie')
+                    ->hidden($tipeAbsens === 'Selesai'),
                 
                 Hidden::make('lat'),
                 Hidden::make('long'),
@@ -58,10 +89,16 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
     public function submit(): void
     {
+        $tipeAbsens = $this->determinePresensiType();
+        if ($tipeAbsens === 'Selesai') {
+            Notification::make()->title('Selesai!')->body('Anda sudah melakukan Absen Masuk dan Pulang hari ini.')->warning()->send();
+            return;
+        }
+
         $formData = $this->form->getState();
         $user = auth()->user();
         
-        if (!$formData['lat'] || !$formData['long']) {
+        if (!isset($formData['lat']) || !isset($formData['long'])) {
             Notification::make()->title('GPS Tidak Aktif')->danger()->send();
             return;
         }
@@ -90,6 +127,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         $currentTime = now();
         $status = 'Hadir';
+        $keterangan = "{$tipeAbsens} - Presensi Mandiri (Dashboard)";
 
         if ($user->role === 'Siswa') {
             $student = Student::where('email', $user->email)->first();
@@ -98,7 +136,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 return;
             }
 
-            if ($currentTime->format('H:i') > '07:05') $status = 'Terlambat';
+            if ($tipeAbsens === 'Masuk' && $currentTime->format('H:i') > '07:05') {
+                $status = 'Terlambat';
+            }
 
             KehadiranSiswa::create([
                 'nis' => $student->nis,
@@ -108,11 +148,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'lat' => $formData['lat'],
                 'long' => $formData['long'],
                 'photo' => $formData['photo'],
-                'keterangan' => 'Presensi Mandiri (Dashboard)',
+                'keterangan' => $keterangan,
             ]);
         } else {
             // Guru / TU
-            
             KehadiranGuruTu::create([
                 'nipy' => $user->nipy ?? $user->email,
                 'rfid_uid' => $user->rfid,
@@ -121,12 +160,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'lat' => $formData['lat'],
                 'long' => $formData['long'],
                 'photo' => $formData['photo'],
-                'keterangan' => 'Presensi Mandiri (Dashboard)',
+                'keterangan' => $keterangan,
             ]);
         }
 
         Notification::make()
-            ->title('Berhasil Absen!')
+            ->title('Berhasil Absen ' . $tipeAbsens . '!')
             ->body('Presensi mandiri Anda telah tercatat.')
             ->success()
             ->send();

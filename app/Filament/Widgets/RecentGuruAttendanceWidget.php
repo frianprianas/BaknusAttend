@@ -16,7 +16,7 @@ class RecentGuruAttendanceWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $heading = 'Rekap Kehadiran Guru & TU Hari Ini';
+    protected static ?string $heading = 'Rekap Kehadiran';
 
     protected int|string|null $defaultTableRecordsPerPageSelectOption = 25;
 
@@ -85,6 +85,7 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ->label('Ket')
                     ->default('–')
                     ->limit(15)
+                    ->searchable()
                     ->hiddenFrom('md'),
             ])
             ->filters([

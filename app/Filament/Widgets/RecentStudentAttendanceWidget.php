@@ -15,7 +15,7 @@ class RecentStudentAttendanceWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $heading = 'Rekap Kehadiran Siswa Hari Ini';
+    protected static ?string $heading = 'Rekap Kehadiran';
 
     // Override default Filament widget (default-nya 10)
     protected int|string|null $defaultTableRecordsPerPageSelectOption = 25;
@@ -92,6 +92,7 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ->default('–')
                     ->limit(15)
                     ->tooltip(fn($record) => $record->keterangan)
+                    ->searchable()
                     ->hiddenFrom('md'),
             ])
             ->filters([
