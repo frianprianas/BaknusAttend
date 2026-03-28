@@ -52,6 +52,27 @@
                 </div>
             </x-filament::section>
 
+        @elseif($sudahAbsenHariIni)
+            {{-- Sudah absen: blokir form izin --}}
+            <x-filament::section>
+                <div class="flex flex-col items-center gap-4 py-4 text-center">
+                    <div class="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-5xl">
+                        ✅
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-gray-800 dark:text-white">Anda Sudah Hadir Hari Ini!</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Karena sudah tercatat hadir (Masuk/Pulang), pengajuan Izin/Sakit tidak bisa dilakukan untuk hari ini.
+                        </p>
+                    </div>
+                    <div class="w-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl px-5 py-3">
+                        <p class="text-sm text-blue-700 dark:text-blue-300">
+                            ℹ️ Izin/Sakit hanya bisa diajukan <strong>sebelum</strong> melakukan absensi.
+                        </p>
+                    </div>
+                </div>
+            </x-filament::section>
+
         @else
             {{-- Form Pengajuan Baru --}}
             <x-filament::section>

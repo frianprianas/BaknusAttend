@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\IzinGuruTu;
+use App\Models\KehadiranGuruTu;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -28,6 +29,9 @@ class IzinSakitPage extends Page implements HasForms
 
     /** @var IzinGuruTu|null */
     public ?IzinGuruTu $izinHariIni = null;
+
+    /** @var bool - sudah absen hari ini (Masuk/Pulang) */
+    public bool $sudahAbsenHariIni = false;
 
     public static function canAccess(): bool
     {
@@ -58,6 +62,14 @@ class IzinSakitPage extends Page implements HasForms
                   ->orWhere('nipy', $user->email);
             })
             ->first();
+
+        // Cek apakah sudah ada absensi hari ini
+        $nipy = $user->nipy ?? $user->email;
+        $this->sudahAbsenHariIni = KehadiranGuruTu::whereDate('waktu_tap', Carbon::today())
+            ->where(function ($q) use ($nipy, $user) {
+                $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
+            })
+            ->exists();
     }
 
     public function form(Form $form): Form
@@ -96,6 +108,16 @@ class IzinSakitPage extends Page implements HasForms
         if (!$user) return;
 
         $this->refreshIzin();
+
+        // Jika sudah ada absensi hari ini, tidak bisa mengajukan izin
+        if ($this->sudahAbsenHariIni) {
+            Notification::make()
+                ->title('Tidak Dapat Mengajukan Izin!')
+                ->body('Anda sudah tercatat hadir (Masuk/Pulang) hari ini. Tidak bisa mengajukan izin setelah absen.')
+                ->danger()->send();
+            return;
+        }
+
         if ($this->izinHariIni) {
             Notification::make()
                 ->title('Pengajuan Sudah Ada!')

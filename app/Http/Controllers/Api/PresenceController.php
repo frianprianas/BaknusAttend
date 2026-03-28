@@ -38,29 +38,45 @@ class PresenceController extends Controller
     private function handleStudentPresence($student, $rfid, $statusTap)
     {
         $currentTime = Carbon::now();
-        $status = 'Hadir';
 
-        // Logika keterlambatan sederhana (contoh: di atas jam 07:05 dianggap telat)
-        if ($statusTap === 'MASUK' && $currentTime->format('H:i') > '07:05') {
+        // Cek batas 2 tap per hari
+        $countToday = KehadiranSiswa::where('nis', $student->nis)
+            ->whereDate('waktu_tap', $currentTime)
+            ->count();
+
+        if ($countToday >= 2) {
+            return response()->json([
+                'status'  => 'WARNING',
+                'message' => 'Absensi sudah lengkap (Masuk & Pulang) hari ini!',
+                'data'    => ['nama' => $student->name],
+            ]);
+        }
+
+        // Auto-detect Masuk atau Pulang
+        $tipeTap = $countToday === 0 ? 'Masuk' : 'Pulang';
+        $status  = 'Hadir';
+
+        if ($tipeTap === 'Masuk' && $currentTime->format('H:i') > '07:05') {
             $status = 'Terlambat';
         }
 
         $kehadiran = KehadiranSiswa::create([
-            'nis' => $student->nis,
-            'rfid_uid' => $rfid,
-            'waktu_tap' => $currentTime,
-            'status' => $status,
-            'keterangan' => 'Tap RFID (' . $statusTap . ')',
+            'nis'        => $student->nis,
+            'rfid_uid'   => $rfid,
+            'waktu_tap'  => $currentTime,
+            'status'     => $status,
+            'keterangan' => $tipeTap . ' - Tap RFID',
         ]);
 
         return response()->json([
-            'status' => 'SUCCESS',
-            'message' => 'Absensi Berhasil!',
-            'data' => [
-                'nipy' => $student->nis, // ESP32 expect nipy
-                'nama' => $student->name,
+            'status'  => 'SUCCESS',
+            'message' => 'Absensi ' . $tipeTap . ' Berhasil!',
+            'data'    => [
+                'nipy'         => $student->nis,
+                'nama'         => $student->name,
+                'tipe'         => $tipeTap,
                 'id_kehadiran' => (string) $kehadiran->id,
-                'server_time' => $currentTime->format('Y-m-d H:i:s'),
+                'server_time'  => $currentTime->format('Y-m-d H:i:s'),
             ]
         ]);
     }
@@ -68,24 +84,43 @@ class PresenceController extends Controller
     private function handleUserPresence($user, $rfid, $statusTap)
     {
         $currentTime = Carbon::now();
-        $status = 'Hadir'; // Tidak ada logika terlambat untuk guru
+        $nipy = $user->nipy ?? $user->email;
+
+        // Cek batas 2 tap per hari
+        $countToday = KehadiranGuruTu::where(function ($q) use ($nipy, $user) {
+                $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
+            })
+            ->whereDate('waktu_tap', $currentTime)
+            ->count();
+
+        if ($countToday >= 2) {
+            return response()->json([
+                'status'  => 'WARNING',
+                'message' => 'Absensi sudah lengkap (Masuk & Pulang) hari ini!',
+                'data'    => ['nama' => $user->name],
+            ]);
+        }
+
+        // Auto-detect Masuk atau Pulang
+        $tipeTap = $countToday === 0 ? 'Masuk' : 'Pulang';
 
         $kehadiran = KehadiranGuruTu::create([
-            'nipy' => $user->nipy ?? $user->email,
-            'rfid_uid' => $rfid,
-            'waktu_tap' => $currentTime,
-            'status' => $status,
-            'keterangan' => 'Tap RFID (' . $statusTap . ')',
+            'nipy'       => $nipy,
+            'rfid_uid'   => $rfid,
+            'waktu_tap'  => $currentTime,
+            'status'     => 'Hadir',
+            'keterangan' => $tipeTap . ' - Tap RFID',
         ]);
 
         return response()->json([
-            'status' => 'SUCCESS',
-            'message' => 'Absensi Berhasil!',
-            'data' => [
-                'nipy' => $user->nipy ?? '-',
-                'nama' => $user->name,
+            'status'  => 'SUCCESS',
+            'message' => 'Absensi ' . $tipeTap . ' Berhasil!',
+            'data'    => [
+                'nipy'         => $nipy,
+                'nama'         => $user->name,
+                'tipe'         => $tipeTap,
                 'id_kehadiran' => (string) $kehadiran->id,
-                'server_time' => $currentTime->format('Y-m-d H:i:s'),
+                'server_time'  => $currentTime->format('Y-m-d H:i:s'),
             ]
         ]);
     }

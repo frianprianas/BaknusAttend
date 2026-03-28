@@ -36,6 +36,11 @@ class AttendanceResource extends Resource
 
     protected static ?string $modelLabel = 'Presensi';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role === 'Admin';
+    }
+
     public static function form(Form $form): Form
     {
         return $form
