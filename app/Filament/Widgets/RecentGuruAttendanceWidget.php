@@ -81,6 +81,35 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ->timezone('Asia/Jakarta')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('tipe_absen')
+                    ->label('Tipe')
+                    ->getStateUsing(function ($record) {
+                        if (str_contains(strtolower($record->keterangan ?? ''), 'masuk')) return 'Masuk';
+                        if (str_contains(strtolower($record->keterangan ?? ''), 'pulang')) return 'Pulang';
+                        return 'Masuk';
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Masuk' => 'success',
+                        'Pulang' => 'warning',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('sumber_presensi')
+                    ->label('Alat Presensi')
+                    ->getStateUsing(function ($record) {
+                        if (str_contains(strtolower($record->keterangan), 'mandiri')) {
+                            return 'HP / GPS';
+                        } elseif (str_contains(strtolower($record->keterangan), 'rfid')) {
+                            return 'Mesin RFID';
+                        }
+                        return 'Manual';
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'HP / GPS' => 'success',
+                        'Mesin RFID' => 'info',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('keterangan')
                     ->label('Ket')
                     ->default('–')

@@ -1,5 +1,10 @@
 <x-filament-widgets::widget>
     <x-filament::section>
+        <style>
+            /* Override Filament's default Drag & Drop text */
+            .fi-fo-file-upload-dropzone .fi-fo-file-upload-dropzone-label { display: none !important; }
+            .fi-fo-file-upload-dropzone::after { content: "Ambil Foto Selfie ({{ $tipeAbsens }})"; font-weight: bold; font-size: 1rem; color: #4f46e5; display: block; margin-top: 10px; text-align: center; }
+        </style>
         <div x-data="{
                 statusText: '',
                 statusClass: '',
