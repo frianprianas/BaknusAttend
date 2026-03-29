@@ -20,7 +20,7 @@ class MasterBiometrikGuruTuResource extends Resource
     protected static ?string $navigationLabel = 'Master Foto Guru & TU';
     protected static ?string $label = 'Foto Master Guru & TU';
     protected static ?string $pluralLabel = 'Master Foto Guru & TU';
-    protected static ?string $navigationIcon = 'heroicon-o-identification'; 
+    protected static ?string $navigationIcon = 'heroicon-o-users'; 
     
     // Kita letakan di posisi kedua grup
     protected static ?int $navigationSort = 2;

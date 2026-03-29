@@ -20,7 +20,7 @@ class MasterBiometrikSiswaResource extends Resource
     protected static ?string $navigationLabel = 'Master Foto Siswa';
     protected static ?string $label = 'Foto Master Siswa';
     protected static ?string $pluralLabel = 'Master Foto Siswa';
-    protected static ?string $navigationIcon = 'heroicon-o-face-id'; // Membutuhkan heroicons-o di v3
+    protected static ?string $navigationIcon = 'heroicon-o-user-circle'; 
     
     // Kita letakan di posisi awal grup
     protected static ?int $navigationSort = 1;
