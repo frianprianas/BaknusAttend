@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\MasterBiometrikSiswaResource\Pages;
 use App\Models\Student;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,7 +25,10 @@ class MasterBiometrikSiswaResource extends Resource
     // Kita letakan di posisi awal grup
     protected static ?int $navigationSort = 1;
 
-    public static function canCreate(): bool => false;
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     public static function table(Table $table): Table
     {

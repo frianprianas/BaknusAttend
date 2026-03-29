@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\MasterBiometrikGuruTuResource\Pages;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,7 +25,10 @@ class MasterBiometrikGuruTuResource extends Resource
     // Kita letakan di posisi kedua grup
     protected static ?int $navigationSort = 2;
 
-    public static function canCreate(): bool => false;
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     public static function table(Table $table): Table
     {
