@@ -71,8 +71,8 @@
                 }
             }" 
             class="flex flex-col items-center justify-center p-4">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Presensi Mandiri</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">
+            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2 tracking-tight">Presensi Mandiri</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-8 text-center font-medium">
                 Silakan nyalakan GPS dan ambil foto selfie untuk melakukan absensi.
             </p>
 

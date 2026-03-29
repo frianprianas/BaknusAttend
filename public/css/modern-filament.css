@@ -1,18 +1,45 @@
-/* Premium Modern Blue Dashboard - SMK Bakti Nusantara 666 */
+/* Premium Modern Glassmorphism Dashboard - SMK Bakti Nusantara 666 */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 :root {
-    --primary-color: #2563eb;
-    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    --surface-glass: rgba(255, 255, 255, 0.85);
+    --primary-color: #4f46e5;
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+    --surface-glass-light: rgba(255, 255, 255, 0.7);
+    --surface-glass-dark: rgba(15, 23, 42, 0.7);
+    --glass-border-light: rgba(255, 255, 255, 0.5);
+    --glass-border-dark: rgba(255, 255, 255, 0.05);
 }
 
-.dark {
-    --surface-glass: rgba(15, 23, 42, 0.85);
+body {
+    font-family: 'Outfit', sans-serif !important;
 }
 
-/* Sidebar Modernization */
+/* Background Application Pattern */
+html:not(.dark) body {
+    background-color: #f4f4f9;
+    background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+html.dark body {
+    background-color: #0f172a;
+    background-image: radial-gradient(#1e293b 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+/* Sidebar Modernization - Floating Effect */
 html:not(.dark) .fi-sidebar {
-    background: #f8fafc !important;
-    border-right: 1px solid #e2e8f0 !important;
+    background: var(--surface-glass-light) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-right: 1px solid var(--glass-border-light) !important;
+}
+
+html.dark .fi-sidebar {
+    background: var(--surface-glass-dark) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-right: 1px solid var(--glass-border-dark) !important;
 }
 
 .fi-sidebar-header {
@@ -22,7 +49,7 @@ html:not(.dark) .fi-sidebar {
 
 .fi-sidebar-header-brand {
     font-size: 1.5rem !important;
-    font-weight: 800 !important;
+    font-weight: 900 !important;
     letter-spacing: -0.025em !important;
     background: var(--primary-gradient);
     -webkit-background-clip: text;
@@ -38,7 +65,7 @@ html:not(.dark) .fi-sidebar {
     background: var(--primary-gradient) !important;
     color: white !important;
     border-radius: 12px !important;
-    box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.5);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
@@ -47,73 +74,85 @@ html:not(.dark) .fi-sidebar {
 }
 
 html:not(.dark) .fi-sidebar-item-button:hover:not(.fi-sidebar-item-active) {
-    background: #eff6ff !important;
+    background: rgba(99, 102, 241, 0.1) !important;
     border-radius: 12px !important;
     color: var(--primary-color) !important;
     transform: translateX(4px);
 }
 
 html.dark .fi-sidebar-item-button:hover:not(.fi-sidebar-item-active) {
-    background: rgba(30, 41, 59, 0.5) !important;
+    background: rgba(99, 102, 241, 0.15) !important;
     border-radius: 12px !important;
     transform: translateX(4px);
 }
 
 /* Topbar Glassmorphism */
 html:not(.dark) .fi-topbar {
-    background: rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.5) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid var(--glass-border-light) !important;
 }
 
 html.dark .fi-topbar {
-    background: rgba(15, 23, 42, 0.8) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border-bottom: 1px solid rgba(30, 41, 59, 0.5) !important;
+    background: rgba(15, 23, 42, 0.7) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid var(--glass-border-dark) !important;
 }
 
-/* General Layout & Cards */
-html:not(.dark) .fi-main {
-    background: #ffffff;
-}
-
+/* General Layout & Cards (Sections, Tables, Stats) */
 html:not(.dark) .fi-section,
 html:not(.dark) .fi-wi-stats-overview-stat {
-    border-radius: 20px !important;
-    border: 1px solid #f1f5f9 !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
-    background: white !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
 }
 
 html.dark .fi-section,
 html.dark .fi-wi-stats-overview-stat {
-    border-radius: 20px !important;
+    border-radius: 24px !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
-    background: rgba(30, 41, 59, 1) !important;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6) !important;
+    background: rgba(30, 41, 59, 0.8) !important;
+    backdrop-filter: blur(10px);
 }
 
 .fi-ta-content {
-    border-radius: 16px !important;
+    border-radius: 20px !important;
+    overflow: hidden;
 }
 
-/* Dashboard Stat Cards */
+/* Dashboard Stat Cards Hover Effects */
 .fi-wi-stats-overview-stat {
-    transition: all 0.4s ease !important;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
 
 .fi-wi-stats-overview-stat:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 25px 30px -5px rgba(79, 70, 229, 0.15), 0 15px 15px -5px rgba(79, 70, 229, 0.1);
 }
 
 html.dark .fi-wi-stats-overview-stat:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 30px -5px rgba(79, 70, 229, 0.3), 0 15px 15px -5px rgba(79, 70, 229, 0.2);
 }
 
-/* Custom Scrollbar */
+/* Primary Button Enhancements */
+.fi-btn-primary {
+    background: var(--primary-gradient) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4) !important;
+    transition: all 0.3s ease !important;
+}
+
+.fi-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(79, 70, 229, 0.5) !important;
+}
+
+/* Custom Scrollbar for sleekness */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -141,21 +180,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
     background: #64748b;
 }
 
-/* Animation */
-.fi-btn-spinning {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
 /* Mobile Responsiveness Enhancements */
 @media (max-width: 768px) {
     .fi-sidebar {
@@ -163,28 +187,32 @@ html.dark ::-webkit-scrollbar-thumb:hover {
     }
 
     .fi-main {
-        padding: 0.75rem !important;
+        padding: 0.5rem !important;
+        padding-top: 1rem !important;
     }
 
     .fi-wi-stats-overview-stat {
-        padding: 1rem !important;
+        padding: 1.25rem !important;
         margin-bottom: 0.75rem !important;
+        border-radius: 20px !important;
     }
 
     .fi-wi-stats-overview-stat-label {
-        font-size: 0.875rem !important;
+        font-size: 0.85rem !important;
     }
 
     .fi-wi-stats-overview-stat-value {
-        font-size: 1.25rem !important;
+        font-size: 1.5rem !important;
+        font-weight: 800 !important;
     }
 
     .fi-topbar {
-        padding: 0.5rem 1rem !important;
+        padding: 0.5rem 0.5rem !important;
     }
 
     .fi-header-heading {
-        font-size: 1.25rem !important;
+        font-size: 1.3rem !important;
+        font-weight: 800 !important;
     }
 
     /* Hide redundant elements on very small screens */
@@ -195,10 +223,16 @@ html.dark ::-webkit-scrollbar-thumb:hover {
     .fi-ta-header-toolbar {
         flex-direction: column !important;
         gap: 1rem !important;
+        align-items: stretch !important;
     }
     
     .fi-ta-search-field {
         width: 100% !important;
+    }
+
+    /* Better spacing for tables on mobile */
+    .fi-ta-content {
+        border-radius: 12px !important;
     }
 }
 
@@ -206,5 +240,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 @media (max-width: 640px) {
     .fi-wi-stats-overview {
         grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
     }
 }

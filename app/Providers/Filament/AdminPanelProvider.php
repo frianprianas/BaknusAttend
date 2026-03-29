@@ -26,9 +26,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Pages\Auth\Login::class)
+            ->font('Outfit')
             ->colors([
-                'primary' => Color::Blue,
-                'gray' => Color::Slate,
+                'primary' => Color::Indigo,
+                'gray' => Color::Zinc,
             ])
             ->brandName('BaknusAttend')
             ->brandLogo(fn() => asset('images/logo_BG.png'))
