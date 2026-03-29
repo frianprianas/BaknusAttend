@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
 class DashboardStatsWidget extends BaseWidget
