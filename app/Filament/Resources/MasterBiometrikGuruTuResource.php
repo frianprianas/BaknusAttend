@@ -29,17 +29,14 @@ class MasterBiometrikGuruTuResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Pegawai')
-                    ->schema([
-                        Forms\Components\TextInput::make('name')->label('Nama Pegawai')->readOnly(),
-                        Forms\Components\TextInput::make('nipy')->label('NIPY')->readOnly(),
-                        Forms\Components\TextInput::make('role')->label('Jabatan')->readOnly(),
-                        Forms\Components\FileUpload::make('face_reference')
-                            ->label('Foto Master (Patokan)')
-                            ->disk('public')
-                            ->image()
-                            ->readOnly(),
-                    ])->columns(2),
+                Forms\Components\TextInput::make('name')->label('Nama Pegawai')->disabled(),
+                Forms\Components\TextInput::make('nipy')->label('NIPY')->disabled(),
+                Forms\Components\TextInput::make('role')->label('Jabatan')->disabled(),
+                Forms\Components\FileUpload::make('face_reference')
+                    ->label('Foto Master (Patokan)')
+                    ->disk('public')
+                    ->image()
+                    ->disabled(),
             ]);
     }
 

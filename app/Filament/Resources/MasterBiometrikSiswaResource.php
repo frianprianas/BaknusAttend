@@ -29,16 +29,13 @@ class MasterBiometrikSiswaResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Siswa')
-                    ->schema([
-                        Forms\Components\TextInput::make('name')->label('Nama Siswa')->readOnly(),
-                        Forms\Components\TextInput::make('nis')->label('NIS')->readOnly(),
-                        Forms\Components\FileUpload::make('face_reference')
-                            ->label('Foto Master (Patokan)')
-                            ->disk('public')
-                            ->image()
-                            ->readOnly(),
-                    ])->columns(2),
+                Forms\Components\TextInput::make('name')->label('Nama Siswa')->disabled(),
+                Forms\Components\TextInput::make('nis')->label('NIS')->disabled(),
+                Forms\Components\FileUpload::make('face_reference')
+                    ->label('Foto Master (Patokan)')
+                    ->disk('public')
+                    ->image()
+                    ->disabled(),
             ]);
     }
 
