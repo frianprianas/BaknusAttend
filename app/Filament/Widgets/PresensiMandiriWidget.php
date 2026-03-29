@@ -36,6 +36,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
     public ?string $userName = null;
     public ?string $userEmail = null;
     public ?string $userClass = null;
+    public ?string $userAvatar = null;
 
     public static function canView(): bool
     {
@@ -57,6 +58,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $user = auth()->user();
         $this->userName = $user?->name;
         $this->userEmail = $user?->email;
+        $this->userAvatar = $user?->email ? "https://baknusmail.smkbn666.sch.id/api/public/avatar/" . $user->email : null;
 
         if ($user && $user->role === 'Siswa') {
             $nis = $user->nipy ?? $user->email;

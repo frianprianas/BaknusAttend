@@ -80,10 +80,17 @@
                     <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
                     
                     <div class="flex flex-col md:flex-row items-center gap-6 relative z-10 text-center md:text-left">
-                        <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-inner">
-                            <span class="text-3xl font-black text-white">
-                                {{ strtoupper(substr($userName ?? '?', 0, 1)) }}
-                            </span>
+                        <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-inner overflow-hidden">
+                            @if($userAvatar)
+                                <img src="{{ $userAvatar }}" 
+                                     alt="Avatar" 
+                                     class="w-full h-full object-cover"
+                                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($userName) }}&color=7F9CF5&background=EBF4FF';">
+                            @else
+                                <span class="text-3xl font-black text-white">
+                                    {{ strtoupper(substr($userName ?? '?', 0, 1)) }}
+                                </span>
+                            @endif
                         </div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-black text-white leading-tight mb-1">{{ $userName }}</h3>
