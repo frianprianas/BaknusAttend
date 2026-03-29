@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\KehadiranGuruTuResource\Pages;
 
 use App\Filament\Resources\KehadiranGuruTuResource;
+use App\Filament\Widgets\KehadiranCalendarWidget;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Support\Htmlable;
@@ -10,6 +11,13 @@ use Illuminate\Contracts\Support\Htmlable;
 class ManageKehadiranGuruTus extends ManageRecords
 {
     protected static string $resource = KehadiranGuruTuResource::class;
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            KehadiranCalendarWidget::class,
+        ];
+    }
 
     protected function getHeaderActions(): array
     {
