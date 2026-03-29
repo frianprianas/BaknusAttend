@@ -95,6 +95,12 @@ class KehadiranSiswaResource extends Resource
                     ->sortable()
                     ->visible(fn () => auth()->user()?->role === 'Admin'),
 
+                Tables\Columns\TextColumn::make('waktu_tap_date')
+                    ->label('Tanggal')
+                    ->date('d/m/Y')
+                    ->getStateUsing(fn($record) => $record->waktu_tap)
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('waktu_tap')
                     ->label('Jam')
                     ->dateTime('H:i')

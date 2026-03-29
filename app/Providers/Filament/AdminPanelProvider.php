@@ -44,9 +44,10 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 'panels::topbar.start',
-                fn(): string => '<div class="hidden md:flex flex-col justify-center px-2 leading-tight">
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium tracking-wide">Aplikasi Kehadiran Terintegrasi</span>
-                    <span class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold">SMK Bakti Nusantara 666</span>
+                fn(): string => '<div class="flex flex-col justify-center px-2 leading-tight">
+                    <span class="text-[9px] text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase">Aplikasi Kehadiran Terintegrasi</span>
+                    <span class="text-[10px] text-gray-500 dark:text-gray-400 font-black">SMK BAKTI NUSANTARA 666</span>
+                    <span class="text-[8px] text-indigo-500 font-bold tracking-widest italic">by BaknusAI</span>
                 </div>'
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
