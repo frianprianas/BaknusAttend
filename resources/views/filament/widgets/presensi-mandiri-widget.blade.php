@@ -90,8 +90,32 @@
 
                 {{ $this->form }}
 
+                {{-- Tombol ini hanya untuk form 1-langkah (sudah punya master).
+                     Form 2-langkah (Wizard) sudah punya tombol sendiri via submitAction. --}}
+                @if($tipeAbsens !== 'Selesai')
+                <div class="mt-4 flex justify-center">
+                    <button type="submit" 
+                        wire:loading.attr="disabled"
+                        x-bind:disabled="!$wire.data.lat || isSearching"
+                        class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-base bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-lg transition duration-200 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span wire:loading.remove wire:target="submit">{{ $labelTombol }}</span>
+                        <span wire:loading wire:target="submit" class="flex items-center gap-2">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            Sedang memproses...
+                        </span>
+                    </button>
+                </div>
+                @endif
+
                 <!-- GPS Status Display -->
-                <div class="mt-6 p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 backdrop-blur-none transition-all duration-300">
+                <div class="mt-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-300">
                     <div class="flex items-center justify-center gap-3">
                         <div x-show="!isSearching && $wire.data.lat" class="p-2 bg-green-100 rounded-full">
                             <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

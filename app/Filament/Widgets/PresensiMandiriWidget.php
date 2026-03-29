@@ -80,40 +80,63 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $user = auth()->user();
         $tipeAbsens = $this->determinePresensiType();
         
-        // Cek apakah sudah punya foto master
+        // Cek apakah sudah punya foto master (cast ke boolean eksplisit)
         $hasMaster = false;
         if ($user->role === 'Siswa') {
             $student = Student::where('email', $user->email)->first();
-            $hasMaster = $student?->face_reference ?? false;
+            $hasMaster = !empty($student?->face_reference);
         } else {
-            $hasMaster = $user->face_reference ?? false;
+            $hasMaster = !empty($user->face_reference);
         }
 
-        if (!$hasMaster) {
-            $pesanInfo = "⚠️ **Belum ada Foto Master.** Silakan ambil foto selfie dengan wajah terlihat jelas dan pencahayaan terang untuk mendaftarkan wajah Anda ke sistem.";
-            $labelTombol = "Daftarkan Wajah & Absen " . $tipeAbsens;
-        } else {
-            $pesanInfo = "Silakan ambil foto selfie untuk melakukan Absen {$tipeAbsens}.";
-            $labelTombol = "Kirim Presensi " . $tipeAbsens;
-        }
-        if ($tipeAbsens === 'Selesai') {
-            $pesanInfo = "Anda sudah menyelesaikan absensi lengkap (Masuk & Pulang) hari ini. Terima kasih!";
-            $labelTombol = "Selesai";
-        }
+        $labelTombol = $tipeAbsens === 'Selesai'
+            ? 'Selesai'
+            : ($hasMaster ? "Kirim Presensi $tipeAbsens" : "Daftarkan Wajah & Absen $tipeAbsens");
 
         $this->labelTombol = $labelTombol;
 
+        // -------------------------------------------------------
+        // KONDISI A: Sudah ada Foto Master → Form 1 Langkah Saja
+        // -------------------------------------------------------
+        if ($hasMaster) {
+            return $form
+                ->schema([
+                    Placeholder::make('info_selfie')
+                        ->label("Presensi Mandiri — Absen $tipeAbsens")
+                        ->content($tipeAbsens === 'Selesai'
+                            ? "✅ Anda sudah menyelesaikan absensi hari ini (Masuk & Pulang). Terima kasih!"
+                            : "Silakan ambil foto selfie untuk verifikasi kehadiran Anda."),
+                    FileUpload::make('photo_selfie')
+                        ->label('📷 Ambil Foto Selfie')
+                        ->image()
+                        ->extraInputAttributes(['capture' => 'user'])
+                        ->required($tipeAbsens !== 'Selesai')
+                        ->maxSize(1024)
+                        ->imageEditorMode(2)
+                        ->disk('public')
+                        ->directory('absensi-selfie')
+                        ->hidden($tipeAbsens === 'Selesai'),
+                    Hidden::make('lat'),
+                    Hidden::make('long'),
+                ])
+                ->statePath('data');
+        }
+
+        // -------------------------------------------------------
+        // KONDISI B: Belum ada Foto Master → Wizard 2 Langkah
+        // -------------------------------------------------------
         return $form
             ->schema([
                 Wizard::make([
-                    Step::make('Step 1: Pendaftaran Wajah Master')
-                        ->description('Ambil foto wajah jelas untuk patokan sistem AI.')
-                        ->hidden(fn () => $hasMaster)
+                    Step::make('Langkah 1: Daftarkan Wajah Master')
+                        ->description('Ambil foto wajah jelas untuk patokan sistem BaknusAI.')
+                        ->icon('heroicon-o-camera')
                         ->schema([
                             Placeholder::make('info_master')
-                                ->content("Sistem mendeteksi Anda belum memiliki foto master. Silakan ambil foto dengan wajah menghadap depan dan pencahayaan terang."),
+                                ->label('')
+                                ->content("⚠️ Anda belum memiliki foto master. Ambil foto dengan wajah menghadap kamera, tanpa masker, pencahayaan terang."),
                             FileUpload::make('photo_master')
-                                ->label('Ambil Foto Master')
+                                ->label('📷 Ambil Foto Wajah Master')
                                 ->image()
                                 ->extraInputAttributes(['capture' => 'user'])
                                 ->required()
@@ -122,14 +145,16 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->disk('public')
                                 ->directory('face-references'),
                         ]),
-                    
-                    Step::make('Step 2: Presensi Mandiri')
-                        ->description("Ambil selfie untuk melakukan Absen $tipeAbsens")
+
+                    Step::make('Langkah 2: Selfie Presensi')
+                        ->description("Ambil selfie untuk menyelesaikan absen $tipeAbsens")
+                        ->icon('heroicon-o-face-smile')
                         ->schema([
-                            Placeholder::make('info_absen')
-                                ->content($hasMaster ? "Silakan ambil foto selfie untuk memverifikasi kehadiran Anda." : "Wajah Anda sudah terdaftar! Sekarang silakan ambil foto selfie terakhir untuk absen."),
+                            Placeholder::make('info_selfie')
+                                ->label('')
+                                ->content("✅ Foto master sudah diambil. Sekarang ambil selfie terakhir untuk absen $tipeAbsens."),
                             FileUpload::make('photo_selfie')
-                                ->label('Ambil Foto Selfie')
+                                ->label('📷 Ambil Foto Selfie')
                                 ->image()
                                 ->extraInputAttributes(['capture' => 'user'])
                                 ->required()
@@ -139,8 +164,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->directory('absensi-selfie'),
                         ]),
                 ])
-                ->submitAction(view('filament.widgets.presensi-submit-button', ['label' => $labelTombol]))
-                ->startOnStep($hasMaster ? 2 : 1),
+                ->submitAction(view('filament.widgets.presensi-submit-button', ['label' => $labelTombol])),
 
                 Hidden::make('lat'),
                 Hidden::make('long'),
