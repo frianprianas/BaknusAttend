@@ -84,13 +84,9 @@ class KehadiranSiswaResource extends Resource
                     ->label('Foto')
                     ->circular()
                     ->defaultImageUrl(url('/images/user-placeholder.png'))
-                    ->action(
-                        Tables\Actions\Action::make('view_photo')
-                            ->modalHeading('Foto Presensi')
-                            ->modalContent(fn ($record) => view('components.image-modal', ['imageUrl' => $record->photo ? asset('storage/' . $record->photo) : null]))
-                            ->modalSubmitAction(false)
-                            ->modalCancelAction(false)
-                    ),
+                    ->disk('public')
+                    // Memaksa foto muncul di HP
+                    ->visibility(fn () => true),
 
                 // Nama hanya terlihat oleh Admin
                 Tables\Columns\TextColumn::make('student.name')
@@ -101,7 +97,7 @@ class KehadiranSiswaResource extends Resource
 
                 Tables\Columns\TextColumn::make('waktu_tap')
                     ->label('Jam')
-                    ->dateTime('H:i:s')
+                    ->dateTime('H:i')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('tipe_absen')
@@ -118,20 +114,6 @@ class KehadiranSiswaResource extends Resource
                         default => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('sumber_presensi')
-                    ->label('Alat Presensi')
-                    ->getStateUsing(function ($record) {
-                        if (str_contains(strtolower($record->keterangan ?? ''), 'mandiri')) return 'HP / GPS';
-                        if (str_contains(strtolower($record->keterangan ?? ''), 'rfid')) return 'Mesin RFID';
-                        return 'Manual';
-                    })
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'HP / GPS' => 'success',
-                        'Mesin RFID' => 'info',
-                        default => 'gray',
-                    }),
-
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -145,34 +127,19 @@ class KehadiranSiswaResource extends Resource
                     })
                     ->searchable(),
             ])
-            ->defaultSort('waktu_tap', 'desc')
-            ->filters([
-                Tables\Filters\SelectFilter::make('waktu_tap')
-                    ->label('Periode')
-                    ->options([
-                        'today'  => 'Hari Ini',
-                        'week'   => 'Minggu Ini',
-                        'month'  => 'Bulan Ini',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return match ($data['value'] ?? null) {
-                            'today' => $query->whereDate('waktu_tap', now()),
-                            'week'  => $query->whereBetween('waktu_tap', [now()->startOfWeek(), now()->endOfWeek()]),
-                            'month' => $query->whereMonth('waktu_tap', now()->month)->whereYear('waktu_tap', now()->year),
-                            default => $query,
-                        };
-                    }),
+            ->actions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ])->visible(fn () => auth()->user()?->role === 'Admin'),
             ])
-            ->actions(auth()->user()?->role === 'Admin' ? [
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ] : [])
             ->bulkActions(auth()->user()?->role === 'Admin' ? [
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ] : [])
-            ->paginated([10, 25, 50, 100, 'all'])
+            ->paginated(true)
+            ->paginationPageOptions([10, 25, 50, 100])
             ->defaultPaginationPageOption(25);
     }
 
