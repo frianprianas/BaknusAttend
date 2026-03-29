@@ -71,6 +71,13 @@ class RecentStudentAttendanceWidget extends BaseWidget
                 return $query;
             })
             ->columns([
+                Tables\Columns\ImageColumn::make('photo')
+                    ->label('Foto')
+                    ->circular()
+                    ->disk('public')
+                    ->size(35)
+                    ->visibility(fn () => true),
+
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
                     ->default('Data tidak ditemukan')
@@ -89,15 +96,17 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ->badge()
                     ->color('gray'),
 
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'Hadir',
-                        'warning' => 'Terlambat',
-                        'danger' => 'Alpa',
-                        'primary' => 'Izin',
-                        'info' => 'Sakit',
-                    ]),
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Hadir' => 'success',
+                        'Terlambat' => 'warning',
+                        'Alpa' => 'danger',
+                        'Izin' => 'primary',
+                        'Sakit' => 'info',
+                        default => 'gray',
+                    }),
 
                 Tables\Columns\TextColumn::make('waktu_tap')
                     ->label('Jam')
@@ -141,6 +150,11 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ->tooltip(fn($record) => $record->keterangan)
                     ->searchable()
                     ->hiddenFrom('md'),
+            ])
+            ->actions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\DeleteAction::make(),
+                ])->visible(fn () => auth()->user()?->role === 'Admin'),
             ])
             ->filters([
                 SelectFilter::make('status')

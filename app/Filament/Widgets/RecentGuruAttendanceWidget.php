@@ -60,6 +60,13 @@ class RecentGuruAttendanceWidget extends BaseWidget
                 return $query;
             })
             ->columns([
+                Tables\Columns\ImageColumn::make('photo')
+                    ->label('Foto')
+                    ->circular()
+                    ->disk('public')
+                    ->size(35)
+                    ->visibility(fn () => true),
+
                 Tables\Columns\TextColumn::make('user_name')
                     ->label('Nama')
                     ->limit(20)
@@ -83,15 +90,17 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     })
                     ->hiddenFrom('md'),
 
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'Hadir',
-                        'warning' => 'Terlambat',
-                        'danger' => 'Alpa',
-                        'primary' => 'Izin',
-                        'info' => 'Sakit',
-                    ]),
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Hadir' => 'success',
+                        'Terlambat' => 'warning',
+                        'Alpa' => 'danger',
+                        'Izin' => 'primary',
+                        'Sakit' => 'info',
+                        default => 'gray',
+                    }),
 
                 Tables\Columns\TextColumn::make('waktu_tap')
                     ->label('Jam')
@@ -134,6 +143,11 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ->limit(15)
                     ->searchable()
                     ->hiddenFrom('md'),
+            ])
+            ->actions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\DeleteAction::make(),
+                ])->visible(fn () => auth()->user()?->role === 'Admin'),
             ])
             ->filters([
                 SelectFilter::make('status')
