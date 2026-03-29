@@ -62,4 +62,13 @@ class User extends Authenticatable implements FilamentUser
         // Izinkan semua yang login untuk masuk ke dasbor (Filament v3 requirement)
         return true;
     }
+
+    /**
+     * Accessor untuk mengambil Avatar dari BaknusMail secara otomatis.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        $cleanEmail = strtolower(trim($this->email ?? ''));
+        return "https://baknusmail.smkbn666.sch.id/api/public/avatar/" . $cleanEmail;
+    }
 }

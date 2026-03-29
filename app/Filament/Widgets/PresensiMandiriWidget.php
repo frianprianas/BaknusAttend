@@ -58,10 +58,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $user = auth()->user();
         $this->userName = $user?->name;
         $this->userEmail = $user?->email;
-        
-        // Bersihkan email & paksa huruf kecil agar cocok dengan API BaknusMail
-        $cleanEmail = strtolower(trim($user->email ?? ''));
-        $this->userAvatar = $cleanEmail ? "https://baknusmail.smkbn666.sch.id/api/public/avatar/" . $cleanEmail : null;
+        $this->userAvatar = $user?->avatar_url;
 
         if ($user && $user->role === 'Siswa') {
             $nis = $user->nipy ?? $user->email;
