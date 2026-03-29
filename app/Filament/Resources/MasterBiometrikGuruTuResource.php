@@ -30,10 +30,16 @@ class MasterBiometrikGuruTuResource extends Resource
         return false;
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereIn('role', ['Guru', 'TU'])
+            ->whereNotNull('face_reference');
+    }
+
     public static function table(Table $table): Table
     {
         return $table
-            ->query(User::query()->whereIn('role', ['Guru', 'TU'])->whereNotNull('face_reference'))
             ->columns([
                 Tables\Columns\ImageColumn::make('face_reference')
                     ->label('Foto Patokan')

@@ -30,16 +30,20 @@ class MasterBiometrikSiswaResource extends Resource
         return false;
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereNotNull('face_reference');
+    }
+
     public static function table(Table $table): Table
     {
         return $table
-            ->query(Student::query()->whereNotNull('face_reference'))
             ->columns([
                 Tables\Columns\ImageColumn::make('face_reference')
                     ->label('Foto Patokan')
                     ->circular()
                     ->disk('public')
-                    // Memastikan foto besar dan jelas
                     ->size(50),
                 
                 Tables\Columns\TextColumn::make('name')
