@@ -61,7 +61,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $today = Carbon::today();
         
         if ($user->role === 'Siswa') {
-            $student = Student::where('email', $user->email)->first();
+            $nis = $user->nipy ?? $user->email;
+            $student = Student::where('nis', $nis)->first();
             if (!$student) return 'Masuk';
             $count = KehadiranSiswa::where('nis', $student->nis)->whereDate('waktu_tap', $today)->count();
         } else {
@@ -83,7 +84,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
         // Cek apakah sudah punya foto master (cast ke boolean eksplisit)
         $hasMaster = false;
         if ($user->role === 'Siswa') {
-            $student = Student::where('email', $user->email)->first();
+            $nis = $user->nipy ?? $user->email;
+            $student = Student::where('nis', $nis)->first();
             $hasMaster = !empty($student?->face_reference);
         } else {
             $hasMaster = !empty($user->face_reference);

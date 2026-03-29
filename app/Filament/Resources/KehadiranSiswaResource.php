@@ -91,6 +91,7 @@ class KehadiranSiswaResource extends Resource
                 // Nama hanya terlihat oleh Admin
                 Tables\Columns\TextColumn::make('student.name')
                     ->label('Nama Siswa')
+                    ->getStateUsing(fn($record) => $record->student?->name ?? 'Siswa: ' . $record->nis)
                     ->searchable()
                     ->sortable()
                     ->visible(fn () => auth()->user()?->role === 'Admin'),

@@ -39,7 +39,9 @@ class DashboardStatsWidget extends BaseWidget
             $totalTerlambatBulanIni = 0;
             
             if ($user->role === 'Siswa') {
-                $student = Student::where('email', $user->email)->first();
+                // Untuk Siswa, NIS disimpan di kolom nipy pada tabel User
+                $nis = $user->nipy ?? $user->email; 
+                $student = Student::where('nis', $nis)->first();
                 if ($student && !empty($student->nis)) {
                     $totalHadirBulanIni = KehadiranSiswa::where('nis', $student->nis)
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
