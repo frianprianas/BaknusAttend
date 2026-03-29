@@ -49,7 +49,6 @@ class KehadiranCalendarWidget extends Widget
         $presences = KehadiranGuruTu::where(function($q) use ($user) {
                 if ($user->nipy) $q->orWhere('nipy', $user->nipy);
                 if ($user->email) $q->orWhere('nipy', $user->email);
-                $q->orWhere('nama', $user->name);
             })
             ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
             ->select(DB::raw('DATE(waktu_tap) as date'), DB::raw('COUNT(*) as total'))
