@@ -130,9 +130,10 @@ class RecentStudentAttendanceWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('sumber_presensi')
                     ->label('Alat Presensi')
                     ->getStateUsing(function ($record) {
-                        if (str_contains(strtolower($record->keterangan), 'mandiri')) {
+                        $keterangan = strtolower($record->keterangan ?? '');
+                        if (str_contains($keterangan, 'mandiri')) {
                             return 'HP / GPS';
-                        } elseif (str_contains(strtolower($record->keterangan), 'rfid')) {
+                        } elseif (str_contains($keterangan, 'rfid')) {
                             return 'Mesin RFID';
                         }
                         return 'Manual';
