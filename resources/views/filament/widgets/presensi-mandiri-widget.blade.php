@@ -71,24 +71,42 @@
                 }
             }" 
             class="flex flex-col items-center justify-center p-4">
-            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2 tracking-tight">Presensi Mandiri</h2>
+            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2 tracking-tight text-center">Presensi Mandiri</h2>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-8 text-center font-medium">
                 Silakan nyalakan GPS dan ambil foto selfie untuk melakukan absensi.
             </p>
 
             <form wire:submit.prevent="submit" class="w-full max-w-2xl relative">
                 @if($tipeAbsens === 'Selesai')
-                    <div class="flex flex-col items-center justify-center p-10 bg-green-50 dark:bg-green-900/20 border-2 border-dashed border-green-500 rounded-3xl">
+                    <div class="flex flex-col items-center justify-center p-10 bg-green-50 dark:bg-green-900/20 border-2 border-dashed border-green-500 rounded-3xl animate-in fade-in zoom-in duration-500">
                         <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/50">
                             <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
-                        <h3 class="text-2xl font-black text-green-700 dark:text-green-400 text-center">Presensi Selesai!</h3>
+                        <h3 class="text-2xl font-black text-green-700 dark:text-green-400 text-center uppercase tracking-tight">Presensi Selesai!</h3>
                         <p class="text-gray-600 dark:text-gray-300 text-center mt-3 font-medium text-lg leading-relaxed">
                             Terima kasih sudah mengisi presensi hari ini. <br>
                             Selamat beristirahat dan tetap semangat! 🚀
                         </p>
+                    </div>
+                @elseif(auth()->user()->role === 'Siswa')
+                    <div class="flex flex-col items-center justify-center p-12 bg-indigo-50 dark:bg-indigo-900/10 border-2 border-dashed border-indigo-200 dark:border-indigo-800 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div class="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mb-8 shadow-xl shadow-indigo-600/30 rotate-3">
+                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-black text-indigo-800 dark:text-indigo-400 text-center tracking-tight uppercase">Siswa / Pelajar</h3>
+                        <div class="mt-6 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900 mx-auto max-w-md">
+                            <p class="text-gray-600 dark:text-gray-300 text-center font-bold text-lg leading-relaxed">
+                                Mohon Maaf, Fasilitas Presensi Wajah sedang dinonaktifkan sementara untuk Siswa.
+                            </p>
+                            <div class="mt-4 flex items-center justify-center gap-2 text-indigo-600 dark:text-indigo-300 font-extrabold text-center bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                                <span class="text-2xl">🎴</span>
+                                <span>Silakan melakukan presensi dengan Kartu Pelajar (RFID) Anda.</span>
+                            </div>
+                        </div>
                     </div>
                 @else
                     <!-- Loading Overlay -->
