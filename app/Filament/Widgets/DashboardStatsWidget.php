@@ -39,8 +39,8 @@ class DashboardStatsWidget extends BaseWidget
             $totalTerlambatBulanIni = 0;
             
             if ($user->role === 'Siswa') {
-                // Untuk Siswa, NIS disimpan di kolom nipy pada tabel User
-                $nis = $user->nipy ?? $user->email; 
+                // Gunakan NIS dari nipy, jika nipy kosong gunakan email asisten (safety)
+                $nis = !empty($user->nipy) ? $user->nipy : (!empty($user->email) ? $user->email : 'NONE');
                 $student = Student::where('nis', $nis)->first();
                 if ($student && !empty($student->nis)) {
                     $totalHadirBulanIni = KehadiranSiswa::where('nis', $student->nis)
@@ -73,13 +73,13 @@ class DashboardStatsWidget extends BaseWidget
 
             return [
                 Stat::make('Total Kehadiran', $totalHadirBulanIni . ' Hari')
-                    ->description('Bulan: ' . Carbon::now()->isoFormat('MMMM YYYY'))
+                    ->description('Bulan: ' . Carbon::now()->format('F Y'))
                     ->descriptionIcon('heroicon-m-calendar-days')
                     ->color('success')
                     ->icon('heroicon-o-calendar-days'),
 
                 Stat::make('Total Terlambat', $totalTerlambatBulanIni . ' Kali')
-                    ->description('Bulan: ' . Carbon::now()->isoFormat('MMMM YYYY'))
+                    ->description('Bulan: ' . Carbon::now()->format('F Y'))
                     ->descriptionIcon('heroicon-m-clock')
                     ->color($totalTerlambatBulanIni > 0 ? 'warning' : 'gray')
                     ->icon('heroicon-o-clock'),
