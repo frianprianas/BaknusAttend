@@ -68,7 +68,11 @@ class User extends Authenticatable implements FilamentUser
      */
     public function getAvatarUrlAttribute(): string
     {
-        $cleanEmail = strtolower(trim($this->email ?? ''));
+        $email = strtolower(trim($this->email ?? ''));
+        
+        // Jembatan Domain: Ubah domain panjang ke domain pendek BaknusMail
+        $cleanEmail = str_replace('smk.baktinusantara666.sch.id', 'smkbn666.sch.id', $email);
+        
         return "https://baknusmail.smkbn666.sch.id/api/public/avatar/" . $cleanEmail;
     }
 }
