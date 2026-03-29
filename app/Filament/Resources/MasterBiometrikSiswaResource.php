@@ -25,6 +25,23 @@ class MasterBiometrikSiswaResource extends Resource
     // Kita letakan di posisi awal grup
     protected static ?int $navigationSort = 1;
 
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Informasi Siswa')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')->label('Nama Siswa')->readOnly(),
+                        Forms\Components\TextInput::make('nis')->label('NIS')->readOnly(),
+                        Forms\Components\FileUpload::make('face_reference')
+                            ->label('Foto Master (Patokan)')
+                            ->disk('public')
+                            ->image()
+                            ->readOnly(),
+                    ])->columns(2),
+            ]);
+    }
+
     public static function canCreate(): bool
     {
         return false;

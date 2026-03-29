@@ -25,6 +25,24 @@ class MasterBiometrikGuruTuResource extends Resource
     // Kita letakan di posisi kedua grup
     protected static ?int $navigationSort = 2;
 
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Informasi Pegawai')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')->label('Nama Pegawai')->readOnly(),
+                        Forms\Components\TextInput::make('nipy')->label('NIPY')->readOnly(),
+                        Forms\Components\TextInput::make('role')->label('Jabatan')->readOnly(),
+                        Forms\Components\FileUpload::make('face_reference')
+                            ->label('Foto Master (Patokan)')
+                            ->disk('public')
+                            ->image()
+                            ->readOnly(),
+                    ])->columns(2),
+            ]);
+    }
+
     public static function canCreate(): bool
     {
         return false;
