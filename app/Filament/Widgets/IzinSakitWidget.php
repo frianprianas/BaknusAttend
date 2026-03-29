@@ -29,7 +29,7 @@ class IzinSakitWidget extends Widget implements HasForms
     public static function canView(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['Guru', 'TU', 'Admin']);
+        return $user && in_array($user->role, ['Guru', 'TU']);
     }
 
     public function mount(): void
