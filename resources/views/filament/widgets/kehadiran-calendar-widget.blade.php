@@ -38,33 +38,33 @@
             </div>
 
             <!-- Body Kalender (Grid 7 Kolom) -->
-            <div class="grid grid-cols-7 gap-2 md:gap-4">
+            <div class="grid grid-cols-7 gap-1 md:gap-3">
                 <!-- Nama Hari -->
                 @foreach(['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as $dayName)
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-2">
+                    <div class="py-2 text-center text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-tighter">
                         {{ $dayName }}
                     </div>
                 @endforeach
 
                 <!-- Spasi di Awal Bulan -->
                 @for($i = 0; $i < $firstDayOfMonth; $i++)
-                    <div class="aspect-square rounded-2xl bg-gray-50 dark:bg-gray-900/10"></div>
+                    <div class="min-h-[40px] md:min-h-[60px]"></div>
                 @endfor
 
                 <!-- Tanggal -->
                 @for($day = 1; $day <= $daysInMonth; $day++)
                     @php
                         $status = $presenceData[$day] ?? 'none';
-                        $bgClass = $status === 'dark' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/30 ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-900' 
+                        $bgClass = $status === 'dark' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/30' 
                                  : ($status === 'light' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' 
-                                 : 'bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-gray-750');
+                                 : 'bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-gray-700');
                     @endphp
-                    <div class="aspect-square relative group transition-all duration-300">
-                        <div class="absolute inset-0 {{ $bgClass }} rounded-2x md:rounded-[1.5rem] flex items-center justify-center font-black text-lg backdrop-blur-md transform group-hover:scale-105 group-hover:-rotate-3 cursor-default">
-                            {{ $day }}
+                    <div class="relative group">
+                        <div class="min-h-[40px] md:min-h-[60px] flex flex-col items-center justify-center {{ $bgClass }} rounded-xl md:rounded-2xl transition-all duration-300 transform group-hover:scale-105 cursor-default relative overflow-hidden">
+                            <span class="text-xs md:text-lg font-black relative z-10">{{ $day }}</span>
                             
                             @if($status !== 'none')
-                                <div class="absolute bottom-1 w-1 h-1 bg-white rounded-full animate-pulse"></div>
+                                <div class="w-1 h-1 bg-white rounded-full mt-1 animate-pulse"></div>
                             @endif
                         </div>
                     </div>
