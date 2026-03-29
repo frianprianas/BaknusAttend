@@ -45,11 +45,17 @@ class DashboardStatsWidget extends BaseWidget
                 if ($student && !empty($student->nis)) {
                     $totalHadirBulanIni = KehadiranSiswa::where('nis', $student->nis)
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                        ->whereIn('status', ['Hadir', 'Terlambat']) // Siswa biasanya dianggap hadir jika statusnya Hadir atau Terlambat
+                        ->whereIn('status', ['Hadir', 'Terlambat'])
+                        ->select(DB::raw('DATE(waktu_tap) as date'))
+                        ->distinct()
+                        ->get()
                         ->count();
                     $totalTerlambatBulanIni = KehadiranSiswa::where('nis', $student->nis)
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
                         ->where('status', 'Terlambat')
+                        ->select(DB::raw('DATE(waktu_tap) as date'))
+                        ->distinct()
+                        ->get()
                         ->count();
                 }
             } else {
@@ -61,12 +67,18 @@ class DashboardStatsWidget extends BaseWidget
                         })
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
                         ->whereIn('status', ['Hadir', 'Terlambat'])
+                        ->select(DB::raw('DATE(waktu_tap) as date'))
+                        ->distinct()
+                        ->get()
                         ->count();
                     $totalTerlambatBulanIni = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
                             $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
                         })
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
                         ->where('status', 'Terlambat')
+                        ->select(DB::raw('DATE(waktu_tap) as date'))
+                        ->distinct()
+                        ->get()
                         ->count();
                 }
             }
