@@ -13,6 +13,8 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
@@ -103,23 +105,43 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         return $form
             ->schema([
-                Placeholder::make('info')
-                    ->label("Presensi Mandiri: " . ($tipeAbsens !== 'Selesai' ? "Absen $tipeAbsens" : "Selesai"))
-                    ->content($pesanInfo),
-                
-                FileUpload::make('photo')
-                    ->label(!$hasMaster ? 'Ambil Foto Master' : 'Ambil Foto Selfie')
-                    ->image()
-                    ->extraInputAttributes(['capture' => 'user'])
-                    ->required()
-                    // Ukuran maksimum untuk Master boleh lebih besar (2MB), Selfie (1MB)
-                    ->maxSize(!$hasMaster ? 2048 : 1024)
-                    // Kompresi kualitas JPEG 80% untuk Master, 65% untuk Selfie
-                    ->imageEditorMode(2)
-                    ->disk('public')
-                    ->directory(!$hasMaster ? 'face-references' : 'absensi-selfie')
-                    ->hidden($tipeAbsens === 'Selesai'),
-                
+                Wizard::make([
+                    Step::make('Step 1: Pendaftaran Wajah Master')
+                        ->description('Ambil foto wajah jelas untuk patokan sistem AI.')
+                        ->hidden(fn () => $hasMaster)
+                        ->schema([
+                            Placeholder::make('info_master')
+                                ->content("Sistem mendeteksi Anda belum memiliki foto master. Silakan ambil foto dengan wajah menghadap depan dan pencahayaan terang."),
+                            FileUpload::make('photo_master')
+                                ->label('Ambil Foto Master')
+                                ->image()
+                                ->extraInputAttributes(['capture' => 'user'])
+                                ->required()
+                                ->maxSize(2048)
+                                ->imageEditorMode(2)
+                                ->disk('public')
+                                ->directory('face-references'),
+                        ]),
+                    
+                    Step::make('Step 2: Presensi Mandiri')
+                        ->description("Ambil selfie untuk melakukan Absen $tipeAbsens")
+                        ->schema([
+                            Placeholder::make('info_absen')
+                                ->content($hasMaster ? "Silakan ambil foto selfie untuk memverifikasi kehadiran Anda." : "Wajah Anda sudah terdaftar! Sekarang silakan ambil foto selfie terakhir untuk absen."),
+                            FileUpload::make('photo_selfie')
+                                ->label('Ambil Foto Selfie')
+                                ->image()
+                                ->extraInputAttributes(['capture' => 'user'])
+                                ->required()
+                                ->maxSize(1024)
+                                ->imageEditorMode(2)
+                                ->disk('public')
+                                ->directory('absensi-selfie'),
+                        ]),
+                ])
+                ->submitAction(view('filament.widgets.presensi-submit-button', ['label' => $labelTombol]))
+                ->startOnStep($hasMaster ? 2 : 1),
+
                 Hidden::make('lat'),
                 Hidden::make('long'),
             ])
@@ -166,53 +188,56 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         // --- FACE RECOGNITION LOGIC ---
         $faceService = new AwsFaceService();
-        $isInitializing = false;
         
         $model = $user;
         if ($user->role === 'Siswa') {
             $model = Student::where('email', $user->email)->first();
         }
 
-        // Jika belum ada foto master
-        if (!$model->face_reference) {
-            $isInitializing = true;
-            // Deteksi apakah ada wajah di foto ini
-            $hasFace = $faceService->detectFace($formData['photo']);
+        // Cek apakah baru saja mendaftarkan Master (dari Step 1)
+        if (isset($formData['photo_master']) && !$model->face_reference) {
+            $hasFace = $faceService->detectFace($formData['photo_master']);
             if (!$hasFace) {
-                // Hapus fotonya karena gagal
-                Storage::disk('public')->delete($formData['photo']);
+                Storage::disk('public')->delete($formData['photo_master'] ?? '');
                 Notification::make()
-                    ->title('Wajah Tidak Terdeteksi!')
-                    ->body('Gagal mendaftarkan wajah. Pastikan wajah terlihat jelas tanpa masker/penutup dan pencahayaan terang.')
+                    ->title('Maaf Verifikasi gagal')
+                    ->body('Wajah tidak terdeteksi pada Foto Master. Pastikan wajah terlihat jelas tanpa penutup.')
                     ->danger()->send();
                 return;
             }
-            // Simpan sebagai referensi
-            $model->update(['face_reference' => $formData['photo']]);
-            Notification::make()
-                ->title('Foto Master Berhasil Disimpan!')
-                ->body('Data wajah Anda telah terdaftar. Selanjutnya sistem akan selalu mencocokkan wajah Anda dengan foto ini.')
-                ->success()->send();
-        } else {
-            // Sudah ada foto master -> Lakukan verifikasi
-            $check = $faceService->compare($formData['photo'], $model->face_reference);
-            
-            if (!$check['success']) {
-                Notification::make()->title('Gagal Memproses Wajah')->body($check['error'])->danger()->send();
-                return;
-            }
-
-            if (!$check['is_identical']) {
-                $conf = round($check['confidence'] * 100);
-                Notification::make()
-                    ->title('Wajah Tidak Cocok! (' . $conf . '%)')
-                    ->body('Sistem mendeteksi wajah yang berbeda. Silakan coba lagi dengan posisi dan pencahayaan yang lebih baik.')
-                    ->danger()->send();
-                return;
-            }
-            
-            // Wajah cocok -> Lanjut simpan absensi
+            // Simpan Master
+            $model->update(['face_reference' => $formData['photo_master']]);
         }
+
+        // Verifikasi Selfie (Step 2)
+        $photoSelfie = $formData['photo_selfie'] ?? null;
+        if (!$photoSelfie) {
+            Notification::make()->title('Foto Selfie dibutuhkan')->danger()->send();
+            return;
+        }
+
+        $check = $faceService->compare($photoSelfie, $model->face_reference);
+        
+        if (!$check['success']) {
+            Notification::make()->title('Maaf Verifikasi gagal')->body($check['error'])->danger()->send();
+            return;
+        }
+
+        if (!$check['is_identical']) {
+            Notification::make()
+                ->title('Maaf Verifikasi gagal')
+                ->body('Wajah selfie tidak cocok dengan foto master. Silakan coba lagi.')
+                ->danger()->send();
+            return;
+        }
+        
+        // Verifikasi BERHASIL
+        Notification::make()
+            ->title("Verifikasi berhasil!")
+            ->body("Anda sudah presensi " . $tipeAbsens)
+            ->success()->persistent()->send();
+
+        $photoFinal = $photoSelfie;
         // --- END FACE RECOGNITION ---
 
         $currentTime = now();
@@ -237,7 +262,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'status' => $status,
                 'lat' => $formData['lat'],
                 'long' => $formData['long'],
-                'photo' => $formData['photo'],
+                'photo' => $photoFinal,
                 'keterangan' => $keterangan,
             ]);
         } else {
@@ -249,7 +274,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'status' => $status,
                 'lat' => $formData['lat'],
                 'long' => $formData['long'],
-                'photo' => $formData['photo'],
+                'photo' => $photoFinal,
                 'keterangan' => $keterangan,
             ]);
         }

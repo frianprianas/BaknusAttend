@@ -76,31 +76,32 @@
                 Silakan nyalakan GPS dan ambil foto selfie untuk melakukan absensi.
             </p>
 
-            <form wire:submit.prevent="submit" class="w-full max-w-md">
+            <form wire:submit.prevent="submit" class="w-full max-w-2xl relative">
+                <!-- Loading Overlay -->
+                <div wire:loading wire:target="submit" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-indigo-200">
+                    <div class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-indigo-500">
+                        <x-filament::loading-indicator class="h-12 w-12 text-indigo-600 mb-4" />
+                        <h3 class="text-lg font-bold text-indigo-700 dark:text-indigo-400 animate-pulse text-center">
+                            Verifikasi wajah dengan BaknusAI sedang berjalan...
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-2 italic text-center">Mohon tunggu sebentar, kami sedang mencocokkan wajah Anda.</p>
+                    </div>
+                </div>
+
                 {{ $this->form }}
 
-                <div class="mt-6">
-                    @if($tipeAbsens !== 'Selesai')
-                    <button type="submit" 
-                        wire:loading.attr="disabled"
-                        x-bind:disabled="!$wire.data.lat || isSearching"
-                        class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-2xl transition duration-200 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        {{ $labelTombol }}
-                    </button>
-                    @endif
-                    
-                    <!-- GPS Status Display -->
-                    <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p x-html="statusText" :class="statusClass"></p>
-                        <div x-show="showRetry" style="display: none;" class="text-center mt-2">
-                            <button type="button" @click="getGPS()" class="text-[10px] underline text-indigo-600 font-bold uppercase tracking-wider">
-                                🔄 Coba Hubungkan GPS Lagi
-                            </button>
+                <!-- GPS Status Display -->
+                <div class="mt-6 p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 backdrop-blur-none transition-all duration-300">
+                    <div class="flex items-center justify-center gap-3">
+                        <div x-show="!isSearching && $wire.data.lat" class="p-2 bg-green-100 rounded-full">
+                            <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         </div>
+                        <p x-html="statusText" :class="statusClass" class="leading-relaxed"></p>
+                    </div>
+                    <div x-show="showRetry" style="display: none;" class="text-center mt-3">
+                        <button type="button" @click="getGPS()" class="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition font-bold text-xs uppercase">
+                            🔄 Coba Hubungkan GPS Lagi
+                        </button>
                     </div>
                 </div>
             </form>
