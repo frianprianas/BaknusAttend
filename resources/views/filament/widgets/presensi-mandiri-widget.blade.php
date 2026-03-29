@@ -73,36 +73,46 @@
             class="flex flex-col items-center justify-center p-4">
             
             <!-- Student/User Profile Header Card -->
-            <div class="w-full max-w-2xl mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-                <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 shadow-2xl shadow-indigo-500/20">
-                    <!-- Decorative Circles in background -->
-                    <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-                    <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
+            <div class="w-full max-w-3xl mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+                <div class="relative overflow-hidden bg-white/5 dark:bg-gray-800/40 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/20 dark:border-gray-700/50 shadow-2xl">
+                    <!-- Subtle Decorative Background -->
+                    <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-[80px]"></div>
+                    <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-600/10 rounded-full blur-[60px]"></div>
                     
-                    <div class="flex flex-col md:flex-row items-center gap-6 relative z-10 text-center md:text-left">
-                        <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-inner overflow-hidden">
-                            @if($userAvatar)
-                                <img src="{{ $userAvatar }}" 
-                                     alt="Avatar" 
-                                     class="w-full h-full object-cover"
-                                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($userName) }}&color=7F9CF5&background=EBF4FF';">
-                            @else
-                                <span class="text-3xl font-black text-white">
-                                    {{ strtoupper(substr($userName ?? '?', 0, 1)) }}
-                                </span>
-                            @endif
+                    <div class="flex flex-col md:flex-row items-center gap-8 relative z-10">
+                        <!-- Avatar Section -->
+                        <div class="relative group">
+                            <div class="absolute -inset-1 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                            <div class="relative w-28 h-28 md:w-32 md:h-32 bg-gray-200 dark:bg-gray-700 rounded-[2rem] overflow-hidden border-4 border-white dark:border-gray-800 shadow-xl flex items-center justify-center">
+                                @if($userAvatar)
+                                    <img src="{{ $userAvatar }}" 
+                                         alt="Avatar" 
+                                         class="w-full h-full object-cover transform transition duration-700 group-hover:scale-110"
+                                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($userName) }}&color=7F9CF5&background=EBF4FF';">
+                                @else
+                                    <span class="text-5xl font-black text-indigo-600 opacity-20">
+                                        {{ strtoupper(substr($userName ?? '?', 0, 1)) }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-black text-white leading-tight mb-1">{{ $userName }}</h3>
-                            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-white/80 font-medium text-sm">
-                                <span class="flex items-center gap-1.5 pt-1 md:pt-0">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+
+                        <!-- Info Section -->
+                        <div class="flex-1 text-center md:text-left">
+                            <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest mb-3">
+                                Welcome Back,
+                            </span>
+                            <h3 class="text-3xl md:text-4xl font-black text-gray-800 dark:text-white leading-tight mb-2 tracking-tight">
+                                {{ $userName }}
+                            </h3>
+                            <div class="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-gray-500 dark:text-gray-400 font-bold text-sm">
+                                <span class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700/50 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                     {{ $userEmail }}
                                 </span>
                                 @if($userClass)
-                                <span class="hidden md:inline text-white/40">|</span>
-                                <span class="flex items-center gap-1.5 px-3 py-1 bg-white/15 rounded-full text-xs font-black uppercase tracking-widest border border-white/20">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                <span class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 rounded-xl shadow-lg shadow-indigo-500/30">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                     Kelas: {{ $userClass }}
                                 </span>
                                 @endif
