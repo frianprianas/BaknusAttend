@@ -32,6 +32,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
     public ?array $data = [];
     public string $tipeAbsens = 'Masuk';
     public string $labelTombol = 'KIRIM PRESENSI';
+    public ?string $userName = null;
+    public ?string $userEmail = null;
+    public ?string $userClass = null;
 
     public static function canView(): bool
     {
@@ -50,6 +53,19 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
     public function mount(): void
     {
+        $user = auth()->user();
+        $this->userName = $user?->name;
+        $this->userEmail = $user?->email;
+
+        if ($user && $user->role === 'Siswa') {
+            $nis = $user->nipy ?? $user->email;
+            $student = Student::with('classRoom')->where('nis', $nis)->first();
+            if ($student) {
+                $this->userName = $student->name;
+                $this->userClass = $student->classRoom?->kelas ?? 'Kelas Tidak Terdaftar';
+            }
+        }
+
         $this->tipeAbsens = $this->determinePresensiType();
         $this->form->fill();
     }
@@ -217,7 +233,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
         
         $model = $user;
         if ($user->role === 'Siswa') {
-            $model = Student::where('email', $user->email)->first();
+            $nis = $user->nipy ?? $user->email;
+            $model = Student::where('nis', $nis)->first();
         }
 
         // Cek apakah baru saja mendaftarkan Master (dari Step 1)
@@ -271,7 +288,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $keterangan = "{$tipeAbsens} - Presensi Mandiri (Dashboard)";
 
         if ($user->role === 'Siswa') {
-            $student = Student::where('email', $user->email)->first();
+            $nis = $user->nipy ?? $user->email;
+            $student = Student::where('nis', $nis)->first();
             if (!$student) {
                 Notification::make()->title('Data Siswa tidak ditemukan!')->danger()->send();
                 return;

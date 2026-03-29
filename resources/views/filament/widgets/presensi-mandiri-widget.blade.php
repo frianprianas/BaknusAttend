@@ -71,7 +71,41 @@
                 }
             }" 
             class="flex flex-col items-center justify-center p-4">
-            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2 tracking-tight text-center">Presensi Mandiri</h2>
+            
+            <!-- Student/User Profile Header Card -->
+            <div class="w-full max-w-2xl mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+                <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 shadow-2xl shadow-indigo-500/20">
+                    <!-- Decorative Circles in background -->
+                    <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                    <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
+                    
+                    <div class="flex flex-col md:flex-row items-center gap-6 relative z-10 text-center md:text-left">
+                        <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-inner">
+                            <span class="text-3xl font-black text-white">
+                                {{ strtoupper(substr($userName ?? '?', 0, 1)) }}
+                            </span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-black text-white leading-tight mb-1">{{ $userName }}</h3>
+                            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-white/80 font-medium text-sm">
+                                <span class="flex items-center gap-1.5 pt-1 md:pt-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    {{ $userEmail }}
+                                </span>
+                                @if($userClass)
+                                <span class="hidden md:inline text-white/40">|</span>
+                                <span class="flex items-center gap-1.5 px-3 py-1 bg-white/15 rounded-full text-xs font-black uppercase tracking-widest border border-white/20">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    Kelas: {{ $userClass }}
+                                </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2 tracking-tight text-center uppercase">Presensi Mandiri</h2>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-8 text-center font-medium">
                 Silakan nyalakan GPS dan ambil foto selfie untuk melakukan absensi.
             </p>
