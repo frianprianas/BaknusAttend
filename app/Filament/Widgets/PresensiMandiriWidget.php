@@ -19,6 +19,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 
 class PresensiMandiriWidget extends Widget implements HasForms
@@ -228,6 +229,24 @@ class PresensiMandiriWidget extends Widget implements HasForms
             return;
         }
 
+        // --- SISTEM ANTI-SPAM (RATE LIMITER) UNTUK AWS ---
+        // Batasi maksimal 3 KALI percobaan dalam 5 MENIT. 
+        $rateLimitKey = 'face_verification_attempt_' . $user->id;
+        
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 3)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
+            Notification::make()
+                ->title('TERKUNCI SEMENTARA 🔒')
+                ->body('Anda telah mencoba verifikasi wajah terlalu banyak. Silakan coba lagi dalam ' . ceil($seconds / 60) . ' menit.')
+                ->danger()
+                ->persistent()
+                ->send();
+            return;
+        }
+
+        // Catat/Hitung percobaan untuk kunci rate limiter ini
+        RateLimiter::hit($rateLimitKey, 300); // 300 detik = 5 menit lockout
+
         // --- FACE RECOGNITION LOGIC ---
         $faceService = new AwsFaceService();
         
@@ -274,7 +293,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
             return;
         }
         
-        // Verifikasi BERHASIL
+        // Verifikasi BERHASIL -> Bersihkan jejak hukuman/spam limiter
+        RateLimiter::clear($rateLimitKey);
+
         Notification::make()
             ->title("Verifikasi berhasil!")
             ->body("Anda sudah presensi " . $tipeAbsens)
