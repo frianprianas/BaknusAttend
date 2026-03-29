@@ -81,9 +81,9 @@
                     
                     <div class="flex flex-col md:flex-row items-center gap-8 relative z-10">
                         <!-- Avatar Section -->
-                        <div class="relative group">
-                            <div class="absolute -inset-1 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[1.5rem] blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
-                            <div class="relative w-24 h-24 md:w-28 md:h-28 bg-gray-200 dark:bg-gray-700 rounded-[1.5rem] overflow-hidden border-4 border-white dark:border-gray-800 shadow-xl flex items-center justify-center">
+                        <div class="relative group shrink-0">
+                            <div class="absolute -inset-1 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                            <div class="relative w-16 h-16 md:w-20 md:h-20 bg-gray-200 dark:bg-gray-700 rounded-2xl overflow-hidden border-4 border-white dark:border-gray-800 shadow-xl flex items-center justify-center">
                                 @if($userAvatar)
                                     <img src="{{ $userAvatar }}" 
                                          alt="Avatar" 
