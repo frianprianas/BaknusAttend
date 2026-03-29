@@ -40,10 +40,10 @@ class DashboardStatsWidget extends BaseWidget
             
             if ($user->role === 'Siswa') {
                 $student = Student::where('email', $user->email)->first();
-                if ($student) {
+                if ($student && !empty($student->nis)) {
                     $totalHadirBulanIni = KehadiranSiswa::where('nis', $student->nis)
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                        ->where('status', 'Hadir')
+                        ->whereIn('status', ['Hadir', 'Terlambat']) // Siswa biasanya dianggap hadir jika statusnya Hadir atau Terlambat
                         ->count();
                     $totalTerlambatBulanIni = KehadiranSiswa::where('nis', $student->nis)
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
@@ -52,18 +52,21 @@ class DashboardStatsWidget extends BaseWidget
                 }
             } else {
                 // Guru / TU
-                $totalHadirBulanIni = KehadiranGuruTu::where(function($q) use ($user) {
-                        $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
-                    })
-                    ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                    ->where('status', 'Hadir')
-                    ->count();
-                $totalTerlambatBulanIni = KehadiranGuruTu::where(function($q) use ($user) {
-                        $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
-                    })
-                    ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                    ->where('status', 'Terlambat')
-                    ->count();
+                $nipy = $user->nipy ?? $user->email; // Gunakan NIPY jika ada, jika tidak gunakan Email
+                if (!empty($nipy)) {
+                    $totalHadirBulanIni = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
+                            $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
+                        })
+                        ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                        ->whereIn('status', ['Hadir', 'Terlambat'])
+                        ->count();
+                    $totalTerlambatBulanIni = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
+                            $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
+                        })
+                        ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                        ->where('status', 'Terlambat')
+                        ->count();
+                }
             }
 
             return [
