@@ -25,6 +25,11 @@ class MasterBiometrikGuruTuResource extends Resource
     // Kita letakan di posisi kedua grup
     protected static ?int $navigationSort = 2;
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->role === 'Admin';
+    }
+
     public static function form(Form $form): Form
     {
         return $form
