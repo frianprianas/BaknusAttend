@@ -69,6 +69,6 @@ class User extends Authenticatable implements FilamentUser
     public function getAvatarUrlAttribute(): string
     {
         $email = strtolower(trim($this->email ?? ''));
-        return "https://baknusmail.smkbn666.sch.id/api/public/avatar/" . $email;
+        return "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . $email;
     }
 }
