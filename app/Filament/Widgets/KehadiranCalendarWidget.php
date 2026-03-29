@@ -47,7 +47,9 @@ class KehadiranCalendarWidget extends Widget
 
         // Ambil data hari yang ada absensi (Distinct Date)
         $presences = KehadiranGuruTu::where(function($q) use ($user) {
-                $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+                if ($user->nipy) $q->orWhere('nipy', $user->nipy);
+                if ($user->email) $q->orWhere('nipy', $user->email);
+                $q->orWhere('nama', $user->name);
             })
             ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
             ->select(DB::raw('DATE(waktu_tap) as date'), DB::raw('COUNT(*) as total'))

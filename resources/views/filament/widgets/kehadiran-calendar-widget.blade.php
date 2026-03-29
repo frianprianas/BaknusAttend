@@ -55,16 +55,17 @@
                 @for($day = 1; $day <= $daysInMonth; $day++)
                     @php
                         $status = $presenceData[$day] ?? 'none';
-                        $bgClass = $status === 'dark' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/30' 
-                                 : ($status === 'light' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' 
-                                 : 'bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-gray-700');
+                        $bgClass = $status === 'dark' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/40 ring-1 ring-white/20' 
+                                 : ($status === 'light' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 ring-1 ring-white/20' 
+                                 : 'bg-gray-50 dark:bg-gray-800/80 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700/50');
                     @endphp
                     <div class="relative group">
-                        <div class="min-h-[40px] md:min-h-[60px] flex flex-col items-center justify-center {{ $bgClass }} rounded-xl md:rounded-2xl transition-all duration-300 transform group-hover:scale-105 cursor-default relative overflow-hidden">
-                            <span class="text-xs md:text-lg font-black relative z-10">{{ $day }}</span>
+                        <div class="min-h-[45px] md:min-h-[65px] flex flex-col items-center justify-center {{ $bgClass }} rounded-xl md:rounded-2xl transition-all duration-300 transform group-hover:scale-105 group-hover:z-10 cursor-default relative overflow-hidden">
+                            <span class="text-xs md:text-xl font-black relative z-10 tracking-tighter">{{ $day }}</span>
                             
                             @if($status !== 'none')
-                                <div class="w-1 h-1 bg-white rounded-full mt-1 animate-pulse"></div>
+                                <div class="absolute inset-0 bg-white/10 dark:bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div class="w-1.5 h-1.5 bg-white rounded-full mt-1 shadow-sm"></div>
                             @endif
                         </div>
                     </div>
