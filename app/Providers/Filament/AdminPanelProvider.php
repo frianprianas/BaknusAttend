@@ -31,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Indigo,
                 'gray' => Color::Zinc,
             ])
+            ->favicon(asset('images/logo_BG.png'))
             ->brandName('BaknusAttend')
             ->brandLogo(fn() => asset('images/logo_BG.png'))
             ->brandLogoHeight('3.5rem')
