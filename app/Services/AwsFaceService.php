@@ -28,9 +28,15 @@ class AwsFaceService
     public function detectFace(string $imagePath): bool
     {
         try {
+            // Kita pastikan path-nya benar
             if (!Storage::disk('public')->exists($imagePath)) {
-                Log::error("AwsFace: File not found at [{$imagePath}]");
-                return false;
+                // Coba bersihkan path jika ada prefix 'public/' yang tidak sengaja terbawa
+                $cleanPath = str_replace('public/', '', $imagePath);
+                if (!Storage::disk('public')->exists($cleanPath)) {
+                    Log::error("AwsFace: File not found at [{$imagePath}] or [{$cleanPath}]");
+                    return false;
+                }
+                $imagePath = $cleanPath;
             }
 
             $imageData = Storage::disk('public')->get($imagePath);
@@ -57,8 +63,15 @@ class AwsFaceService
     public function compare(string $selfiePath, string $referencePath): array
     {
         try {
-            if (!Storage::disk('public')->exists($selfiePath) || !Storage::disk('public')->exists($referencePath)) {
-                return ['success' => false, 'error' => 'Foto selfie atau foto master tidak ditemukan di storage.'];
+            // Bersihkan path
+            $selfiePath = str_replace('public/', '', $selfiePath);
+            $referencePath = str_replace('public/', '', $referencePath);
+
+            if (!Storage::disk('public')->exists($selfiePath)) {
+                return ['success' => false, 'error' => "Foto selfie tidak ditemukan: $selfiePath"];
+            }
+            if (!Storage::disk('public')->exists($referencePath)) {
+                return ['success' => false, 'error' => "Foto master tidak ditemukan: $referencePath"];
             }
 
             $sourceImageBytes = Storage::disk('public')->get($referencePath); // Master
