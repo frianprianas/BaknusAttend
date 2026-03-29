@@ -19,13 +19,71 @@ class DashboardStatsWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->role === 'Admin';
+        return auth()->check();
     }
 
     protected function getStats(): array
     {
-        $today = Carbon::today();
+        $user = auth()->user();
+        if (!$user) return [];
 
+        $today = Carbon::today();
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfMonth();
+
+        // ----------------------------------------------------
+        // KONDISI 1: Statistik Login Guru / TU / Siswa (Pribadi)
+        // ----------------------------------------------------
+        if ($user->role !== 'Admin') {
+            $totalHadirBulanIni = 0;
+            $totalTerlambatBulanIni = 0;
+            
+            if ($user->role === 'Siswa') {
+                $student = Student::where('email', $user->email)->first();
+                if ($student) {
+                    $totalHadirBulanIni = KehadiranSiswa::where('nis', $student->nis)
+                        ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                        ->where('status', 'Hadir')
+                        ->count();
+                    $totalTerlambatBulanIni = KehadiranSiswa::where('nis', $student->nis)
+                        ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                        ->where('status', 'Terlambat')
+                        ->count();
+                }
+            } else {
+                // Guru / TU
+                $totalHadirBulanIni = KehadiranGuruTu::where(function($q) use ($user) {
+                        $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+                    })
+                    ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                    ->where('status', 'Hadir')
+                    ->count();
+                $totalTerlambatBulanIni = KehadiranGuruTu::where(function($q) use ($user) {
+                        $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+                    })
+                    ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                    ->where('status', 'Terlambat')
+                    ->count();
+            }
+
+            return [
+                Stat::make('Total Kehadiran', $totalHadirBulanIni . ' Hari')
+                    ->description('Bulan: ' . Carbon::now()->isoFormat('MMMM YYYY'))
+                    ->descriptionIcon('heroicon-m-calendar-days')
+                    ->color('success')
+                    ->icon('heroicon-o-calendar-days'),
+
+                Stat::make('Total Terlambat', $totalTerlambatBulanIni . ' Kali')
+                    ->description('Bulan: ' . Carbon::now()->isoFormat('MMMM YYYY'))
+                    ->descriptionIcon('heroicon-m-clock')
+                    ->color($totalTerlambatBulanIni > 0 ? 'warning' : 'gray')
+                    ->icon('heroicon-o-clock'),
+            ];
+        }
+
+        // ----------------------------------------------------
+        // KONDISI 2: Statistik Khusus ADMIN (Global)
+        // ----------------------------------------------------
         $totalSiswa  = Student::count();
         $totalGuru   = User::where('role', 'Guru')->count();
         $totalTU     = User::where('role', 'TU')->count();
@@ -38,39 +96,28 @@ class DashboardStatsWidget extends BaseWidget
         $pctSiswa  = $totalSiswa  > 0 ? round(($hadirSiswaHariIni  / $totalSiswa)  * 100) : 0;
         $pctGuruTU = $totalGuruTU > 0 ? round(($hadirGuruTUHariIni / $totalGuruTU) * 100) : 0;
 
-        // Pengajuan Izin/Sakit pending hari ini
         $izinPending = IzinGuruTu::whereDate('tanggal', $today)->where('status', 'Diajukan')->count();
 
         return [
             Stat::make('Total Siswa', number_format($totalSiswa))
                 ->description('Terdaftar di sistem')
                 ->descriptionIcon('heroicon-m-academic-cap')
-                ->color('primary')
-                ->icon('heroicon-o-academic-cap'),
+                ->color('primary'),
 
             Stat::make('Guru & TU', number_format($totalGuruTU))
-                ->description("{$totalGuru} Guru · {$totalTU} TU")
-                ->descriptionIcon('heroicon-m-users')
-                ->color('success')
-                ->icon('heroicon-o-users'),
+                ->description("{$totalGuru} Guru · {$totalTU} TU"),
 
             Stat::make('Hadir Siswa – Hari Ini', $hadirSiswaHariIni . ' / ' . $totalSiswa)
                 ->description("{$pctSiswa}% hadir · {$terlambatSiswa} terlambat")
-                ->descriptionIcon('heroicon-m-clock')
-                ->color($pctSiswa >= 80 ? 'success' : ($pctSiswa >= 60 ? 'warning' : 'danger'))
-                ->icon('heroicon-o-check-circle'),
+                ->color($pctSiswa >= 80 ? 'success' : 'warning'),
 
             Stat::make('Hadir Guru & TU – Hari Ini', $hadirGuruTUHariIni . ' / ' . $totalGuruTU)
                 ->description("{$pctGuruTU}% hadir hari ini")
-                ->descriptionIcon('heroicon-m-briefcase')
-                ->color($pctGuruTU >= 80 ? 'success' : 'warning')
-                ->icon('heroicon-o-building-office'),
+                ->color($pctGuruTU >= 80 ? 'success' : 'warning'),
 
             Stat::make('Izin / Sakit Pending', $izinPending)
                 ->description($izinPending > 0 ? 'Menunggu persetujuan Admin' : 'Tidak ada pengajuan baru')
-                ->descriptionIcon('heroicon-m-document-text')
                 ->color($izinPending > 0 ? 'warning' : 'gray')
-                ->icon('heroicon-o-document-text')
                 ->url('/admin/izin-guru-tus'),
         ];
     }

@@ -43,8 +43,7 @@ class RecentStudentAttendanceWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        $user = auth()->user();
-        return $user?->role === 'Admin' || $user?->role === 'Siswa';
+        return auth()->user()?->role === 'Admin';
     }
 
     public function table(Table $table): Table

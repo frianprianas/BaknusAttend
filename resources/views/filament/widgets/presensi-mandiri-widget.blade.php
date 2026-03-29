@@ -77,57 +77,68 @@
             </p>
 
             <form wire:submit.prevent="submit" class="w-full max-w-2xl relative">
-                <!-- Loading Overlay -->
-                <div wire:loading wire:target="submit" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-indigo-200">
-                    <div class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-indigo-500">
-                        <x-filament::loading-indicator class="h-12 w-12 text-indigo-600 mb-4" />
-                        <h3 class="text-lg font-bold text-indigo-700 dark:text-indigo-400 animate-pulse text-center">
-                            Verifikasi wajah dengan BaknusAI sedang berjalan...
-                        </h3>
-                        <p class="text-xs text-gray-500 mt-2 italic text-center">Mohon tunggu sebentar, kami sedang mencocokkan wajah Anda.</p>
-                    </div>
-                </div>
-
-                {{ $this->form }}
-
-                {{-- Tombol ini hanya untuk form 1-langkah (sudah punya master).
-                     Form 2-langkah (Wizard) sudah punya tombol sendiri via submitAction. --}}
-                @if($tipeAbsens !== 'Selesai')
-                <div class="mt-4 flex justify-center">
-                    <button type="submit" 
-                        wire:loading.attr="disabled"
-                        x-bind:disabled="!$wire.data.lat || isSearching"
-                        class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-base bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-lg transition duration-200 disabled:cursor-not-allowed">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span wire:loading.remove wire:target="submit">{{ $labelTombol }}</span>
-                        <span wire:loading wire:target="submit" class="flex items-center gap-2">
-                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                @if($tipeAbsens === 'Selesai')
+                    <div class="flex flex-col items-center justify-center p-10 bg-green-50 dark:bg-green-900/20 border-2 border-dashed border-green-500 rounded-3xl">
+                        <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/50">
+                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Sedang memproses...
-                        </span>
-                    </button>
-                </div>
-                @endif
-
-                <!-- GPS Status Display -->
-                <div class="mt-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-300">
-                    <div class="flex items-center justify-center gap-3">
-                        <div x-show="!isSearching && $wire.data.lat" class="p-2 bg-green-100 rounded-full">
-                            <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         </div>
-                        <p x-html="statusText" :class="statusClass" class="leading-relaxed"></p>
+                        <h3 class="text-2xl font-black text-green-700 dark:text-green-400 text-center">Presensi Selesai!</h3>
+                        <p class="text-gray-600 dark:text-gray-300 text-center mt-3 font-medium text-lg leading-relaxed">
+                            Terima kasih sudah mengisi presensi hari ini. <br>
+                            Selamat beristirahat dan tetap semangat! 🚀
+                        </p>
                     </div>
-                    <div x-show="showRetry" style="display: none;" class="text-center mt-3">
-                        <button type="button" @click="getGPS()" class="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition font-bold text-xs uppercase">
-                            🔄 Coba Hubungkan GPS Lagi
+                @else
+                    <!-- Loading Overlay -->
+                    <div wire:loading wire:target="submit" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-indigo-200">
+                        <div class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-indigo-500">
+                            <x-filament::loading-indicator class="h-12 w-12 text-indigo-600 mb-4" />
+                            <h3 class="text-lg font-bold text-indigo-700 dark:text-indigo-400 animate-pulse text-center">
+                                Verifikasi wajah dengan BaknusAI sedang berjalan...
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-2 italic text-center">Mohon tunggu sebentar, kami sedang mencocokkan wajah Anda.</p>
+                        </div>
+                    </div>
+
+                    {{ $this->form }}
+
+                    <div class="mt-4 flex justify-center">
+                        <button type="submit" 
+                            wire:loading.attr="disabled"
+                            x-bind:disabled="!$wire.data.lat || isSearching"
+                            class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-base bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-lg transition duration-200 disabled:cursor-not-allowed">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span wire:loading.remove wire:target="submit">{{ $labelTombol }}</span>
+                            <span wire:loading wire:target="submit" class="flex items-center gap-2">
+                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                Sedang memproses...
+                            </span>
                         </button>
                     </div>
-                </div>
+
+                    <!-- GPS Status Display -->
+                    <div class="mt-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-300">
+                        <div class="flex items-center justify-center gap-3">
+                            <div x-show="!isSearching && $wire.data.lat" class="p-2 bg-green-100 rounded-full">
+                                <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <p x-html="statusText" :class="statusClass" class="leading-relaxed"></p>
+                        </div>
+                        <div x-show="showRetry" style="display: none;" class="text-center mt-3">
+                            <button type="button" @click="getGPS()" class="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition font-bold text-xs uppercase">
+                                🔄 Coba Hubungkan GPS Lagi
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </form>
         </div>
     </x-filament::section>

@@ -40,7 +40,7 @@ class RecentGuruAttendanceWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->role !== 'Siswa';
+        return auth()->user()?->role === 'Admin';
     }
 
     public function table(Table $table): Table
