@@ -20,13 +20,19 @@
                     };
                     document.head.appendChild(s);
                 },
+                setGpsInputs(lat, long) {
+                    // Tulis langsung ke hidden input — TANPA $wire.set agar tidak trigger Livewire request
+                    const latEl  = document.querySelector('input[name="data[lat]"], input[wire\\:model*="lat"]');
+                    const longEl = document.querySelector('input[name="data[long]"], input[wire\\:model*="long"]');
+                    if (latEl)  { latEl.value  = lat;  latEl.dispatchEvent(new Event('input', {bubbles:true})); }
+                    if (longEl) { longEl.value = long; longEl.dispatchEvent(new Event('input', {bubbles:true})); }
+                },
                 getGPS(showStatus = true) {
                     if (!navigator.geolocation) { this.statusText = 'Perangkat tidak mendukung GPS'; this.statusClass = 'gps-error'; return; }
                     if (showStatus) { this.statusText = 'Melacak sinyal GPS...'; this.statusClass = 'gps-idle'; }
                     navigator.geolocation.getCurrentPosition(
                         (p) => {
-                            this.$wire.set('data.lat', p.coords.latitude);
-                            this.$wire.set('data.long', p.coords.longitude);
+                            this.setGpsInputs(p.coords.latitude, p.coords.longitude);
                             this.gpsLocked = true;
                             this.statusText = 'Posisi terkunci · ' + p.coords.latitude.toFixed(4) + ', ' + p.coords.longitude.toFixed(4);
                             this.statusClass = 'gps-ok';
@@ -40,14 +46,18 @@
                         this.isBusy = true; this.busyText = 'Menarik GPS ulang...';
                         await new Promise(r => {
                             navigator.geolocation.getCurrentPosition((p) => {
-                                this.$wire.set('data.lat', p.coords.latitude);
-                                this.$wire.set('data.long', p.coords.longitude);
+                                this.setGpsInputs(p.coords.latitude, p.coords.longitude);
                                 this.gpsLocked = true; r();
                             }, () => r(), { timeout: 5000 });
                         });
                     }
                     const img = document.querySelector('.filepond--item canvas') || document.querySelector('.filepond--image-preview img');
-                    if (!img) { this.$wire.submit(); return; }
+                    if (!img) {
+                        this.isBusy = true;
+                        this.busyText = 'Mengirim data presensi...';
+                        this.$wire.submit().then(() => { this.isBusy = false; }).catch(() => { this.isBusy = false; });
+                        return;
+                    }
                     this.isBusy = true; this.busyText = 'Memvalidasi wajah...';
                     if (this.faceApiLoaded && window.faceapi) {
                         try {
@@ -60,7 +70,7 @@
                         } catch(e) { console.error("AI Detect err", e); }
                     }
                     this.busyText = 'Mengirim data presensi...';
-                    this.$wire.submit();
+                    this.$wire.submit().then(() => { this.isBusy = false; }).catch(() => { this.isBusy = false; });
                 }
             };
         }
@@ -272,17 +282,16 @@
                     <div class="mt-6">
                         <button
                             type="submit"
-                            wire:loading.attr="disabled"
-                            x-bind:disabled="isBusy"
+                            :disabled="isBusy"
                             class="btn-absen-v2"
                         >
-                            <span wire:loading.remove wire:target="submit">Kirim Presensi {{ strtoupper($tipeAbsens) }}</span>
-                            <span wire:loading wire:target="submit" style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                                <svg style="animation:spin .8s linear infinite;width:18px;height:18px;" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <span x-show="!isBusy">Kirim Presensi {{ strtoupper($tipeAbsens) }}</span>
+                            <span x-show="isBusy" style="display:none;align-items:center;justify-content:center;gap:8px;">
+                                <svg style="animation:spin .8s linear infinite;width:18px;height:18px;flex-shrink:0;" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"></circle>
                                     <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:.75"></path>
                                 </svg>
-                                Mengirim...
+                                <span x-text="busyText || 'Mengirim...'"></span>
                             </span>
                         </button>
                     </div>
