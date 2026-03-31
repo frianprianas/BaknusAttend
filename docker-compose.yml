@@ -24,6 +24,7 @@ services:
         depends_on:
             - mysql
             - redis
+        restart: unless-stopped
     laravel.worker:
         image: sail-8.2/app
         command: php artisan queue:work
@@ -37,6 +38,7 @@ services:
         depends_on:
             - mysql
             - redis
+        restart: unless-stopped
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -53,6 +55,7 @@ services:
             - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
         networks:
             - sail
+        restart: unless-stopped
         healthcheck:
             test:
                 - CMD
@@ -69,6 +72,7 @@ services:
             - 'sail-redis:/data'
         networks:
             - sail
+        restart: unless-stopped
         healthcheck:
             test:
                 - CMD
