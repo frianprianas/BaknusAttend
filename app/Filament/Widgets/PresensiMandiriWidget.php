@@ -272,6 +272,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         // Cek apakah baru saja mendaftarkan Master (dari Step 1)
         if (isset($formData['photo_master']) && !$model->face_reference) {
+            // ── PRE-FILTER LOKAL (gratis, sebelum AWS) ──
+            $pre = $faceService->preFilter($formData['photo_master']);
+            if (!$pre['ok']) {
+                Storage::disk('public')->delete($formData['photo_master'] ?? '');
+                Notification::make()
+                    ->title('Foto Master Ditolak')
+                    ->body($pre['reason'])
+                    ->danger()->send();
+                return;
+            }
+
             $hasFace = $faceService->detectFace($formData['photo_master']);
             if (!$hasFace) {
                 Storage::disk('public')->delete($formData['photo_master'] ?? '');
@@ -289,6 +300,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $photoSelfie = $formData['photo_selfie'] ?? null;
         if (!$photoSelfie) {
             Notification::make()->title('Foto Selfie dibutuhkan')->danger()->send();
+            return;
+        }
+
+        // ── PRE-FILTER LOKAL untuk selfie (gratis, sebelum AWS) ──
+        $preSelfie = $faceService->preFilter($photoSelfie);
+        if (!$preSelfie['ok']) {
+            Storage::disk('public')->delete($photoSelfie);
+            Notification::make()
+                ->title('Foto Selfie Ditolak')
+                ->body($preSelfie['reason'])
+                ->danger()->send();
             return;
         }
 

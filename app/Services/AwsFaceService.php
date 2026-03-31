@@ -5,6 +5,7 @@ namespace App\Services;
 use Aws\Rekognition\RekognitionClient;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class AwsFaceService
 {
@@ -36,6 +37,88 @@ class AwsFaceService
         }
         Log::error("AwsFace: File tidak ditemukan di [{$path}]");
         return null;
+    }
+
+    /**
+     * PRE-FILTER LOKAL (GRATIS - tanpa panggil AWS).
+     *
+     * Menolak foto yang jelas bukan selfie wajah menggunakan PHP GD:
+     *  - File terlalu kecil (<5KB)  → bukan foto asli kamera
+     *  - Resolusi terlalu kecil     → bukan kamera, mungkin ikon
+     *  - Gambar terlalu uniform     → foto tembok polos / langit / layar putih
+     *
+     * Return: ['ok' => true] atau ['ok' => false, 'reason' => '...']
+     */
+    public function preFilter(string $imagePath): array
+    {
+        $path = str_replace('public/', '', $imagePath);
+
+        // 1. Cek keberadaan file
+        if (!Storage::disk('public')->exists($path)) {
+            return ['ok' => false, 'reason' => 'File foto tidak ditemukan.'];
+        }
+
+        $bytes = Storage::disk('public')->get($path);
+        $size  = strlen($bytes);
+
+        // 2. File terlalu kecil (<5KB) → pasti bukan foto kamera
+        if ($size < 5120) {
+            Log::warning("preFilter: Ditolak — file terlalu kecil ({$size} bytes) [{$path}]");
+            return ['ok' => false, 'reason' => 'Ukuran foto terlalu kecil. Gunakan kamera untuk mengambil foto selfie.'];
+        }
+
+        // 3. Pastikan format valid & ambil dimensi via GD
+        $img = @imagecreatefromstring($bytes);
+        if (!$img) {
+            Log::warning("preFilter: Ditolak — bukan gambar valid [{$path}]");
+            return ['ok' => false, 'reason' => 'Format foto tidak valid.'];
+        }
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+
+        // 4. Resolusi terlalu kecil (<100x100)
+        if ($w < 100 || $h < 100) {
+            imagedestroy($img);
+            Log::warning("preFilter: Ditolak — resolusi terlalu kecil ({$w}x{$h}) [{$path}]");
+            return ['ok' => false, 'reason' => 'Resolusi foto terlalu kecil. Pastikan kamera perangkat aktif.'];
+        }
+
+        // 5. Deteksi gambar terlalu uniform (tembok polos, layar putih, foto langit)
+        //    Ambil sampel 10x10 piksel dari area tengah, hitung standard deviation RGB
+        $samples  = [];
+        $stepX    = max(1, intval($w / 12));
+        $stepY    = max(1, intval($h / 12));
+        $startX   = intval($w * 0.2);
+        $startY   = intval($h * 0.2);
+        $endX     = intval($w * 0.8);
+        $endY     = intval($h * 0.8);
+
+        for ($x = $startX; $x < $endX; $x += $stepX) {
+            for ($y = $startY; $y < $endY; $y += $stepY) {
+                $rgb       = imagecolorat($img, $x, $y);
+                $r         = ($rgb >> 16) & 0xFF;
+                $g         = ($rgb >> 8) & 0xFF;
+                $b         = $rgb & 0xFF;
+                $samples[] = ($r + $g + $b) / 3; // luminance sederhana
+            }
+        }
+
+        imagedestroy($img);
+
+        if (count($samples) > 0) {
+            $mean   = array_sum($samples) / count($samples);
+            $variance = array_sum(array_map(fn($v) => ($v - $mean) ** 2, $samples)) / count($samples);
+            $stdDev = sqrt($variance);
+
+            // StdDev < 8 → gambar sangat uniform (tembok putih, layar hitam, dll)
+            if ($stdDev < 8.0) {
+                Log::warning("preFilter: Ditolak — gambar terlalu uniform (stdDev={$stdDev}) [{$path}]");
+                return ['ok' => false, 'reason' => 'Foto terlalu gelap, terlalu terang, atau bukan foto wajah. Pastikan wajah Anda terlihat jelas.'];
+            }
+        }
+
+        return ['ok' => true];
     }
 
     /**
