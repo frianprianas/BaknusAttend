@@ -42,7 +42,7 @@
             }
         </style>
 
-        <div x-data="presensiWidget()" class="flex flex-col items-center justify-center p-4">
+        <div x-data="presensiWidgetBaknus()" class="flex flex-col items-center justify-center p-4">
             
             <!-- Student/User Profile Header Card -->
             <div class="w-full max-w-3xl mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
@@ -170,7 +170,7 @@
         </div>
 
         <script>
-            function presensiWidget() {
+            function presensiWidgetBaknus() {
                 return {
                     statusText: '',
                     statusClass: '',
