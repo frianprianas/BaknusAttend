@@ -1,6 +1,7 @@
 <x-filament-widgets::widget>
     <!-- PRODUCTION FINAL: 2.4.0-REDESIGN -->
-    <script data-navigate-track="true">
+    @script
+    <script>
         window.mesinAbsenFormalFixV15 = function() {
             return {
                 statusText: 'Mengecek GPS...', statusClass: 'gps-idle', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
@@ -90,6 +91,7 @@
             };
         }
     </script>
+    @endscript
 
     <x-filament::section class="fi-absen-wrapper">
         <style>
