@@ -167,6 +167,9 @@
             <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2 tracking-tight text-center uppercase">Presensi Mandiri</h2>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-8 text-center font-medium">
                 Silakan nyalakan GPS dan ambil foto selfie untuk melakukan absensi.
+                <span class="text-[11px] text-orange-600 dark:text-orange-400 font-bold block mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                    ⚠️ PENTING: Sistem HP akan memblokir foto secara otomatis jika tidak mendeteksi wajah dengan jelas.
+                </span>
             </p>
 
             <form @submit.prevent="validateFaceAndSubmit" class="w-full max-w-2xl relative">
@@ -202,8 +205,22 @@
                         </div>
                     </div>
                 @else
-                    <!-- Loading Overlay -->
-                    <div wire:loading wire:target="submit" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-indigo-200">
+                    <!-- Local AI Scanning Overlay -->
+                    <div x-show="isScanningFace" style="display: none;" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-orange-200">
+                        <div class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-orange-500 transform transition-all scale-100 opacity-100">
+                            <svg class="animate-spin h-12 w-12 text-orange-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <h3 class="text-lg font-bold text-orange-600 dark:text-orange-400 animate-pulse text-center">
+                                Sabar, HP Anda sedang menscan Wajah...
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-2 italic text-center">Memastikan gambar layak dikirim ke Server Pusat.</p>
+                        </div>
+                    </div>
+
+                    <!-- Server AI Loading Overlay -->
+                    <div wire:loading wire:target="submit" class="absolute inset-0 z-[49] flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-indigo-200">
                         <div class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-indigo-500">
                             <x-filament::loading-indicator class="h-12 w-12 text-indigo-600 mb-4" />
                             <h3 class="text-lg font-bold text-indigo-700 dark:text-indigo-400 animate-pulse text-center">
