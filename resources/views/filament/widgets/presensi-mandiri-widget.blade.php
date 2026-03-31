@@ -4,6 +4,7 @@
         window.mesinAbsenFormalFixV15 = function() {
             return {
                 statusText: 'Mengecek GPS...', statusClass: 'gps-idle', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
+                lat: null, long: null,
                 init() {
                     this.getGPS();
                     this.loadFaceApi();
@@ -25,8 +26,8 @@
                     if (showStatus) { this.statusText = 'Melacak sinyal GPS...'; this.statusClass = 'gps-idle'; }
                     navigator.geolocation.getCurrentPosition(
                         (p) => {
-                            this.$wire.set('data.lat', p.coords.latitude);
-                            this.$wire.set('data.long', p.coords.longitude);
+                            this.lat = p.coords.latitude;
+                            this.long = p.coords.longitude;
                             this.gpsLocked = true;
                             this.statusText = 'Posisi terkunci · ' + p.coords.latitude.toFixed(4) + ', ' + p.coords.longitude.toFixed(4);
                             this.statusClass = 'gps-ok';
@@ -44,13 +45,19 @@
                         try {
                             await new Promise((resolve, reject) => {
                                 navigator.geolocation.getCurrentPosition((p) => {
-                                    this.$wire.set('data.lat', p.coords.latitude);
-                                    this.$wire.set('data.long', p.coords.longitude);
+                                    this.lat = p.coords.latitude;
+                                    this.long = p.coords.longitude;
                                     this.gpsLocked = true;
                                     resolve();
                                 }, () => reject(), { timeout: 5000 });
                             });
-                        } catch(e) { /* ignore */ }
+                        } catch(e) { /* Abaikan untuk ditangani server */ }
+                    }
+
+                    // Sinkronisasi koordinat GPS ke backend Livewire TEPAT SEBELUM submit (Menghindari XHR siluman di bekgraun)
+                    if (this.gpsLocked) {
+                        this.$wire.set('data.lat', this.lat);
+                        this.$wire.set('data.long', this.long);
                     }
 
                     const img = document.querySelector('.filepond--item canvas') || document.querySelector('.filepond--image-preview img');
