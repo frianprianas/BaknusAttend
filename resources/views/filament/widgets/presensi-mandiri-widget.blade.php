@@ -10,6 +10,7 @@
                 statusClass: '',
                 showRetry: false,
                 isSearching: false,
+                isScanningFace: false,
                 
                 init() {
                     this.getGPS();
@@ -68,6 +69,42 @@
                             maximumAge: 0
                         }
                     );
+                },
+
+                validateFaceAndSubmit() {
+                    // Jika browser tidak dukung FaceDetector (seperti Safari lama), langsung lewat ke Server
+                    if (!('FaceDetector' in window)) {
+                        this.$wire.submit();
+                        return;
+                    }
+
+                    // Ambil gambar yang sudah difoto pada kotak Dropzone/FilePond Filament
+                    const imgSource = document.querySelector('.filepond--item canvas') || document.querySelector('.filepond--image-preview img');
+                    
+                    if (!imgSource) {
+                        this.$wire.submit(); // Biarkan validasi Laravel yg menolak kalau kosong
+                        return;
+                    }
+
+                    this.isScanningFace = true;
+                    
+                    const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+                    detector.detect(imgSource)
+                        .then((faces) => {
+                            this.isScanningFace = false;
+                            if (faces.length > 0) {
+                                // ✅ WAJAH KETEMU LOKAL -> Lanjtukan Kirim ke AWS Token
+                                this.$wire.submit();
+                            } else {
+                                // ❌ TIDAK ADA WAJAH -> Blokir agar AWS tidak terpotong
+                                alert('🛑 STOP! Sistem mendeteksi tidak ada wajah di foto tersebut. Harap foto wajah Anda dengan jelas. Ini akan menghemat Token Server kami.');
+                            }
+                        })
+                        .catch((e) => {
+                            // Jika ada error internal API HP, abaikan dan biarkan server AWS yg kerja
+                            this.isScanningFace = false;
+                            this.$wire.submit(); 
+                        });
                 }
             }" 
             class="flex flex-col items-center justify-center p-4">
@@ -132,7 +169,7 @@
                 Silakan nyalakan GPS dan ambil foto selfie untuk melakukan absensi.
             </p>
 
-            <form wire:submit.prevent="submit" class="w-full max-w-2xl relative">
+            <form @submit.prevent="validateFaceAndSubmit" class="w-full max-w-2xl relative">
                 @if($tipeAbsens === 'Selesai')
                     <div class="flex flex-col items-center justify-center p-10 bg-green-50 dark:bg-green-900/20 border-2 border-dashed border-green-500 rounded-3xl animate-in fade-in zoom-in duration-500">
                         <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/50">
@@ -181,7 +218,7 @@
                     <div class="mt-4 flex justify-center">
                         <button type="submit" 
                             wire:loading.attr="disabled"
-                            x-bind:disabled="!$wire.data.lat || isSearching"
+                            x-bind:disabled="!$wire.data.lat || isSearching || isScanningFace"
                             class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-base bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-lg transition duration-200 disabled:cursor-not-allowed">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
