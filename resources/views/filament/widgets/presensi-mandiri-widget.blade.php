@@ -1,9 +1,45 @@
 <x-filament-widgets::widget>
     <x-filament::section>
         <style>
-            /* Override Filament's default Drag & Drop text */
-            .fi-fo-file-upload-dropzone .fi-fo-file-upload-dropzone-label { display: none !important; }
-            .fi-fo-file-upload-dropzone::after { content: "{{ $labelTombol }}"; font-weight: bold; font-size: 1rem; color: #4f46e5; display: block; margin-top: 10px; text-align: center; }
+            .fi-fo-file-upload-dropzone-label { display: none !important; }
+            .filepond--root:not(.filepond--has-file) {
+                background-color: #e0e7ff !important;
+                border: 2px dashed #4f46e5 !important;
+                border-radius: 1rem !important;
+                cursor: pointer !important;
+                min-height: 160px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s;
+            }
+            .filepond--root:not(.filepond--has-file)::before {
+                content: "📷";
+                font-size: 3.5rem;
+                display: block;
+                margin-bottom: 0.5rem;
+                text-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+            .filepond--root:not(.filepond--has-file)::after {
+                content: "KLIK UNTUK MULAI KAMERA";
+                font-weight: 900;
+                font-size: 1.15rem;
+                color: #4f46e5;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .dark .filepond--root:not(.filepond--has-file) {
+                background-color: rgba(67, 56, 202, 0.1) !important;
+                border-color: #6366f1 !important;
+            }
+            .dark .filepond--root:not(.filepond--has-file)::after {
+                color: #a5b4fc;
+            }
+            .filepond--root.filepond--has-file::before,
+            .filepond--root.filepond--has-file::after {
+                display: none !important;
+            }
         </style>
         <div x-data="{
                 statusText: '',
@@ -11,15 +47,27 @@
                 showRetry: false,
                 isSearching: false,
                 isScanningFace: false,
+                faceApiLoaded: false,
                 
                 init() {
                     this.getGPS();
+                    this.loadFaceApi();
                     
                     setInterval(() => {
                         if (!this.$wire.data.lat) {
                             this.getGPS();
                         }
                     }, 60000);
+                },
+
+                loadFaceApi() {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js';
+                    script.onload = async () => {
+                        await faceapi.nets.tinyFaceDetector.loadFromUri('https://vladmandic.github.io/face-api/model/');
+                        this.faceApiLoaded = true;
+                    };
+                    document.head.appendChild(script);
                 },
                 
                 getGPS() {
@@ -71,40 +119,54 @@
                     );
                 },
 
-                validateFaceAndSubmit() {
-                    // Jika browser tidak dukung FaceDetector (seperti Safari lama), langsung lewat ke Server
-                    if (!('FaceDetector' in window)) {
-                        this.$wire.submit();
-                        return;
-                    }
-
-                    // Ambil gambar yang sudah difoto pada kotak Dropzone/FilePond Filament
+                async validateFaceAndSubmit() {
                     const imgSource = document.querySelector('.filepond--item canvas') || document.querySelector('.filepond--image-preview img');
                     
                     if (!imgSource) {
-                        this.$wire.submit(); // Biarkan validasi Laravel yg menolak kalau kosong
+                        this.$wire.submit(); 
                         return;
                     }
 
                     this.isScanningFace = true;
                     
-                    const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
-                    detector.detect(imgSource)
-                        .then((faces) => {
+                    // 1. Coba deteksi menggunakan model akurat face-api.js
+                    if (this.faceApiLoaded && window.faceapi) {
+                        try {
+                            const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
+                            const detections = await faceapi.detectAllFaces(imgSource, options);
+                            
                             this.isScanningFace = false;
-                            if (faces.length > 0) {
-                                // ✅ WAJAH KETEMU LOKAL -> Lanjtukan Kirim ke AWS Token
+                            if (detections.length > 0) {
                                 this.$wire.submit();
                             } else {
-                                // ❌ TIDAK ADA WAJAH -> Blokir agar AWS tidak terpotong
-                                alert('🛑 STOP! Sistem mendeteksi tidak ada wajah di foto tersebut. Harap foto wajah Anda dengan jelas. Ini akan menghemat Token Server kami.');
+                                alert('🛑 FOTO DITOLAK: AI tidak mendeteksi wajah sama sekali. Tolong foto wajah Anda menghadap ke kamera dengan jelas.');
                             }
-                        })
-                        .catch((e) => {
-                            // Jika ada error internal API HP, abaikan dan biarkan server AWS yg kerja
+                            return;
+                        } catch (e) {
+                            console.error("FaceAPI error:", e);
+                        }
+                    }
+
+                    // 2. Fallback cadangan pakai FaceDetector eksperimental Chrome bawaan
+                    if ('FaceDetector' in window) {
+                        try {
+                            const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+                            const faces = await detector.detect(imgSource);
                             this.isScanningFace = false;
-                            this.$wire.submit(); 
-                        });
+                            if (faces.length > 0) {
+                                this.$wire.submit();
+                            } else {
+                                alert('🛑 FOTO DITOLAK: AI tidak mendeteksi wajah sama sekali. Tolong foto wajah Anda menghadap ke kamera dengan jelas.');
+                            }
+                            return;
+                        } catch (e) {
+                            console.error("Native FaceDetector error:", e);
+                        }
+                    }
+                    
+                    // Bypass jika kedua security gagal berjalan
+                    this.isScanningFace = false;
+                    this.$wire.submit();
                 }
             }" 
             class="flex flex-col items-center justify-center p-4">
@@ -232,18 +294,14 @@
 
                     {{ $this->form }}
 
-                    <div class="mt-4 flex justify-center">
+                    <div class="mt-8 flex justify-center">
                         <button type="submit" 
                             wire:loading.attr="disabled"
                             x-bind:disabled="!$wire.data.lat || isSearching || isScanningFace"
-                            class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white font-extrabold text-base bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-xl shadow-lg transition duration-200 disabled:cursor-not-allowed">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span wire:loading.remove wire:target="submit">{{ $labelTombol }}</span>
+                            class="w-full flex items-center justify-center gap-3 px-6 py-5 text-white font-black text-xl bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 rounded-2xl shadow-[0_10px_25px_-5px_rgba(79,70,229,0.5)] transform transition-transform hover:-translate-y-1 active:translate-y-0 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:cursor-not-allowed">
+                            <span wire:loading.remove wire:target="submit">🚀 KIRIM PRESENSI SEKARANG</span>
                             <span wire:loading wire:target="submit" class="flex items-center gap-2">
-                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                 </svg>
