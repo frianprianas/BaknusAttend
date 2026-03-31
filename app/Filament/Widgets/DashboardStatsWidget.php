@@ -18,6 +18,8 @@ class DashboardStatsWidget extends BaseWidget
     protected ?string $heading = null;
     protected int|string|array $columnSpan = 'full';
 
+    protected $listeners = ['kehadiran-updated' => '$refresh'];
+
     public static function canView(): bool
     {
         return auth()->check();

@@ -19,6 +19,13 @@ class KehadiranCalendarWidget extends Widget
     public $firstDayOfMonth;
     public $presenceData = [];
 
+    protected $listeners = ['kehadiran-updated' => 'refreshCalendarData'];
+
+    public function refreshCalendarData()
+    {
+        $this->fetchPresenceData();
+    }
+
     public static function canView(): bool
     {
         // Hanya tampilkan untuk Guru / TU (bukan Admin / Siswa di resource ini)

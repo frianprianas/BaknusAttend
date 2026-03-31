@@ -386,6 +386,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ->success()
             ->send();
 
+        // Minta dashboard widgets lain me-refresh ulang (terutama karena bulan baru / nambah presensi)
+        $this->dispatch('kehadiran-updated');
+
         $this->form->fill();
     }
 
