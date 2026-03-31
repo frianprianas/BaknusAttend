@@ -136,7 +136,7 @@
                             const detections = await faceapi.detectAllFaces(imgSource, options);
                             
                             this.isScanningFace = false;
-                            if (detections.length > 0) {
+                            if (detections.length != 0) {
                                 this.$wire.submit();
                             } else {
                                 alert('🛑 FOTO DITOLAK: AI tidak mendeteksi wajah sama sekali. Tolong foto wajah Anda menghadap ke kamera dengan jelas.');
@@ -153,7 +153,7 @@
                             const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
                             const faces = await detector.detect(imgSource);
                             this.isScanningFace = false;
-                            if (faces.length > 0) {
+                            if (faces.length != 0) {
                                 this.$wire.submit();
                             } else {
                                 alert('🛑 FOTO DITOLAK: AI tidak mendeteksi wajah sama sekali. Tolong foto wajah Anda menghadap ke kamera dengan jelas.');
