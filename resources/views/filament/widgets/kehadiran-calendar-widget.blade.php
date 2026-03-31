@@ -1,81 +1,193 @@
 <x-filament-widgets::widget>
     <x-filament::section>
-        <div class="flex flex-col">
-            <!-- Header Navigasi Kalender -->
-            <div class="flex items-center justify-between mb-8">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+            .cal-wrap * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+
+            /* ---- Header ---- */
+            .cal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 28px;
+            }
+            .cal-title {
+                font-size: 1.35rem;
+                font-weight: 900;
+                color: #0f172a;
+                letter-spacing: -0.02em;
+                margin: 0 0 4px;
+            }
+            .dark .cal-title { color: #f1f5f9; }
+            .cal-month-label {
+                font-size: .72rem;
+                font-weight: 700;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: .1em;
+            }
+
+            /* Nav buttons */
+            .cal-nav-btn {
+                width: 38px; height: 38px;
+                border-radius: 10px;
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer; transition: all .15s; color: #475569;
+            }
+            .cal-nav-btn:hover { background: #e2e8f0; color: #1e293b; transform: scale(1.05); }
+            .dark .cal-nav-btn { background: rgba(30,41,59,.6); border-color: #334155; color: #94a3b8; }
+            .dark .cal-nav-btn:hover { background: #334155; color: #f1f5f9; }
+            .cal-nav-group { display: flex; align-items: center; gap: 8px; }
+
+            /* ---- Legend ---- */
+            .cal-legend {
+                display: flex; flex-wrap: wrap;
+                align-items: center; gap: 16px;
+                margin-bottom: 24px;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+            }
+            .dark .cal-legend { background: rgba(30,41,59,.4); border-color: #1e293b; }
+            .legend-dot { width: 10px; height: 10px; border-radius: 4px; flex-shrink: 0; }
+            .legend-item { display: flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 700; color: #64748b; letter-spacing: .04em; text-transform: uppercase; }
+            .dark .legend-item { color: #94a3b8; }
+            .dot-full  { background: #6366f1; box-shadow: 0 2px 6px rgba(99,102,241,.4); }
+            .dot-in    { background: #38bdf8; box-shadow: 0 2px 6px rgba(56,189,248,.4); }
+            .dot-none  { background: #e2e8f0; }
+            .dark .dot-none { background: #334155; }
+
+            /* ---- Day headers ---- */
+            .cal-day-label {
+                text-align: center;
+                font-size: .62rem;
+                font-weight: 800;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: .08em;
+                padding: 6px 0 10px;
+            }
+
+            /* ---- Day cells ---- */
+            .cal-cell {
+                position: relative;
+                aspect-ratio: 1;
+                border-radius: 14px;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                cursor: default;
+                transition: transform .2s, box-shadow .2s;
+            }
+            .cal-cell:hover { transform: scale(1.08); z-index: 10; }
+
+            .cal-cell-none {
+                background: #f8fafc;
+                border: 1px solid #f1f5f9;
+            }
+            .dark .cal-cell-none { background: rgba(30,41,59,.5); border-color: #1e293b; }
+
+            .cal-cell-full {
+                background: linear-gradient(135deg, #6366f1, #4f46e5);
+                box-shadow: 0 4px 16px rgba(99,102,241,.35);
+            }
+            .cal-cell-full:hover { box-shadow: 0 8px 24px rgba(99,102,241,.50); }
+
+            .cal-cell-in {
+                background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+                box-shadow: 0 4px 16px rgba(56,189,248,.35);
+            }
+            .cal-cell-in:hover { box-shadow: 0 8px 24px rgba(56,189,248,.50); }
+
+            .cal-day-num-colored { font-size: .9rem; font-weight: 900; color: #fff; letter-spacing: -.01em; }
+            .cal-day-num-plain   { font-size: .9rem; font-weight: 700; color: #94a3b8; letter-spacing: -.01em; }
+            .dark .cal-day-num-plain { color: #475569; }
+
+            .cal-pip {
+                width: 5px; height: 5px; border-radius: 50%;
+                background: rgba(255,255,255,.7); margin-top: 3px;
+            }
+
+            /* ---- Quote footer ---- */
+            .cal-quote {
+                margin-top: 24px;
+                padding: 16px 20px;
+                background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+                border: 1px solid #c7d2fe;
+                border-radius: 16px;
+                text-align: center;
+            }
+            .dark .cal-quote { background: rgba(30,27,75,.3); border-color: rgba(99,102,241,.25); }
+            .cal-quote p {
+                font-size: .8rem;
+                color: #6366f1;
+                font-weight: 600;
+                font-style: italic;
+                line-height: 1.65;
+                margin: 0;
+            }
+            .dark .cal-quote p { color: #818cf8; }
+        </style>
+
+        <div class="cal-wrap flex flex-col">
+            {{-- Header --}}
+            <div class="cal-header">
                 <div>
-                    <h2 class="text-2xl font-black text-gray-800 dark:text-white tracking-tight uppercase">
-                        Kalender Presensi Saya
-                    </h2>
-                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1 italic">
-                        {{ \Carbon\Carbon::create($currentYear, $currentMonth, 1)->format('F Y') }}
+                    <h2 class="cal-title">Kalender Presensi</h2>
+                    <p class="cal-month-label">
+                        {{ \Carbon\Carbon::create($currentYear, $currentMonth, 1)->translatedFormat('F Y') }}
                     </p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button wire:click="previousMonth" class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                <div class="cal-nav-group">
+                    <button wire:click="previousMonth" class="cal-nav-btn" title="Bulan sebelumnya">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                     </button>
-                    <button wire:click="nextMonth" class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    <button wire:click="nextMonth" class="cal-nav-btn" title="Bulan berikutnya">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                     </button>
                 </div>
             </div>
 
-            <!-- Legenda Warna -->
-            <div class="flex flex-wrap items-center gap-6 mb-8 text-[10px] font-black uppercase tracking-widest">
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded-md bg-indigo-600 shadow-md shadow-indigo-500/30"></div>
-                    <span class="text-gray-600 dark:text-gray-400">Hadir Lengkap (In & Out)</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded-md bg-sky-400 shadow-md shadow-sky-400/30"></div>
-                    <span class="text-gray-600 dark:text-gray-400">Masuk Saja</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded-md bg-gray-200 dark:bg-gray-800"></div>
-                    <span class="text-gray-400">Tanpa Data</span>
-                </div>
+            {{-- Legend --}}
+            <div class="cal-legend">
+                <div class="legend-item"><div class="legend-dot dot-full"></div> Hadir Lengkap</div>
+                <div class="legend-item"><div class="legend-dot dot-in"></div> Masuk Saja</div>
+                <div class="legend-item"><div class="legend-dot dot-none"></div> Tanpa Data</div>
             </div>
 
-            <!-- Body Kalender (Grid 7 Kolom) -->
-            <div class="grid grid-cols-7 gap-1 md:gap-3">
-                <!-- Nama Hari -->
-                @foreach(['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as $dayName)
-                    <div class="py-2 text-center text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-tighter">
-                        {{ $dayName }}
-                    </div>
+            {{-- Grid --}}
+            <div class="grid grid-cols-7 gap-1 md:gap-2">
+                {{-- Day labels --}}
+                @foreach(['Min','Sen','Sel','Rab','Kam','Jum','Sab'] as $d)
+                    <div class="cal-day-label">{{ $d }}</div>
                 @endforeach
 
-                <!-- Spasi di Awal Bulan -->
+                {{-- Empty leading cells --}}
                 @for($i = 0; $i < $firstDayOfMonth; $i++)
-                    <div class="min-h-[40px] md:min-h-[60px]"></div>
+                    <div></div>
                 @endfor
 
-                <!-- Tanggal -->
+                {{-- Day cells --}}
                 @for($day = 1; $day <= $daysInMonth; $day++)
                     @php
                         $status = $presenceData[$day] ?? 'none';
-                        $bgClass = $status === 'dark' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/40 ring-1 ring-white/20' 
-                                 : ($status === 'light' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 ring-1 ring-white/20' 
-                                 : 'bg-gray-50 dark:bg-gray-800/80 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700/50');
+                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : 'cal-cell-none');
+                        $numClass  = in_array($status, ['dark','light']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
                     @endphp
-                    <div class="relative group">
-                        <div class="min-h-[45px] md:min-h-[65px] flex flex-col items-center justify-center {{ $bgClass }} rounded-xl md:rounded-2xl transition-all duration-300 transform group-hover:scale-105 group-hover:z-10 cursor-default relative overflow-hidden">
-                            <span class="text-xs md:text-xl font-black relative z-10 tracking-tighter">{{ $day }}</span>
-                            
-                            @if($status !== 'none')
-                                <div class="absolute inset-0 bg-white/10 dark:bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                <div class="w-1.5 h-1.5 bg-white rounded-full mt-1 shadow-sm"></div>
-                            @endif
-                        </div>
+                    <div class="cal-cell {{ $cellClass }}">
+                        <span class="{{ $numClass }}">{{ $day }}</span>
+                        @if(in_array($status, ['dark','light']))
+                            <div class="cal-pip"></div>
+                        @endif
                     </div>
                 @endfor
             </div>
 
-            <div class="mt-8 p-4 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800 rounded-2xl">
-                <p class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold italic text-center leading-relaxed">
-                    "Disiplin adalah kunci kesuksesan. Terus tingkatkan kehadiran Anda demi masa depan Bakti Nusantara 666."
-                </p>
+            {{-- Quote --}}
+            <div class="cal-quote">
+                <p>"Disiplin adalah jembatan antara tujuan dan pencapaian. Pertahankan kehadiranmu!"</p>
             </div>
         </div>
     </x-filament::section>

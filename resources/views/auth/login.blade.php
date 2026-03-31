@@ -4,193 +4,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BaknusAttend – Sistem Presensi Digital SMK Bakti Nusantara 666">
     <title>BaknusAttend – Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            min-height: 100vh;
-            display: flex;
+        :root {
+            --indigo-50: #eef2ff;
+            --indigo-100: #e0e7ff;
+            --indigo-400: #818cf8;
+            --indigo-500: #6366f1;
+            --indigo-600: #4f46e5;
+            --indigo-700: #4338ca;
+            --indigo-900: #312e81;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-2xl: 24px;
+            --shadow-indigo: 0 8px 32px rgba(99, 102, 241, 0.35);
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
         }
 
-        /* LEFT PANEL */
-        .left {
-            width: 55%;
-            background: linear-gradient(150deg, rgba(13, 27, 62, 0.85) 0%, rgba(15, 32, 68, 0.85) 60%, rgba(26, 16, 94, 0.85) 100%),
-                        url("{{ asset('images/BA.png') }}") no-repeat center center / cover;
+        html,
+        body {
+            height: 100%;
+            font-family: var(--font);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
             display: flex;
-            flex-direction: column;
-            padding: 52px;
+            min-height: 100vh;
+            background: var(--slate-50);
+        }
+
+        /* =========================================================
+           LEFT PANEL — cinematic gradient + image overlay
+           ========================================================= */
+        .lp {
+            width: 56%;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 52px 56px;
+            background:
+                linear-gradient(160deg,
+                    rgba(10, 14, 54, 0.93) 0%,
+                    rgba(15, 22, 72, 0.90) 55%,
+                    rgba(37, 14, 118, 0.88) 100%),
+                url("{{ asset('images/BA.png') }}") center / cover no-repeat;
         }
 
-        .blob {
+        /* Fine grid overlay */
+        .lp-grid {
             position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+            background-size: 48px 48px;
             pointer-events: none;
         }
 
-        .b1 {
-            width: 360px;
-            height: 360px;
-            top: -60px;
-            right: -80px;
-            background: radial-gradient(circle, rgba(99, 102, 241, .35), transparent 70%);
-            animation: fa 8s ease-in-out infinite;
-        }
-
-        .b2 {
-            width: 300px;
-            height: 300px;
-            bottom: -40px;
-            left: -60px;
-            background: radial-gradient(circle, rgba(129, 140, 248, .25), transparent 70%);
-            animation: fb 10s ease-in-out infinite;
-        }
-
-        @keyframes fa {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        @keyframes fb {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(20px); }
-        }
-
-        .grid-bg {
+        /* Animated ambient blobs */
+        .blob {
             position: absolute;
-            inset: 0;
-            background-image: linear-gradient(rgba(255, 255, 255, .04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, .04) 1px, transparent 1px);
-            background-size: 44px 44px;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
         }
 
-        .brand {
+        .blob-1 {
+            width: 420px;
+            height: 420px;
+            top: -80px;
+            right: -100px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.38), transparent 70%);
+            animation: floatA 9s ease-in-out infinite;
+        }
+
+        .blob-2 {
+            width: 340px;
+            height: 340px;
+            bottom: -50px;
+            left: -70px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.28), transparent 70%);
+            animation: floatB 11s ease-in-out infinite;
+        }
+
+        .blob-3 {
+            width: 200px;
+            height: 200px;
+            top: 42%;
+            left: 30%;
+            background: radial-gradient(circle, rgba(165, 180, 252, 0.12), transparent 70%);
+            animation: floatA 14s ease-in-out infinite;
+        }
+
+        @keyframes floatA {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-28px) scale(1.04); }
+        }
+
+        @keyframes floatB {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(24px) scale(1.03); }
+        }
+
+        /* Brand */
+        .lp-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             position: relative;
             z-index: 10;
         }
 
-        .brand-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, .1);
-            border: 1px solid rgba(255, 255, 255, .2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .lp-brand-logo {
+            height: 52px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(165, 180, 252, 0.4));
         }
 
-        .brand-name {
+        .lp-brand-name {
+            font-size: 1.2rem;
+            font-weight: 800;
             color: #fff;
-            font-weight: 700;
-            font-size: 1.1rem;
+            letter-spacing: -0.01em;
         }
 
-        .brand-name span { color: #a5b4fc; }
+        .lp-brand-name span {
+            color: #a5b4fc;
+        }
 
-        .hero {
-            margin-top: auto;
+        /* Scroller / spacer */
+        .lp-spacer { flex: 1; }
+
+        /* Hero content */
+        .lp-hero {
             position: relative;
             z-index: 10;
+            padding-bottom: 4px;
         }
 
-        .badge {
+        .lp-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(99, 102, 241, .18);
-            border: 1px solid rgba(165, 180, 252, .3);
+            background: rgba(99, 102, 241, 0.18);
+            border: 1px solid rgba(165, 180, 252, 0.32);
+            backdrop-filter: blur(8px);
             color: #c7d2fe;
-            font-size: .75rem;
-            font-weight: 600;
-            padding: 6px 14px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 7px 16px;
             border-radius: 999px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
 
-        .dot {
+        .badge-dot {
             width: 7px;
             height: 7px;
             border-radius: 50%;
             background: #4ade80;
-            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 6px #4ade80;
+            animation: pulse 1.8s ease-in-out infinite;
         }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: .5; transform: scale(1.3); }
+            50% { opacity: .55; transform: scale(1.35); }
         }
 
-        h1 {
-            font-size: clamp(1.8rem, 3vw, 2.8rem);
-            font-weight: 800;
+        .lp-headline {
+            font-size: clamp(2rem, 3.2vw, 3.2rem);
+            font-weight: 900;
             color: #fff;
-            line-height: 1.2;
-            margin-bottom: 16px;
+            line-height: 1.14;
+            letter-spacing: -0.03em;
+            margin-bottom: 22px;
         }
 
-        h1 span {
-            background: linear-gradient(90deg, #a5b4fc, #818cf8);
+        .lp-headline span {
+            background: linear-gradient(100deg, #c7d2fe, #818cf8 60%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .desc {
+        .lp-desc {
             color: #94a3b8;
-            font-size: .9rem;
-            line-height: 1.7;
-            max-width: 360px;
-            margin-bottom: 32px;
+            font-size: 0.9375rem;
+            line-height: 1.75;
+            max-width: 380px;
+            margin-bottom: 40px;
         }
 
-        .stats {
+        /* Stats row */
+        .lp-stats {
             display: flex;
             align-items: center;
-            gap: 0;
         }
 
-        .stat {
-            display: flex;
-            flex-direction: column;
-        }
+        .stat-item { display: flex; flex-direction: column; }
 
-        .sv {
-            font-size: 1.6rem;
-            font-weight: 800;
+        .stat-val {
+            font-size: 1.875rem;
+            font-weight: 900;
             color: #fff;
+            line-height: 1;
+            letter-spacing: -0.03em;
         }
 
-        .sl {
-            font-size: .6rem;
+        .stat-lbl {
+            font-size: 0.62rem;
             color: #64748b;
             text-transform: uppercase;
-            letter-spacing: .1em;
-            margin-top: 3px;
+            letter-spacing: 0.1em;
+            margin-top: 5px;
+            font-weight: 700;
         }
 
-        .sdiv {
+        .stat-div {
             width: 1px;
-            height: 32px;
-            background: rgba(255, 255, 255, .1);
-            margin: 0 24px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 28px;
         }
 
-        /* RIGHT PANEL */
-        .right {
-            width: 45%;
+        /* =========================================================
+           RIGHT PANEL — clean white card
+           ========================================================= */
+        .rp {
+            width: 44%;
             background: #fff;
             display: flex;
             align-items: center;
@@ -199,244 +266,388 @@
             position: relative;
         }
 
-        .right::before {
+        .rp::before {
             content: '';
             position: absolute;
             top: 0;
             right: 0;
-            width: 260px;
-            height: 260px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle at top right, var(--indigo-50), transparent 65%);
             pointer-events: none;
-            background: radial-gradient(circle at top right, #eef2ff, transparent 65%);
         }
 
-        .form-box {
+        .rp::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at bottom left, #f0fdf4, transparent 65%);
+            pointer-events: none;
+        }
+
+        .form-card {
             width: 100%;
             max-width: 400px;
             position: relative;
             z-index: 10;
         }
 
-        .subtitle {
-            font-size: .7rem;
+        /* Icon badge */
+        .form-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--indigo-600), var(--indigo-400));
+            box-shadow: var(--shadow-indigo);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+
+        .form-icon svg {
+            width: 28px;
+            height: 28px;
+            color: #fff;
+        }
+
+        .form-eyebrow {
+            font-size: 0.7rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: .12em;
-            color: #6366f1;
+            letter-spacing: 0.14em;
+            color: var(--indigo-500);
             margin-bottom: 8px;
         }
 
-        .title {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -.02em;
+        .form-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            letter-spacing: -0.03em;
             margin-bottom: 8px;
+            line-height: 1.1;
         }
 
-        .tagline {
-            font-size: .875rem;
-            color: #64748b;
-            line-height: 1.6;
-            margin-bottom: 32px;
+        .form-subtitle {
+            font-size: 0.875rem;
+            color: var(--slate-500);
+            line-height: 1.65;
+            margin-bottom: 36px;
         }
 
-        /* Error */
+        /* Alert */
         .alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
             background: #fef2f2;
             border: 1px solid #fecaca;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            margin-bottom: 24px;
             color: #dc2626;
-            font-size: .875rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            animation: slideDown 0.3s ease;
         }
 
-        /* Fields */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form fields */
         .field {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .field label {
             display: block;
-            font-size: .75rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            color: #374151;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            margin-bottom: 6px;
+            color: var(--slate-700);
+            letter-spacing: 0.02em;
+            margin-bottom: 8px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--slate-400);
+            pointer-events: none;
+            transition: color 0.2s;
         }
 
         .field input {
             width: 100%;
-            padding: 12px 14px;
-            border-radius: 10px;
-            border: 1.5px solid #d1d5db;
-            background: #f9fafb;
-            font-size: .9375rem;
-            color: #111827;
-            font-family: inherit;
-            transition: border-color .2s, box-shadow .2s;
+            padding: 13px 14px 13px 42px;
+            border-radius: var(--radius-lg);
+            border: 1.5px solid var(--slate-200);
+            background: var(--slate-50);
+            font-size: 0.9375rem;
+            font-family: var(--font);
+            color: var(--slate-900);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
             outline: none;
+            font-weight: 500;
+        }
+
+        .field input::placeholder {
+            color: #b0bacb;
+            font-weight: 400;
         }
 
         .field input:focus {
-            border-color: #6366f1;
+            border-color: var(--indigo-500);
             background: #fff;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, .12);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
         }
 
-        .remember {
+        .field input:focus ~ .input-icon,
+        .input-wrap:focus-within .input-icon {
+            color: var(--indigo-500);
+        }
+
+        /* Remember me */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        .remember-label {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 24px;
-            font-size: .875rem;
-            color: #6b7280;
+            font-size: 0.875rem;
+            color: var(--slate-500);
+            cursor: pointer;
+            user-select: none;
         }
 
-        .remember input[type=checkbox] {
-            width: 16px;
-            height: 16px;
-            accent-color: #6366f1;
+        .remember-label input[type=checkbox] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--indigo-500);
+            border-radius: 4px;
+            cursor: pointer;
         }
 
-        /* Button */
-        .btn {
+        /* Submit button */
+        .btn-submit {
+            position: relative;
             width: 100%;
-            padding: 14px;
-            border-radius: 12px;
+            padding: 15px 24px;
+            border-radius: var(--radius-lg);
             border: none;
             cursor: pointer;
-            font-size: .9375rem;
-            font-weight: 700;
+            font-family: var(--font);
+            font-size: 0.9375rem;
+            font-weight: 800;
             color: #fff;
-            background: linear-gradient(135deg, #4f46e5, #6366f1);
-            box-shadow: 0 6px 24px rgba(99, 102, 241, .4);
-            transition: transform .15s, box-shadow .15s;
-            font-family: inherit;
+            background: linear-gradient(135deg, var(--indigo-600), var(--indigo-500));
+            box-shadow: var(--shadow-indigo);
+            transition: transform 0.15s, box-shadow 0.15s;
+            letter-spacing: 0.02em;
+            overflow: hidden;
         }
 
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, .45);
+        .btn-submit::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+            pointer-events: none;
         }
 
-        .btn:active {
-            transform: scale(.98);
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 40px rgba(99, 102, 241, 0.45);
         }
 
-        .footer {
-            margin-top: 40px;
+        .btn-submit:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: var(--shadow-indigo);
+        }
+
+        /* Footer */
+        .form-footer {
+            margin-top: 36px;
             padding-top: 20px;
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid var(--slate-100);
             text-align: center;
-            font-size: .65rem;
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .12em;
-            color: #cbd5e1;
+            letter-spacing: 0.1em;
+            color: #c1cad6;
         }
 
-        @media (prefers-color-scheme: dark) {
-            .right { background: #0f172a; }
-            .right::before { background: radial-gradient(circle at top right, #1e293b, transparent 65%); }
-            .title { color: #f8fafc; }
-            .tagline { color: #94a3b8; }
-            .subtitle { color: #818cf8; }
-            .field label { color: #cbd5e1; }
-            .field input { background: #1e293b; border-color: #334155; color: #f8fafc; }
-            .field input:focus { background: #0f172a; border-color: #818cf8; box-shadow: 0 0 0 4px rgba(129, 140, 248, .15); }
-            .remember { color: #94a3b8; }
-            .footer { border-top-color: #1e293b; color: #475569; }
-            .alert { background: rgba(220, 38, 38, 0.1); border-color: rgba(220, 38, 38, 0.2); color: #f87171; }
+        /* =========================================================
+           RESPONSIVE
+           ========================================================= */
+        @media (max-width: 900px) {
+            .lp { display: none !important; }
+            .rp {
+                width: 100% !important;
+                padding: 40px 24px !important;
+            }
         }
 
-        /* RESPONSIVE OVERRIDES (MOBILE FIRST AT BOTTOM) */
-        @media(max-width: 900px) {
-            .left { display: none !important; }
-            .right { width: 100% !important; padding: 40px 24px !important; }
-            .form-box { max-width: 100% !important; }
-        }
-
-        @media(max-width: 600px) {
-            .title { font-size: 1.5rem !important; }
-            .hero h1 { font-size: 1.8rem !important; }
+        @media (max-width: 480px) {
+            .form-title { font-size: 1.6rem !important; }
         }
     </style>
 </head>
 
 <body>
 
-    {{-- LEFT PANEL --}}
-    <div class="left">
-        <div class="grid-bg"></div>
-        <div class="blob b1"></div>
-        <div class="blob b2"></div>
+    {{-- ======= LEFT PANEL ======= --}}
+    <div class="lp">
+        <div class="lp-grid"></div>
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
 
-        <div class="brand">
-            <div class="brand-icon"
-                style="background:transparent; border:none; width:auto; height: 55px; border-radius:0;">
-                <img src="{{ asset('images/logo_BG.png') }}" alt="Logo"
-                    style="height: 100%; width: auto; object-fit: contain;">
-            </div>
-            <span class="brand-name">Baknus<span>Attend</span></span>
+        {{-- Brand --}}
+        <div class="lp-brand">
+            <img src="{{ asset('images/logo_BG.png') }}" alt="Logo BaknusAttend" class="lp-brand-logo">
+            <span class="lp-brand-name">Baknus<span>Attend</span></span>
         </div>
 
-        <div class="hero">
-            <div class="badge">
-                <div class="dot"></div>Sistem Presensi Aktif
+        <div class="lp-spacer"></div>
+
+        {{-- Hero --}}
+        <div class="lp-hero">
+            <div class="lp-badge">
+                <div class="badge-dot"></div>
+                Sistem Presensi Aktif
             </div>
-            <h1>Hadir Tepat<br>Waktu, <span>Setiap Hari.</span></h1>
-            <p class="desc">Sistem absensi digital terintegrasi Mailcow untuk seluruh civitas akademika SMK Bakti
-                Nusantara 666. Akurat, cepat, dan real-time.</p>
-            <div class="stats">
-                <div class="stat"><span class="sv">100%</span><span class="sl">Digital</span></div>
-                <div class="sdiv"></div>
-                <div class="stat"><span class="sv">3</span><span class="sl">Peran User</span></div>
-                <div class="sdiv"></div>
-                <div class="stat"><span class="sv">RFID</span><span class="sl">Terintegrasi</span></div>
+
+            <h1 class="lp-headline">
+                Hadir Tepat Waktu,<br>
+                <span>Setiap Hari.</span>
+            </h1>
+
+            <p class="lp-desc">
+                Sistem absensi digital terintegrasi Mailcow untuk seluruh civitas akademika
+                SMK Bakti Nusantara 666. Akurat, cepat, dan real-time.
+            </p>
+
+            <div class="lp-stats">
+                <div class="stat-item">
+                    <span class="stat-val">100%</span>
+                    <span class="stat-lbl">Digital</span>
+                </div>
+                <div class="stat-div"></div>
+                <div class="stat-item">
+                    <span class="stat-val">3</span>
+                    <span class="stat-lbl">Peran User</span>
+                </div>
+                <div class="stat-div"></div>
+                <div class="stat-item">
+                    <span class="stat-val">RFID</span>
+                    <span class="stat-lbl">Terintegrasi</span>
+                </div>
             </div>
         </div>
     </div>
 
-    {{-- RIGHT PANEL --}}
-    <div class="right">
-        <div class="form-box">
-            <p class="subtitle">Portal Masuk</p>
-            <h2 class="title">Masuk ke Akun Anda</h2>
-            <p class="tagline">Gunakan email Mailcow sekolah Anda untuk melanjutkan.</p>
+    {{-- ======= RIGHT PANEL ======= --}}
+    <div class="rp">
+        <div class="form-card">
 
+            {{-- Icon --}}
+            <div class="form-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21V9l9-6 9 6v12"/><path d="M9 21V12h6v9"/>
+                </svg>
+            </div>
+
+            <p class="form-eyebrow">Portal Masuk</p>
+            <h1 class="form-title">Masuk ke Akun Anda</h1>
+            <p class="form-subtitle">Gunakan email Mailcow sekolah Anda untuk melanjutkan ke dashboard.</p>
+
+            {{-- Error --}}
             @if($errors->any())
-                <div class="alert">
+                <div class="alert" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;width:18px;height:18px;margin-top:1px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
                     {{ $errors->first() }}
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login.post') }}">
+            {{-- Form --}}
+            <form method="POST" action="{{ route('login.post') }}" id="loginForm">
                 @csrf
+
                 <div class="field">
                     <label for="email">Username atau Email</label>
-                    <input type="text" id="email" name="email" value="{{ old('email') }}"
-                        placeholder="Contoh: 21221001 atau nama@..." required autofocus>
+                    <div class="input-wrap">
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <input
+                            type="text"
+                            id="email"
+                            name="email"
+                            value="{{ old('email') }}"
+                            placeholder="NIS / email@smkbaknus.sch.id"
+                            required
+                            autofocus
+                            autocomplete="username"
+                        >
+                    </div>
                 </div>
+
                 <div class="field">
                     <label for="password">Kata Sandi</label>
-                    <input type="password" id="password" name="password" placeholder="Password Mailcow Anda" required>
+                    <div class="input-wrap">
+                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Password Mailcow Anda"
+                            required
+                            autocomplete="current-password"
+                        >
+                    </div>
                 </div>
-                <div class="remember">
-                    <input type="checkbox" name="remember" id="remember">
-                    <label for="remember">Ingat saya</label>
+
+                <div class="remember-row">
+                    <label class="remember-label" for="remember">
+                        <input type="checkbox" name="remember" id="remember">
+                        Ingat saya
+                    </label>
                 </div>
-                <button type="submit" class="btn">Masuk Sekarang →</button>
+
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    Masuk Sekarang &nbsp;→
+                </button>
             </form>
 
-            <div class="footer">
+            <div class="form-footer">
                 &copy; {{ date('Y') }} &nbsp;·&nbsp; IT Dept. SMK Bakti Nusantara 666
             </div>
         </div>
     </div>
 
 </body>
-
 </html>

@@ -1,10 +1,9 @@
 <x-filament-widgets::widget>
-    <!-- PRODUCTION FINAL: 2.3.0-STABLE-FORCE-HTTPS -->
+    <!-- PRODUCTION FINAL: 2.4.0-REDESIGN -->
     <script>
-        // Masukkan mesin ke laci global agar tidak "hilang" oleh sistem Livewire
         window.mesinAbsenFormalFixV15 = function() {
             return {
-                statusText: 'Mengecek GPS...', statusClass: 'text-gray-400', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
+                statusText: 'Mengecek GPS...', statusClass: 'gps-idle', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
                 init() {
                     this.getGPS();
                     this.loadFaceApi();
@@ -22,28 +21,23 @@
                     document.head.appendChild(s);
                 },
                 getGPS(showStatus = true) {
-                    if (!navigator.geolocation) { this.statusText = '❌ PERANGKAT TIDAK MENDUKUNG GPS'; return; }
-                    if (showStatus) this.statusText = '🛰️ MELACAK GPS...';
+                    if (!navigator.geolocation) { this.statusText = 'Perangkat tidak mendukung GPS'; this.statusClass = 'gps-error'; return; }
+                    if (showStatus) { this.statusText = 'Melacak sinyal GPS...'; this.statusClass = 'gps-idle'; }
                     navigator.geolocation.getCurrentPosition(
                         (p) => {
                             this.$wire.set('data.lat', p.coords.latitude);
                             this.$wire.set('data.long', p.coords.longitude);
                             this.gpsLocked = true;
-                            this.statusText = '✅ POSISI TERKUNCI [' + p.coords.latitude.toFixed(4) + ']';
-                            this.statusClass = 'text-green-500 font-bold';
+                            this.statusText = 'Posisi terkunci · ' + p.coords.latitude.toFixed(4) + ', ' + p.coords.longitude.toFixed(4);
+                            this.statusClass = 'gps-ok';
                         },
-                        (e) => { 
-                            this.gpsLocked = false; 
-                            this.statusText = '❌ GPS TIDAK AKTIF / DITOLAK';
-                            this.statusClass = 'text-red-500 font-bold';
-                        },
+                        () => { this.gpsLocked = false; this.statusText = 'GPS tidak aktif atau ditolak'; this.statusClass = 'gps-error'; },
                         { enableHighAccuracy: true, timeout: 10000 }
                     );
                 },
                 async submitAbsenFinal() {
-                    // Cek Ulang GPS jika masih merah
                     if (!this.gpsLocked) {
-                        this.isBusy = true; this.busyText = 'Menarik GPS Ulang...';
+                        this.isBusy = true; this.busyText = 'Menarik GPS ulang...';
                         await new Promise(r => {
                             navigator.geolocation.getCurrentPosition((p) => {
                                 this.$wire.set('data.lat', p.coords.latitude);
@@ -52,110 +46,253 @@
                             }, () => r(), { timeout: 5000 });
                         });
                     }
-
                     const img = document.querySelector('.filepond--item canvas') || document.querySelector('.filepond--image-preview img');
                     if (!img) { this.$wire.submit(); return; }
-
-                    this.isBusy = true; this.busyText = 'Validasi Wajah...';
-
+                    this.isBusy = true; this.busyText = 'Memvalidasi wajah...';
                     if (this.faceApiLoaded && window.faceapi) {
                         try {
                             const det = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 }));
                             if (det.length === 0) {
                                 this.isBusy = false;
-                                alert('🛑 STOP! Foto Anda tidak terdeteksi wajah bapak. Pastikan wajah jelas dan menghadap kamera.');
+                                alert('Wajah tidak terdeteksi. Pastikan wajah jelas dan menghadap kamera.');
                                 return;
                             }
                         } catch(e) { console.error("AI Detect err", e); }
                     }
-                    
-                    this.busyText = 'Mengirim Datamu...';
+                    this.busyText = 'Mengirim data presensi...';
                     this.$wire.submit();
                 }
             };
         }
     </script>
 
-    <x-filament::section class="fi-fo-transparent-absen">
+    <x-filament::section class="fi-absen-wrapper">
         <style>
-            .fi-fo-transparent-absen { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+            /* ---- Font ---- */
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+            .fi-absen-wrapper,
+            .fi-absen-wrapper * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+
+            .fi-absen-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .fi-fo-field-wrp-label { display: none !important; }
             .fi-fo-file-upload-dropzone-label { display: none !important; }
+
+            /* ---- Upload zone ---- */
             .filepond--root:not(.filepond--has-file) {
                 background-color: #f1f5f9 !important;
                 border: 2px dashed #94a3b8 !important;
-                border-radius: 1.5rem !important;
+                border-radius: 20px !important;
                 min-height: 160px;
-                display: flex; direction: column; align-items: center; justify-content: center;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                transition: border-color .2s, background .2s !important;
             }
-            .filepond--root:not(.filepond--has-file)::before { content: "📷"; font-size: 3.5rem; margin-bottom: 0.5rem; opacity: 0.6; }
-            .filepond--root:not(.filepond--has-file)::after { content: "KLIK UNTUK MULAI KAMERA"; font-weight: 800; font-size: 0.9rem; color: #475569; letter-spacing: 0.05em; }
-            
-            .dark .filepond--root:not(.filepond--has-file) { background-color: rgba(30, 41, 59, 0.5) !important; border-color: #334155 !important; }
+            .filepond--root:not(.filepond--has-file):hover {
+                border-color: #6366f1 !important;
+                background-color: #eef2ff !important;
+            }
+            .filepond--root:not(.filepond--has-file)::before {
+                content: "📷"; font-size: 3rem; margin-bottom: .5rem; opacity: .65;
+                font-family: sans-serif !important;
+            }
+            .filepond--root:not(.filepond--has-file)::after {
+                content: "KLIK UNTUK MULAI KAMERA";
+                font-weight: 800 !important; font-size: .8rem !important;
+                color: #64748b; letter-spacing: .06em;
+                font-family: 'Plus Jakarta Sans', sans-serif !important;
+            }
+            .dark .filepond--root:not(.filepond--has-file) {
+                background-color: rgba(30,41,59,.6) !important;
+                border-color: #334155 !important;
+            }
             .dark .filepond--root:not(.filepond--has-file)::after { color: #94a3b8; }
 
-            .btn-absen-formal {
-                background: #4f46e5 !important; color: white !important; padding: 20px !important; border-radius: 14px !important;
-                width: 100% !important; font-weight: 800 !important; font-size: 1.15rem !important; cursor: pointer !important;
-                border: none !important; transition: all 0.2s ease-in-out; text-transform: uppercase;
+            /* ---- Profile card ---- */
+            .absen-profile-card {
+                width: 100%; max-width: 680px;
+                background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+                border: 1px solid #e2e8f0;
+                border-radius: 20px;
+                padding: 20px 24px;
+                display: flex; align-items: center; gap: 16px;
+                box-shadow: 0 2px 12px rgba(0,0,0,.06);
+                margin-bottom: 28px;
             }
-            .btn-absen-formal:hover { background: #4338ca !important; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-            .btn-absen-formal:disabled { background: #94a3b8 !important; opacity: 0.5; cursor: not-allowed; transform: none; }
+            .dark .absen-profile-card {
+                background: linear-gradient(135deg, rgba(30,41,59,.8), rgba(15,23,42,.6));
+                border-color: #1e293b;
+            }
+            .absen-avatar {
+                width: 56px; height: 56px;
+                border-radius: 14px;
+                background: linear-gradient(135deg, #4f46e5, #818cf8);
+                display: flex; align-items: center; justify-content: center;
+                overflow: hidden; flex-shrink: 0;
+                box-shadow: 0 4px 16px rgba(99,102,241,.35);
+            }
+            .absen-avatar img { width: 100%; height: 100%; object-fit: cover; }
+            .absen-avatar span { font-size: 1.5rem; font-weight: 900; color: #fff; }
+            .absen-user-name { font-size: 1rem; font-weight: 800; color: #0f172a; }
+            .dark .absen-user-name { color: #f1f5f9; }
+            .absen-user-meta { font-size: .72rem; color: #64748b; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-top: 3px; }
+
+            /* ---- Section title ---- */
+            .absen-section-title {
+                font-size: .7rem; font-weight: 800; text-transform: uppercase !important;
+                letter-spacing: .12em; color: #6366f1 !important; text-align: center;
+                margin-bottom: 6px;
+            }
+            .absen-divider {
+                width: 32px; height: 3px; background: #6366f1; border-radius: 99px;
+                margin: 0 auto 28px; opacity: .6;
+            }
+
+            /* ---- GPS pill ---- */
+            .gps-pill {
+                display: inline-flex; align-items: center; gap: 8px;
+                padding: 8px 18px; border-radius: 999px;
+                font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+                border: 1px solid; transition: all .3s;
+                margin-top: 14px;
+            }
+            .gps-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+            .gps-idle { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+            .gps-idle .gps-dot { background: #94a3b8; animation: pulse-dot 1.5s infinite; }
+            .gps-ok { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
+            .gps-ok .gps-dot { background: #4ade80; box-shadow: 0 0 6px #4ade80; animation: pulse-dot 2s infinite; }
+            .gps-error { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+            .gps-error .gps-dot { background: #f87171; }
+            @keyframes pulse-dot {
+                0%,100% { opacity:1; transform:scale(1); }
+                50%      { opacity:.55; transform:scale(1.35); }
+            }
+
+            /* ---- Submit button ---- */
+            .btn-absen-v2 {
+                position: relative; width: 100%; padding: 16px 24px;
+                border-radius: 16px; border: none; cursor: pointer;
+                font-family: 'Plus Jakarta Sans', sans-serif !important;
+                font-size: 1rem !important; font-weight: 800 !important;
+                color: #fff !important; letter-spacing: .04em; text-transform: uppercase !important;
+                background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+                box-shadow: 0 8px 28px rgba(99,102,241,.40) !important;
+                transition: transform .15s, box-shadow .15s !important;
+                overflow: hidden;
+            }
+            .btn-absen-v2::before {
+                content: ''; position: absolute; inset: 0;
+                background: linear-gradient(135deg, rgba(255,255,255,.13), transparent);
+                pointer-events: none;
+            }
+            .btn-absen-v2:hover:not(:disabled) { transform: translateY(-2px) !important; box-shadow: 0 14px 40px rgba(99,102,241,.50) !important; }
+            .btn-absen-v2:active:not(:disabled) { transform: scale(.98) !important; }
+            .btn-absen-v2:disabled { background: #94a3b8 !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; opacity: .7 !important; }
+
+            /* ---- Done state ---- */
+            .absen-done {
+                width: 100%; max-width: 680px;
+                background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+                border: 1.5px dashed #86efac; border-radius: 20px;
+                padding: 36px; text-align: center;
+            }
+            .dark .absen-done {
+                background: linear-gradient(135deg, rgba(22,101,52,.2), rgba(20,83,45,.1));
+                border-color: rgba(134,239,172,.3);
+            }
+            .absen-done-icon {
+                width: 64px; height: 64px; border-radius: 50%;
+                background: #dcfce7; border: 2px solid #86efac;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem; margin: 0 auto 16px;
+            }
+
+            /* ---- Busy overlay ---- */
+            .absen-busy-overlay {
+                position: absolute; inset: 0; z-index: 50;
+                display: flex; align-items: center; justify-content: center;
+                background: rgba(255,255,255,.95); backdrop-filter: blur(6px);
+                border-radius: 16px;
+            }
+            .dark .absen-busy-overlay { background: rgba(15,23,42,.95); }
+            .absen-busy-spinner {
+                width: 36px; height: 36px; border-radius: 50%;
+                border: 3px solid #e2e8f0; border-top-color: #6366f1;
+                animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+            }
+            @keyframes spin { to { transform:rotate(360deg); } }
+            .absen-busy-text {
+                font-size: .75rem; font-weight: 800; color: #6366f1;
+                text-transform: uppercase; letter-spacing: .08em;
+            }
         </style>
 
-        <div x-data="window.mesinAbsenFormalFixV15()" class="flex flex-col items-center justify-center">
-            
-            <!-- Profil Card -->
-            <div class="w-full max-w-2xl mb-8 p-6 bg-white/5 dark:bg-gray-800/20 backdrop-blur-md rounded-2xl border border-white/10 dark:border-gray-700/30">
-                <div class="flex items-center gap-5">
-                    <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden">
-                        @if($userAvatar)
-                            <img src="{{ $userAvatar }}" class="w-full h-full object-cover">
-                        @else
-                            <span class="text-3xl font-black text-gray-400">{{ strtoupper(substr($userName ?? '?', 0, 1)) }}</span>
-                        @endif
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">{{ $userName }}</h3>
-                        <p class="text-[11px] text-gray-500 font-bold uppercase mt-1">{{ $userEmail }} @if($userClass) | {{ $userClass }} @endif</p>
+        <div x-data="window.mesinAbsenFormalFixV15()" class="flex flex-col items-center justify-center w-full">
+
+            {{-- Profile Card --}}
+            <div class="absen-profile-card">
+                <div class="absen-avatar">
+                    @if($userAvatar)
+                        <img src="{{ $userAvatar }}" alt="Avatar">
+                    @else
+                        <span>{{ strtoupper(substr($userName ?? '?', 0, 1)) }}</span>
+                    @endif
+                </div>
+                <div>
+                    <div class="absen-user-name">{{ $userName }}</div>
+                    <div class="absen-user-meta">
+                        {{ $userEmail }}
+                        @if($userClass) &nbsp;·&nbsp; {{ $userClass }} @endif
                     </div>
                 </div>
             </div>
 
-            <div class="w-full max-w-2xl text-center mb-6">
-                <h2 class="text-sm font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest leading-relaxed">PRESENSI {{ strtoupper($tipeAbsens) }}</h2>
-                <div class="h-1 w-12 bg-indigo-500 mx-auto mt-2 rounded-full opacity-50"></div>
-            </div>
+            {{-- Section Label --}}
+            <p class="absen-section-title">PRESENSI {{ strtoupper($tipeAbsens) }}</p>
+            <div class="absen-divider"></div>
 
+            {{-- Form / Done State --}}
             <form @submit.prevent="submitAbsenFinal()" class="w-full max-w-2xl relative">
                 @if($tipeAbsens === 'Selesai')
-                    <div class="p-8 bg-green-50 dark:bg-green-900/10 border-2 border-dashed border-green-500/30 rounded-2xl text-center">
-                        <p class="text-lg font-bold text-green-600 uppercase">Tugas Hari Ini Selesai 🚀</p>
+                    <div class="absen-done">
+                        <div class="absen-done-icon">🚀</div>
+                        <p style="font-size:1.1rem;font-weight:800;color:#16a34a;margin:0 0 6px;">Tugas Hari Ini Selesai!</p>
+                        <p style="font-size:.85rem;color:#4ade80;font-weight:500;">Presensi masuk dan pulang sudah tercatat.</p>
                     </div>
                 @else
-                    <!-- Overlay Sibuk -->
-                    <div x-show="isBusy" style="display: none;" class="absolute inset-0 z-50 flex items-center justify-center bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl">
+                    {{-- Busy Overlay --}}
+                    <div x-show="isBusy" style="display:none;" class="absen-busy-overlay">
                         <div class="text-center">
-                            <div class="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-3"></div>
-                            <h3 class="text-sm font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest" x-text="busyText"></h3>
+                            <div class="absen-busy-spinner"></div>
+                            <p class="absen-busy-text" x-text="busyText"></p>
                         </div>
                     </div>
 
                     {{ $this->form }}
 
-                    <div class="mt-8">
-                        <button type="submit" 
-                            wire:loading.attr="disabled" 
-                            x-bind:disabled="isBusy" 
-                            class="btn-absen-formal">
-                            <span wire:loading.remove wire:target="submit">KIRIM PRESENSI {{ strtoupper($tipeAbsens) }}</span>
-                            <span wire:loading wire:target="submit">MENGIRIM...</span>
+                    <div class="mt-6">
+                        <button
+                            type="submit"
+                            wire:loading.attr="disabled"
+                            x-bind:disabled="isBusy"
+                            class="btn-absen-v2"
+                        >
+                            <span wire:loading.remove wire:target="submit">Kirim Presensi {{ strtoupper($tipeAbsens) }}</span>
+                            <span wire:loading wire:target="submit" style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                                <svg style="animation:spin .8s linear infinite;width:18px;height:18px;" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"></circle>
+                                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:.75"></path>
+                                </svg>
+                                Mengirim...
+                            </span>
                         </button>
                     </div>
 
-                    <!-- GPS Info -->
-                    <div class="mt-4 flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800/30 w-fit mx-auto border border-gray-200 dark:border-gray-700/50">
-                        <div :class="gpsLocked ? 'bg-green-500 animate-pulse' : 'bg-red-400'" class="w-2 h-2 rounded-full"></div>
-                        <p x-html="statusText" :class="statusClass" class="text-[9px] font-black uppercase tracking-tighter"></p>
+                    {{-- GPS Status --}}
+                    <div class="flex items-center justify-center">
+                        <div class="gps-pill" :class="statusClass">
+                            <div class="gps-dot"></div>
+                            <span x-text="statusText"></span>
+                        </div>
                     </div>
                 @endif
             </form>
