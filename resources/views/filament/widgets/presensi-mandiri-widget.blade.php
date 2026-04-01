@@ -105,14 +105,13 @@
             .fi-absen-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
             .fi-fo-field-wrp-label { display: none !important; }
 
-            /* ---- Sembunyikan SEMUA teks bawaan FilePond (Drag & Drop, Browse, dsb.) ---- */
-            .filepond--label-action,
-            .filepond--drop-label label,
+            /* ---- Sembunyikan teks bawaan namun tetap clickable ---- */
             .fi-fo-file-upload-dropzone-label { display: none !important; }
-            .filepond--drop-label { display: none !important; }
-
-            /* ---- Paksa input file hanya ambil dari kamera ---- */
-            .filepond--browser { capture: user; }
+            .filepond--label-action { text-decoration: none !important; }
+            .filepond--drop-label { 
+                opacity: 0 !important; /* HARUS opacity 0, JANGAN display none karena menghilangkan area klik kamera */
+                cursor: pointer !important;
+            }
 
             /* ---- Upload zone ---- */
             .filepond--root:not(.filepond--has-file) {
