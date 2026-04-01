@@ -16,12 +16,18 @@ class AwsFaceService
 
     public function __construct()
     {
+        // Hindari env() langsung secara buta karena di production (config:cache) env() bisa mereturn null
+        // Gunakan getenv() sebagai fallback final
+        $awsKey = config('services.aws.key') ?: (env('AWS_ACCESS_KEY_ID') ?: getenv('AWS_ACCESS_KEY_ID'));
+        $awsSec = config('services.aws.secret') ?: (env('AWS_SECRET_ACCESS_KEY') ?: getenv('AWS_SECRET_ACCESS_KEY'));
+        $awsReg = config('services.aws.region') ?: (env('AWS_DEFAULT_REGION') ?: getenv('AWS_DEFAULT_REGION') ?: 'ap-southeast-1');
+
         $this->client = new RekognitionClient([
-            'region'      => config('services.aws.region', env('AWS_DEFAULT_REGION', 'ap-southeast-1')),
+            'region'      => $awsReg,
             'version'     => 'latest',
             'credentials' => [
-                'key'    => config('services.aws.key', env('AWS_ACCESS_KEY_ID')),
-                'secret' => config('services.aws.secret', env('AWS_SECRET_ACCESS_KEY')),
+                'key'    => $awsKey,
+                'secret' => $awsSec,
             ],
         ]);
     }
@@ -65,6 +71,12 @@ class AwsFaceService
         if ($size < 5120) {
             Log::warning("preFilter: Ditolak — file terlalu kecil ({$size} bytes) [{$path}]");
             return ['ok' => false, 'reason' => 'Ukuran foto terlalu kecil. Gunakan kamera untuk mengambil foto selfie.'];
+        }
+
+        // 3. Pastikan ekstensi GD aktif, jika tidak maka skip pengecekan grafis
+        if (!function_exists('imagecreatefromstring')) {
+            Log::warning("preFilter: PHP GD extension tidak aktif. Bypassing grafik.");
+            return ['ok' => true];
         }
 
         // 3. Pastikan format valid & ambil dimensi via GD
