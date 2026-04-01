@@ -11,11 +11,6 @@
                     this.loadFaceApi();
                     setInterval(() => { if(!this.gpsLocked) this.getGPS(false); }, 45000);
                     
-                    // Request permission untuk PWA Push Notification
-                    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                        Notification.requestPermission();
-                    }
-                    
                     // Listen event absen sukses dari server
                     window.addEventListener('kehadiran-updated', () => {
                         this.showNativePush();
@@ -60,6 +55,10 @@
                     );
                 },
                 async submitAbsenFinal() {
+                    // Paksa permintaan izin di dalam "User Gesture" (klik tombol) agar iOS mengizinkannya
+                    if ('Notification' in window && Notification.permission === 'default') {
+                         await Notification.requestPermission();
+                    }
                     if (this.isBusy) return;
                     this.isBusy = true;
                     this.busyText = 'Memeriksa GPS...';

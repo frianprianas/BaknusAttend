@@ -43,7 +43,9 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::styles.after',
                 fn(): string => '<link rel="stylesheet" href="' . asset('css/modern-filament.css') . '">
-                                 <link rel="manifest" href="' . secure_asset('manifest.json') . '">'
+                                 <link rel="manifest" href="' . secure_asset('manifest.json') . '">
+                                 <link rel="apple-touch-icon" href="' . secure_asset('images/logo_BG.png') . '">
+                                 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
             )
             ->renderHook(
                 'panels::scripts.after',
