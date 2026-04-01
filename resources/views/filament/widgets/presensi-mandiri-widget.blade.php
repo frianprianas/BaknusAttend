@@ -73,9 +73,10 @@
                                 return;
                             }
                         } catch(e) { console.error("AI Detect err", e); }
+                        this.busyText = 'Sedang memindai wajah by BaknusAI...';
+                    } else {
+                        this.busyText = 'Mengirim data presensi...';
                     }
-
-                    this.busyText = 'Mengirim data presensi...';
                     
                     try {
                         const promise = this.$wire.submit();
