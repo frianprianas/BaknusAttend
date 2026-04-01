@@ -110,6 +110,12 @@ class UserResource extends Resource
                     ->placeholder('-')
                     ->hiddenFrom('md'),
 
+                Tables\Columns\IconColumn::make('push_status')
+                    ->label('Notif HP')
+                    ->getStateUsing(fn(User $record): string => $record->pushSubscriptions()->exists() ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle')
+                    ->color(fn(string $state): string => $state === 'heroicon-o-check-circle' ? 'success' : 'gray')
+                    ->tooltip(fn(User $record): string => $record->pushSubscriptions()->exists() ? 'Perangkat terhubung' : 'Belum mengaktifkan notifikasi'),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime()
@@ -126,6 +132,35 @@ class UserResource extends Resource
                     ]),
             ])
             ->actions([
+                Tables\Actions\Action::make('sendPush')
+                    ->label('Kirim Pesan')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('indigo')
+                    ->hidden(fn (User $record): bool => !$record->pushSubscriptions()->exists())
+                    ->modalHeading('Kirim Notifikasi ke HP')
+                    ->modalDescription('Pesan ini akan langsung muncul di bar notifikasi HP Guru.')
+                    ->form([
+                        Forms\Components\TextInput::make('title')
+                            ->label('Judul Notifikasi')
+                            ->default('Pesan dari Admin')
+                            ->required(),
+                        Forms\Components\Textarea::make('message')
+                            ->label('Isi Pesan')
+                            ->placeholder('Tulis pesan Anda di sini...')
+                            ->required(),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->notify(new \App\Notifications\PushBroadcastNotification(
+                            $data['title'],
+                            $data['message']
+                        ));
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Terkirim!')
+                            ->body('Notifikasi sedang dikirim ke HP ' . $record->name)
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
