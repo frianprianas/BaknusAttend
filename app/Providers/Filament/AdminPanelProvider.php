@@ -63,12 +63,7 @@ class AdminPanelProvider extends PanelProvider
                         navigator.serviceWorker.register("' . secure_asset('sw.js') . '").then(function(swReg) {
                             console.log("PWA SW terdaftar!");
 
-                            // Minta izin otomatis jika belum
-                            if (Notification.permission === "default") {
-                                Notification.requestPermission();
-                            }
-
-                            if (Notification.permission === "granted") {
+                            const subscribePush = () => {
                                 swReg.pushManager.getSubscription().then(function(sub) {
                                     if (!sub) {
                                         swReg.pushManager.subscribe({
@@ -77,6 +72,16 @@ class AdminPanelProvider extends PanelProvider
                                         }).then(res => kirimTokenKeServer(res));
                                     } else {
                                         kirimTokenKeServer(sub);
+                                    }
+                                });
+                            };
+
+                            if (Notification.permission === "granted") {
+                                subscribePush();
+                            } else if (Notification.permission === "default") {
+                                Notification.requestPermission().then(function(permission) {
+                                    if (permission === "granted") {
+                                        subscribePush();
                                     }
                                 });
                             }

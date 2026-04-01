@@ -16,7 +16,7 @@ class PushNotificationController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'endpoint'    => 'required',
             'keys.auth'   => 'required',
             'keys.p256dh' => 'required'
