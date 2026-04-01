@@ -208,6 +208,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ->statePath('data');
     }
 
+    public function resetSelfie()
+    {
+        // Reset state Livewire agar Filepond kembali ke tampilan "Kamera"
+        $this->form->fill();
+    }
+
     public function submit(): void
     {
         $tipeAbsens = $this->determinePresensiType();
@@ -283,6 +289,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->title('Foto Master Ditolak')
                     ->body($pre['reason'])
                     ->danger()->send();
+                $this->resetSelfie();
                 return;
             }
 
@@ -293,6 +300,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->title('Maaf Verifikasi gagal')
                     ->body('Wajah tidak terdeteksi pada Foto Master. Pastikan wajah terlihat jelas tanpa penutup.')
                     ->danger()->send();
+                $this->resetSelfie();
                 return;
             }
             // Simpan Master
@@ -314,6 +322,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 ->title('Foto Selfie Ditolak')
                 ->body($preSelfie['reason'])
                 ->danger()->send();
+            $this->resetSelfie();
             return;
         }
 
@@ -321,6 +330,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         
         if (!$check['success']) {
             Notification::make()->title('Maaf Verifikasi gagal')->body($check['error'])->danger()->send();
+            $this->resetSelfie();
             return;
         }
 
@@ -329,6 +339,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 ->title('Maaf Verifikasi gagal')
                 ->body('Wajah selfie tidak cocok dengan foto master. Silakan coba lagi.')
                 ->danger()->send();
+            $this->resetSelfie();
             return;
         }
         

@@ -71,11 +71,8 @@
                                 this.isBusy = false;
                                 alert('Wajah tidak terdeteksi. Pastikan wajah jelas dan menghadap kamera.');
                                 
-                                // Solusi: otomatis hapus file yang salah/gagal agar user bisa langsung tap kamera lagi
-                                const removeBtn = document.querySelector('.filepond--action-remove-item');
-                                if (removeBtn) {
-                                    removeBtn.click();
-                                }
+                                // Solusi: Panggil method reset di backend agar sinkronisasi FilePond 100% bersih kembali ke logo Kamera
+                                this.$wire.call('resetSelfie');
                                 return;
                             }
                         } catch(e) { console.error("AI Detect err", e); }
