@@ -10,6 +10,28 @@
                     this.getGPS();
                     this.loadFaceApi();
                     setInterval(() => { if(!this.gpsLocked) this.getGPS(false); }, 45000);
+                    
+                    // Request permission untuk PWA Push Notification
+                    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                        Notification.requestPermission();
+                    }
+                    
+                    // Listen event absen sukses dari server
+                    window.addEventListener('kehadiran-updated', () => {
+                        this.showNativePush();
+                    });
+                },
+                showNativePush() {
+                    if ('Notification' in window && navigator.serviceWorker && Notification.permission === 'granted') {
+                        navigator.serviceWorker.ready.then((reg) => {
+                            reg.showNotification('Absen Berhasil! ✅', {
+                                body: 'Presensi/Izin Anda telah tersimpan di BaknusAttend.',
+                                icon: '/images/logo_BG.png',
+                                vibrate: [200, 100, 200, 100, 200],
+                                badge: '/images/logo_BG.png'
+                            });
+                        });
+                    }
                 },
                 loadFaceApi() {
                     const s = document.createElement('script');

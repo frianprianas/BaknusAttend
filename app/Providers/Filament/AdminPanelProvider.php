@@ -42,7 +42,16 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->renderHook(
                 'panels::styles.after',
-                fn(): string => '<link rel="stylesheet" href="' . asset('css/modern-filament.css') . '">'
+                fn(): string => '<link rel="stylesheet" href="' . asset('css/modern-filament.css') . '">
+                                 <link rel="manifest" href="' . secure_asset('manifest.json') . '">'
+            )
+            ->renderHook(
+                'panels::scripts.after',
+                fn(): string => '<script>
+                    if ("serviceWorker" in navigator) {
+                        navigator.serviceWorker.register("' . secure_asset('sw.js') . '");
+                    }
+                </script>'
             )
             ->renderHook(
                 'panels::topbar.start',

@@ -1,0 +1,21 @@
+{
+    "name": "BaknusAttend",
+    "short_name": "BA Attend",
+    "description": "Aplikasi Presensi SMK Bakti Nusantara 666",
+    "start_url": "/admin",
+    "display": "standalone",
+    "background_color": "#1e293b",
+    "theme_color": "#4f46e5",
+    "icons": [
+        {
+            "src": "/images/logo_BG.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/images/logo_BG.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
