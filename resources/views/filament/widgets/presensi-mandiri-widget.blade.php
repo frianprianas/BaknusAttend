@@ -70,6 +70,12 @@
                             if (det.length === 0) {
                                 this.isBusy = false;
                                 alert('Wajah tidak terdeteksi. Pastikan wajah jelas dan menghadap kamera.');
+                                
+                                // Solusi: otomatis hapus file yang salah/gagal agar user bisa langsung tap kamera lagi
+                                const removeBtn = document.querySelector('.filepond--action-remove-item');
+                                if (removeBtn) {
+                                    removeBtn.click();
+                                }
                                 return;
                             }
                         } catch(e) { console.error("AI Detect err", e); }
@@ -292,8 +298,8 @@
                 </div>
             </div>
 
-            {{-- BA Logo – ilustrasi premium, tampil di semua ukuran layar --}}
-            <img src="{{ asset('images/BA.png') }}" alt="BaknusAI" class="absen-ba-logo">
+            {{-- Logo dashboard sesuai request user --}}
+            <img src="{{ asset('images/logo_BG.png') }}" alt="BaknusAI" class="absen-ba-logo">
 
             {{-- Section Label --}}
             <p class="absen-section-title">PRESENSI {{ strtoupper($tipeAbsens) }}</p>

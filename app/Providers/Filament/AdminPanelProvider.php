@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->favicon(secure_asset('images/logo_BG.png'))
             ->brandName('BaknusAttend')
-            ->brandLogo(fn() => secure_asset('images/BA.png'))
+            ->brandLogo(fn() => secure_asset('images/logo_BG.png'))
             ->brandLogoHeight('3.5rem')
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('18rem')
