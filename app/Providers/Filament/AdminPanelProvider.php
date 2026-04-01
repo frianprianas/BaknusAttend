@@ -50,8 +50,38 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::scripts.after',
                 fn(): string => '<script>
-                    if ("serviceWorker" in navigator) {
-                        navigator.serviceWorker.register("' . secure_asset('sw.js') . '");
+                    function urlBase64ToUint8Array(base64String) {
+                        const padding = "=".repeat((4 - base64String.length % 4) % 4);
+                        const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+                        const rawData = window.atob(base64);
+                        const outputArray = new Uint8Array(rawData.length);
+                        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+                        return outputArray;
+                    }
+
+                    if ("serviceWorker" in navigator && "PushManager" in window) {
+                        navigator.serviceWorker.register("' . secure_asset('sw.js') . '").then(function(swReg) {
+                            if (Notification.permission === "granted") {
+                                swReg.pushManager.getSubscription().then(function(sub) {
+                                    if (sub === null) {
+                                        swReg.pushManager.subscribe({
+                                            userVisibleOnly: true,
+                                            applicationServerKey: urlBase64ToUint8Array("' . env('VAPID_PUBLIC_KEY') . '")
+                                        }).then(function(newSub) {
+                                            fetch("/push/subscribe", {
+                                                method: "POST",
+                                                body: JSON.stringify(newSub),
+                                                headers: {
+                                                    "Accept": "application/json",
+                                                    "Content-Type": "application/json",
+                                                    "X-CSRF-TOKEN": "' . csrf_token() . '"
+                                                }
+                                            });
+                                        });
+                                    }
+                                });
+                            }
+                        });
                     }
                 </script>'
             )
