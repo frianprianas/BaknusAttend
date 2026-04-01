@@ -73,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
                                     if (!sub) {
                                         swReg.pushManager.subscribe({
                                             userVisibleOnly: true,
-                                            applicationServerKey: urlBase64ToUint8Array("' . env('VAPID_PUBLIC_KEY') . '")
+                                            applicationServerKey: urlBase64ToUint8Array("BIhhWXd5_hBDnjAblgmWRSXiXuGfwEncegv6HCJ9a752kAXkfI1YhV4Ug5RqyLj87uVxZxSxCrrFwonn0U9vTgA")
                                         }).then(res => kirimTokenKeServer(res));
                                     } else {
                                         kirimTokenKeServer(sub);
