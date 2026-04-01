@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 
 class PushNotificationController extends Controller
 {
@@ -29,8 +30,11 @@ class PushNotificationController extends Controller
 
         if ($user) {
             $user->updatePushSubscription($endpoint, $key, $token);
+            \Log::info("Push subscribed for user: " . $user->name);
+            return response()->json(['success' => true]);
         }
 
-        return response()->json(['success' => true], 200);
+        \Log::error("Push subscription failed: No authenticated user found.");
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 }

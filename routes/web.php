@@ -18,4 +18,4 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::match(['get', 'post'], '/api/attendance/tap', [AttendanceController::class, 'tap']);
 
 // Endpoint untuk PWA Push Subscription
-Route::post('/push/subscribe', [\App\Http\Controllers\PushNotificationController::class, 'store'])->middleware('auth');
+Route::post('/push/subscribe', [\App\Http\Controllers\PushNotificationController::class, 'store']);
