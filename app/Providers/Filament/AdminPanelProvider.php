@@ -61,51 +61,38 @@ class AdminPanelProvider extends PanelProvider
 
                     if ("serviceWorker" in navigator && "PushManager" in window) {
                         navigator.serviceWorker.register("' . secure_asset('sw.js') . '").then(function(swReg) {
-                            console.log("SW Registered");
-                            // Hilangkan popup "Page Expired" dan langsung reload halaman
-                            document.addEventListener("livewire:init", () => {
-                                Livewire.hook("request", ({ fail }) => {
-                                    fail(({ status, preventDefault }) => {
-                                        if (status === 419) {
-                                            preventDefault();
-                                            window.location.reload();
-                                        }
-                                    });
-                                });
-                            });
+                            console.log("PWA SW terdaftar!");
+
+                            // Minta izin otomatis jika belum
+                            if (Notification.permission === "default") {
+                                Notification.requestPermission();
+                            }
 
                             if (Notification.permission === "granted") {
                                 swReg.pushManager.getSubscription().then(function(sub) {
-                                    // Kirim (atau paksa update) token ke server setiap kali buka dashboad
-                                    if (sub) {
-                                        fetch("/push/subscribe", {
-                                            method: "POST",
-                                            body: JSON.stringify(sub),
-                                            headers: {
-                                                "Accept": "application/json",
-                                                "Content-Type": "application/json",
-                                                "X-CSRF-TOKEN": "' . csrf_token() . '"
-                                            }
-                                        }).then(res => console.log("Push sub synced"));
-                                    } else {
+                                    if (!sub) {
                                         swReg.pushManager.subscribe({
                                             userVisibleOnly: true,
                                             applicationServerKey: urlBase64ToUint8Array("' . env('VAPID_PUBLIC_KEY') . '")
-                                        }).then(function(newSub) {
-                                            fetch("/push/subscribe", {
-                                                method: "POST",
-                                                body: JSON.stringify(newSub),
-                                                headers: {
-                                                    "Accept": "application/json",
-                                                    "Content-Type": "application/json",
-                                                    "X-CSRF-TOKEN": "' . csrf_token() . '"
-                                                }
-                                            });
-                                        });
+                                        }).then(res => kirimTokenKeServer(res));
+                                    } else {
+                                        kirimTokenKeServer(sub);
                                     }
                                 });
                             }
                         });
+                    }
+
+                    function kirimTokenKeServer(sub) {
+                        fetch("/push/subscribe", {
+                            method: "POST",
+                            body: JSON.stringify(sub),
+                            headers: {
+                                "Accept": "application/json",
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "' . csrf_token() . '"
+                            }
+                        }).then(() => console.log("Token HP Terkirim ke MySQL!"));
                     }
                 </script>'
             )

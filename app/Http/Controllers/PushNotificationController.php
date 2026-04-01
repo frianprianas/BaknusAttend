@@ -30,11 +30,10 @@ class PushNotificationController extends Controller
 
         if ($user) {
             $user->updatePushSubscription($endpoint, $key, $token);
-            \Log::info("Push subscribed for user: " . $user->name);
+            Log::info("Push subscribed for user: " . $user->name);
             return response()->json(['success' => true]);
         }
 
-        \Log::error("Push subscription failed: No authenticated user found.");
-        return response()->json(['error' => 'Unauthorized'], 401);
+        return response()->json(['success' => false, 'message' => 'User not logged in'], 200);
     }
 }
