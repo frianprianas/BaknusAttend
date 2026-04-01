@@ -104,7 +104,15 @@
 
             .fi-absen-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
             .fi-fo-field-wrp-label { display: none !important; }
+
+            /* ---- Sembunyikan SEMUA teks bawaan FilePond (Drag & Drop, Browse, dsb.) ---- */
+            .filepond--label-action,
+            .filepond--drop-label label,
             .fi-fo-file-upload-dropzone-label { display: none !important; }
+            .filepond--drop-label { display: none !important; }
+
+            /* ---- Paksa input file hanya ambil dari kamera ---- */
+            .filepond--browser { capture: user; }
 
             /* ---- Upload zone ---- */
             .filepond--root:not(.filepond--has-file) {
@@ -124,7 +132,7 @@
                 font-family: sans-serif !important;
             }
             .filepond--root:not(.filepond--has-file)::after {
-                content: "KLIK UNTUK MULAI KAMERA";
+                content: "KETUK UNTUK BUKA KAMERA";
                 font-weight: 800 !important; font-size: .8rem !important;
                 color: #64748b; letter-spacing: .06em;
                 font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -134,6 +142,17 @@
                 border-color: #334155 !important;
             }
             .dark .filepond--root:not(.filepond--has-file)::after { color: #94a3b8; }
+
+            /* ---- BA Logo (ilustrasi) – tampil di semua ukuran layar ---- */
+            .absen-ba-logo {
+                display: block;
+                width: clamp(80px, 18vw, 120px); /* Responsif: minimum 80px, max 120px */
+                height: auto;
+                margin: 0 auto 18px;
+                opacity: .85;
+                filter: drop-shadow(0 4px 16px rgba(99,102,241,.25));
+                user-select: none; pointer-events: none;
+            }
 
             /* ---- Profile card ---- */
             .absen-profile-card {
@@ -273,6 +292,9 @@
                     </div>
                 </div>
             </div>
+
+            {{-- BA Logo – ilustrasi premium, tampil di semua ukuran layar --}}
+            <img src="{{ asset('images/BA.png') }}" alt="BaknusAI" class="absen-ba-logo">
 
             {{-- Section Label --}}
             <p class="absen-section-title">PRESENSI {{ strtoupper($tipeAbsens) }}</p>
