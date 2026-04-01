@@ -1,0 +1,36 @@
+[2026-04-01 18:30] LOG PERUBAHAN STABILISASI BAKNUSATTEND
+
+- STABILISASI WIDGET PRESENSI (ALPINE.JS & LIVEWIRE 3):
+  * Menggunakan directive @script @endscript agar fungsi mesinAbsenFormalFixV15 tetap 
+    berjalan meski navigasi SPA (tujuan menu-ke-menu tanpa reload).
+  * Memperbaiki error "isBusy is not defined" yang muncul akibat script lama dibuang browser.
+
+- OPTIMASI BIAYA AWS (FACE DETECTION LOKAL):
+  * Menambahkan method preFilter() pada AwsFaceService.php (PHP GD).
+  * Menolak foto "iseng" (tembok, langit, gelap, blur) secara lokal di server.
+  * Hanya memanggil AWS Rekognition jika foto memiliki kontras/warna wajah yang cukup.
+
+- PERBAIKAN GPS & SINKRONISASI REAL-TIME:
+  * GPS Tracker diubah: hanya sinkron $wire.set('lat'/'long') sesaat sebelum submit.
+  * Mencegah "XHR lag" (freeze browser) karena pengiriman koordinat berulang di latar belakang.
+  * Menambahkan visual status GPS (Mengecek, Melacak, Terkunci).
+
+- INTEGRASI AUTO-REFRESH DASHBOARD:
+  * Menambahkan Livewire Event Dispatching 'kehadiran-updated'.
+  * Widget Statistik dan Kalender otomatis refresh ($refresh) begitu absen sukses 
+    (angka 0 langsung berubah jadi 1 tanpa F5).
+
+- PERBAIKAN UI KAMERA & FILEPOND:
+  * Kamera-only mode: menyembunyikan tulisan "Seret & Jatuhkan" dan "Jelajahi".
+  * Perbaikan bug "Kamera Gak Bisa Diklik": mengubah display:none menjadi opacity:0 agar 
+    area tap/klik FilePond tetap berfungsi di layar HP.
+  * Memperbaiki logo BA.png agar responsif (clamp) di layar HP kecil.
+
+- PERBAIKAN INFRASTRUKTUR & KEAMANAN:
+  * Mengatasi "419 Page Expired": SESSION_LIFETIME 480 menit dan SESSION_DRIVER ke 'file' 
+    agar login tidak mudah putus/hilang.
+  * Mengatasi Mixed Content Error (HTTPS): Menggunakan secure_asset() untuk favicon 
+    dan logo brand agar tidak diblokir browser.
+    
+[STATUS: STABIL & PRODUKSI]
+Pekerjaan oleh: Antigravity AI (Google Deepmind)
