@@ -63,27 +63,35 @@ class AdminPanelProvider extends PanelProvider
                         navigator.serviceWorker.register("' . secure_asset('sw.js') . '").then(function(swReg) {
                             console.log("PWA SW terdaftar!");
 
-                            const subscribePush = () => {
-                                swReg.pushManager.getSubscription().then(function(sub) {
-                                    if (!sub) {
-                                        swReg.pushManager.subscribe({
-                                            userVisibleOnly: true,
-                                            applicationServerKey: urlBase64ToUint8Array("BIhhWXd5_hBDnjAblgmWRSXiXuGfwEncegv6HCJ9a752kAXkfI1YhV4Ug5RqyLj87uVxZxSxCrrFwonn0U9vTgA")
-                                        }).then(res => kirimTokenKeServer(res));
-                                    } else {
-                                        kirimTokenKeServer(sub);
-                                    }
-                                });
+                            window.initWebPush = function() {
+                                const subscribePush = () => {
+                                    swReg.pushManager.getSubscription().then(function(sub) {
+                                        if (!sub) {
+                                            swReg.pushManager.subscribe({
+                                                userVisibleOnly: true,
+                                                applicationServerKey: urlBase64ToUint8Array("BIhhWXd5_hBDnjAblgmWRSXiXuGfwEncegv6HCJ9a752kAXkfI1YhV4Ug5RqyLj87uVxZxSxCrrFwonn0U9vTgA")
+                                            }).then(res => kirimTokenKeServer(res));
+                                        } else {
+                                            kirimTokenKeServer(sub);
+                                        }
+                                    });
+                                };
+
+                                if (Notification.permission === "granted") {
+                                    subscribePush();
+                                } else if (Notification.permission === "default") {
+                                    Notification.requestPermission().then(function(permission) {
+                                        if (permission === "granted") {
+                                            subscribePush();
+                                        }
+                                    });
+                                }
                             };
 
+                            // Jalankan otomatis jika DULU waktu lalu sudah pernah dijawab "Izinkan"
+                            // (iOS hanya melarang requestPermission otomatis, tapi kalau sudah diizinkan, getSubscription() boleh)
                             if (Notification.permission === "granted") {
-                                subscribePush();
-                            } else if (Notification.permission === "default") {
-                                Notification.requestPermission().then(function(permission) {
-                                    if (permission === "granted") {
-                                        subscribePush();
-                                    }
-                                });
+                                window.initWebPush();
                             }
                         });
                     }

@@ -55,13 +55,14 @@
                     );
                 },
                 async submitAbsenFinal() {
-                    // Paksa permintaan izin di dalam "User Gesture" (klik tombol) agar iOS mengizinkannya
-                    if ('Notification' in window && Notification.permission === 'default') {
-                         await Notification.requestPermission();
+                    // Paksa inisialisasi WebPush dari dalam interaksi pengguna untuk membypass limitasi iOS Safari
+                    if (window.initWebPush && 'Notification' in window && Notification.permission !== 'denied') {
+                        window.initWebPush();
                     }
+
                     if (this.isBusy) return;
                     this.isBusy = true;
-                    this.busyText = 'Memeriksa GPS...';
+                    this.busyText = 'Memvalidasi data...';
 
                     if (!this.gpsLocked) {
                         try {
