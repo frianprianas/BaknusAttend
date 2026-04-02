@@ -52,21 +52,32 @@ class KehadiranCalendarWidget extends Widget
         $this->daysInMonth = $startOfMonth->daysInMonth;
         $this->firstDayOfMonth = $startOfMonth->dayOfWeek; // 0 (Sun) - 6 (Sat)
 
-        // Ambil data hari yang ada absensi (Distinct Date)
+        // Ambil data hari yang ada absensi secara detail agar jam masuk dan pulang terbaca
         $presences = KehadiranGuruTu::where(function($q) use ($user) {
                 if ($user->nipy) $q->orWhere('nipy', $user->nipy);
                 if ($user->email) $q->orWhere('nipy', $user->email);
             })
             ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-            ->select(DB::raw('DATE(waktu_tap) as date'), DB::raw('COUNT(*) as total'))
-            ->groupBy('date')
+            ->orderBy('waktu_tap', 'asc') // Urutkan dari pagi ke sore
             ->get();
 
         $this->presenceData = [];
         foreach ($presences as $p) {
-            $day = (int) Carbon::parse($p->date)->format('j');
-            // Jika total 2 berarti Masuk & Pulang (Biru Tua), Jika 1 berarti Masuk saja (Biru Muda)
-            $this->presenceData[$day] = $p->total >= 2 ? 'dark' : 'light';
+            $day = (int) Carbon::parse($p->waktu_tap)->format('j');
+            $time = Carbon::parse($p->waktu_tap)->format('H:i');
+            
+            if (!isset($this->presenceData[$day])) {
+                // Presensi pertama kali di hari itu (Masuk)
+                $this->presenceData[$day] = [
+                    'status' => 'light',
+                    'jam_masuk' => $time,
+                    'jam_pulang' => '-',
+                ];
+            } else {
+                // Presensi kedua dan seterusnya di hari yang sama (Pulang)
+                $this->presenceData[$day]['status'] = 'dark';
+                $this->presenceData[$day]['jam_pulang'] = $time;
+            }
         }
     }
 

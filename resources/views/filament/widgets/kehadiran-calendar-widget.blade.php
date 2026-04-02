@@ -172,14 +172,36 @@
                 {{-- Day cells --}}
                 @for($day = 1; $day <= $daysInMonth; $day++)
                     @php
-                        $status = $presenceData[$day] ?? 'none';
+                        $dataDay = $presenceData[$day] ?? null;
+                        $status = $dataDay['status'] ?? 'none';
+                        $jam_masuk = $dataDay['jam_masuk'] ?? '-';
+                        $jam_pulang = $dataDay['jam_pulang'] ?? '-';
+
                         $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : 'cal-cell-none');
                         $numClass  = in_array($status, ['dark','light']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
                     @endphp
-                    <div class="cal-cell {{ $cellClass }}">
+                    <div class="cal-cell {{ $cellClass }}" 
+                         @if(in_array($status, ['dark','light']))
+                         x-data="{ open: false }" 
+                         @click="open = !open" 
+                         @click.outside="open = false" 
+                         style="cursor: pointer;"
+                         @endif
+                    >
                         <span class="{{ $numClass }}">{{ $day }}</span>
                         @if(in_array($status, ['dark','light']))
                             <div class="cal-pip"></div>
+
+                            {{-- Gelembung Pop-up Detail Jam --}}
+                            <div x-cloak x-show="open" 
+                                 x-transition.opacity.scale.origin.bottom
+                                 class="absolute bottom-full mb-2 w-max px-3 py-2 bg-indigo-900 border border-indigo-500 rounded-xl shadow-lg z-50 text-center flex flex-col"
+                                 style="display: none; min-width: 90px;">
+                                <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Masuk: <b style="color:#fff;">{{ $jam_masuk }}</b></p>
+                                <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Pulang: <b style="color:#fff;">{{ $jam_pulang }}</b></p>
+                                {{-- Panah Gelembung ke bawah --}}
+                                <div style="position: absolute; bottom:-5px; left:50%; transform:translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #312e81;"></div>
+                            </div>
                         @endif
                     </div>
                 @endfor

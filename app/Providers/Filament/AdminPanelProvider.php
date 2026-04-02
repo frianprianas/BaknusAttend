@@ -117,6 +117,30 @@ class AdminPanelProvider extends PanelProvider
                     <span class="text-[8px] text-indigo-500 font-bold tracking-widest italic">by BaknusAI</span>
                 </div>'
             )
+            ->renderHook(
+                'panels::body.end',
+                fn(): string => '<script>
+                    function isIos() {
+                        const ua = window.navigator.userAgent.toLowerCase();
+                        return /iphone|ipad|ipod/.test(ua);
+                    }
+                    function isInStandaloneMode() {
+                        return ("standalone" in window.navigator) && window.navigator.standalone;
+                    }
+                    if (isIos() && !isInStandaloneMode()) {
+                        const banner = document.createElement("div");
+                        banner.innerHTML = `<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:90%;max-width:400px;background:rgba(15,23,42,0.95);backdrop-filter:blur(10px);color:#fff;padding:16px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:99999;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:12px;">
+                            <div style="font-size:24px;">💡</div>
+                            <div style="flex:1;">
+                                <p style="margin:0;font-size:0.8rem;font-weight:700;font-family:sans-serif;color:#f8fafc;">Aplikasi Belum Terinstal!</p>
+                                <p style="margin:4px 0 0;font-size:0.7rem;line-height:1.4;color:#cbd5e1;font-family:sans-serif;">Ketuk tombol <b style="color:#60a5fa;">Share (Kotak Panah)</b> di bawah, lalu pilih <b style="color:#60a5fa;">"Add to Home Screen"</b> agar notifikasi Absen berfungsi.</p>
+                            </div>
+                            <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer;padding:8px;">&times;</button>
+                        </div>`;
+                        document.body.appendChild(banner);
+                    }
+                </script>'
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->pages([
                 Pages\Dashboard::class,
