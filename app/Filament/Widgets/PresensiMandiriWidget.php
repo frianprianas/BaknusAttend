@@ -396,9 +396,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         Notification::make()
             ->title('Berhasil Absen ' . $tipeAbsens . '!')
-            ->body('Presensi mandiri Anda telah tercatat.')
+            ->body('Presensi mandiri Anda telah tercatat pada ' . now()->format('H:i'))
             ->success()
-            ->send();
+            ->send()
+            ->sendToDatabase($user);
 
         // Minta dashboard widgets lain me-refresh ulang (terutama karena bulan baru / nambah presensi)
         $this->dispatch('kehadiran-updated');

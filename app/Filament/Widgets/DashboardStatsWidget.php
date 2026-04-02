@@ -56,7 +56,7 @@ class DashboardStatsWidget extends BaseWidget
         // ----------------------------------------------------
         if ($user->role !== 'Admin') {
             $totalHadirBulanIni = 0;
-            $totalTerlambatBulanIni = 0;
+            $totalIzinSakitBulanIni = 0;
             
             if ($user->role === 'Siswa') {
                 // Gunakan NIS dari nipy, jika nipy kosong gunakan email asisten (safety)
@@ -70,9 +70,9 @@ class DashboardStatsWidget extends BaseWidget
                         ->distinct()
                         ->get()
                         ->count();
-                    $totalTerlambatBulanIni = KehadiranSiswa::where('nis', $student->nis)
+                    $totalIzinSakitBulanIni = KehadiranSiswa::where('nis', $student->nis)
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                        ->where('status', 'Terlambat')
+                        ->whereIn('status', ['Izin', 'Sakit'])
                         ->select(DB::raw('DATE(waktu_tap) as date'))
                         ->distinct()
                         ->get()
@@ -91,14 +91,11 @@ class DashboardStatsWidget extends BaseWidget
                         ->distinct()
                         ->get()
                         ->count();
-                    $totalTerlambatBulanIni = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
+                    $totalIzinSakitBulanIni = IzinGuruTu::where(function($q) use ($user, $nipy) {
                             $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
                         })
-                        ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                        ->where('status', 'Terlambat')
-                        ->select(DB::raw('DATE(waktu_tap) as date'))
-                        ->distinct()
-                        ->get()
+                        ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+                        ->whereIn('status', ['Diajukan', 'Disetujui'])
                         ->count();
                 }
             }
@@ -110,11 +107,11 @@ class DashboardStatsWidget extends BaseWidget
                     ->color('success')
                     ->icon('heroicon-o-calendar-days'),
 
-                Stat::make('Total Terlambat', $totalTerlambatBulanIni . ' Kali')
+                Stat::make('Total Izin / Sakit', $totalIzinSakitBulanIni . ' Hari')
                     ->description('Bulan: ' . $monthLabel)
-                    ->descriptionIcon('heroicon-m-clock')
-                    ->color($totalTerlambatBulanIni > 0 ? 'warning' : 'gray')
-                    ->icon('heroicon-o-clock'),
+                    ->descriptionIcon('heroicon-m-document-text')
+                    ->color($totalIzinSakitBulanIni > 0 ? 'warning' : 'gray')
+                    ->icon('heroicon-o-document-text'),
             ];
         }
 

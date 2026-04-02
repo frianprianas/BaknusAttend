@@ -150,14 +150,23 @@ class UserResource extends Resource
                             ->required(),
                     ])
                     ->action(function (User $record, array $data): void {
+                        // 1. Eksekusi pengiriman payload ke Web Push Server (Background iPhone/Android)
                         $record->notify(new \App\Notifications\PushBroadcastNotification(
                             $data['title'],
                             $data['message']
                         ));
 
+                        // 2. Simpan juga ke Database Filament agar terekam di Lonceng Notifikasi 
                         \Filament\Notifications\Notification::make()
-                            ->title('Terkirim!')
-                            ->body('Notifikasi sedang dikirim ke HP ' . $record->name)
+                            ->title($data['title'])
+                            ->body($data['message'])
+                            ->icon('heroicon-o-chat-bubble-bottom-center-text')
+                            ->sendToDatabase($record);
+
+                        // 3. Info sukses ke Admin
+                        \Filament\Notifications\Notification::make()
+                            ->title('Pesan Terkirim!')
+                            ->body('Notifikasi telah dikirim ke perangkat ' . $record->name . ' dan terekam di sistem.')
                             ->success()
                             ->send();
                     }),
