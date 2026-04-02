@@ -6,6 +6,7 @@
             return {
                 statusText: 'Mengecek GPS...', statusClass: 'gps-idle', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
                 lat: null, long: null,
+                stream: null, showLiveCam: false,
                 init() {
                     this.getGPS();
                     this.loadFaceApi();
@@ -14,6 +15,7 @@
                     // Listen event absen sukses dari server
                     window.addEventListener('kehadiran-updated', () => {
                         this.showNativePush();
+                        this.stopCamera();
                     });
 
                     // Paksa kamera depan untuk semua input file (Bypass FilePond regenerasi)
@@ -24,6 +26,61 @@
                             }
                         });
                     }, 500);
+                },
+                openLiveCamera() {
+                    this.showLiveCam = true;
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                            .then((stream) => {
+                                this.stream = stream;
+                                const video = this.$refs.liveVideo;
+                                video.srcObject = stream;
+                                video.play();
+                            })
+                            .catch((err) => {
+                                alert("Kamera tidak dapat diakses: " + err.message + "\nGunakan tombol kamera bawaan di bawah.");
+                                this.stopCamera();
+                            });
+                    } else {
+                        alert("Browser Anda tidak mendukung fitur Live Kamera. Gunakan tombol bawaan.");
+                        this.stopCamera();
+                    }
+                },
+                captureLiveCamera() {
+                    const video = this.$refs.liveVideo;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Jangan mirror gambar jika facingMode user secara native tidak mirror data.
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    canvas.toBlob((blob) => {
+                        const file = new File([blob], 'selfie_live.jpg', { type: 'image/jpeg' });
+                        
+                        // Injeksi otomatis ke FilePond yang ada di form
+                        const pondRoots = document.querySelectorAll('.filepond--root');
+                        let pondInjected = false;
+                        pondRoots.forEach((root) => {
+                            if (window.FilePond && window.FilePond.find(root)) {
+                                window.FilePond.find(root).addFile(file);
+                                pondInjected = true;
+                            }
+                        });
+                        
+                        if (!pondInjected) {
+                            alert("Gagal memuat foto ke form. Silakan gunakan tombol kamera manual.");
+                        }
+                        this.stopCamera();
+                    }, 'image/jpeg', 0.9);
+                },
+                stopCamera() {
+                    if (this.stream) {
+                        this.stream.getTracks().forEach(track => track.stop());
+                        this.stream = null;
+                    }
+                    this.showLiveCam = false;
                 },
                 showNativePush() {
                     if ('Notification' in window && navigator.serviceWorker && Notification.permission === 'granted') {
@@ -347,6 +404,29 @@
                         <div class="text-center">
                             <div class="absen-busy-spinner"></div>
                             <p class="absen-busy-text" x-text="busyText"></p>
+                        </div>
+                    </div>
+
+                    {{-- Box Live Kamera WebRTC (Solusi Paksa Kamera Depan) --}}
+                    <div class="mb-6">
+                        <template x-if="!showLiveCam">
+                            <button type="button" @click="openLiveCamera()" class="w-full flex items-center justify-center gap-3 py-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold text-sm border-2 border-dashed border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 hover:border-indigo-400 transition-all cursor-pointer shadow-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                BUKA KAMERA SELFIE LANGSUNG
+                            </button>
+                        </template>
+                        
+                        <div x-cloak x-show="showLiveCam" class="relative w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-indigo-500 bg-black animate-in fade-in zoom-in duration-300">
+                            <video x-ref="liveVideo" class="w-full h-auto object-cover bg-black" style="min-height: 300px;" playsinline></video>
+                            
+                            <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-4 px-4">
+                                <button type="button" @click="stopCamera()" class="bg-gray-900/80 backdrop-blur text-white px-6 py-3 rounded-full font-bold text-xs shadow-lg transition hover:bg-gray-800">
+                                    Batal
+                                </button>
+                                <button type="button" @click="captureLiveCamera()" class="bg-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(79,70,229,0.5)] border-2 border-indigo-300 flex items-center gap-2 transition hover:bg-indigo-500 active:scale-95">
+                                    <span class="w-4 h-4 bg-white rounded-full animate-pulse"></span> AMBIL FOTO
+                                </button>
+                            </div>
                         </div>
                     </div>
 
