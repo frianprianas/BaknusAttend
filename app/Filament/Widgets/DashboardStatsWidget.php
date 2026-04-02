@@ -18,7 +18,19 @@ class DashboardStatsWidget extends BaseWidget
     protected ?string $heading = null;
     protected int|string|array $columnSpan = 'full';
 
-    protected $listeners = ['kehadiran-updated' => '$refresh'];
+    public ?int $targetMonth = null;
+    public ?int $targetYear = null;
+
+    protected $listeners = [
+        'kehadiran-updated' => '$refresh',
+        'month-changed' => 'updateMonthTarget'
+    ];
+
+    public function updateMonthTarget($month, $year)
+    {
+        $this->targetMonth = $month;
+        $this->targetYear = $year;
+    }
 
     public static function canView(): bool
     {
@@ -31,8 +43,13 @@ class DashboardStatsWidget extends BaseWidget
         if (!$user) return [];
 
         $today = Carbon::today();
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
+        
+        $m = $this->targetMonth ?? Carbon::now()->month;
+        $y = $this->targetYear ?? Carbon::now()->year;
+        
+        $startOfMonth = Carbon::create($y, $m, 1)->startOfMonth();
+        $endOfMonth = Carbon::create($y, $m, 1)->endOfMonth();
+        $monthLabel = $startOfMonth->translatedFormat('F Y');
 
         // ----------------------------------------------------
         // KONDISI 1: Statistik Login Guru / TU / Siswa (Pribadi)
@@ -88,13 +105,13 @@ class DashboardStatsWidget extends BaseWidget
 
             return [
                 Stat::make('Total Kehadiran', $totalHadirBulanIni . ' Hari')
-                    ->description('Bulan: ' . Carbon::now()->format('F Y'))
+                    ->description('Bulan: ' . $monthLabel)
                     ->descriptionIcon('heroicon-m-calendar-days')
                     ->color('success')
                     ->icon('heroicon-o-calendar-days'),
 
                 Stat::make('Total Terlambat', $totalTerlambatBulanIni . ' Kali')
-                    ->description('Bulan: ' . Carbon::now()->format('F Y'))
+                    ->description('Bulan: ' . $monthLabel)
                     ->descriptionIcon('heroicon-m-clock')
                     ->color($totalTerlambatBulanIni > 0 ? 'warning' : 'gray')
                     ->icon('heroicon-o-clock'),
@@ -102,16 +119,17 @@ class DashboardStatsWidget extends BaseWidget
         }
 
         // ----------------------------------------------------
-        // KONDISI 2: Statistik Khusus ADMIN (Global)
+        // KONDISI 2: Statistik Global ADMIN
         // ----------------------------------------------------
-        $totalSiswa  = Student::count();
+        $totalSiswa = Student::count();
         $totalGuru   = User::where('role', 'Guru')->count();
         $totalTU     = User::where('role', 'TU')->count();
         $totalGuruTU = $totalGuru + $totalTU;
 
+        // Hitung Kehadiran HARI INI
+        $hadirGuruTUHariIni = KehadiranGuruTu::whereDate('waktu_tap', $today)->where('status', 'Hadir')->count();
         $hadirSiswaHariIni  = KehadiranSiswa::whereDate('waktu_tap', $today)->where('status', 'Hadir')->count();
         $terlambatSiswa     = KehadiranSiswa::whereDate('waktu_tap', $today)->where('status', 'Terlambat')->count();
-        $hadirGuruTUHariIni = KehadiranGuruTu::whereDate('waktu_tap', $today)->where('status', 'Hadir')->count();
 
         $pctSiswa  = $totalSiswa  > 0 ? round(($hadirSiswaHariIni  / $totalSiswa)  * 100) : 0;
         $pctGuruTU = $totalGuruTU > 0 ? round(($hadirGuruTUHariIni / $totalGuruTU) * 100) : 0;

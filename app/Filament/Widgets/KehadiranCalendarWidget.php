@@ -87,6 +87,7 @@ class KehadiranCalendarWidget extends Widget
         $this->currentMonth = $date->month;
         $this->currentYear = $date->year;
         $this->fetchPresenceData();
+        $this->dispatch('month-changed', $this->currentMonth, $this->currentYear);
     }
 
     public function nextMonth()
@@ -95,5 +96,6 @@ class KehadiranCalendarWidget extends Widget
         $this->currentMonth = $date->month;
         $this->currentYear = $date->year;
         $this->fetchPresenceData();
+        $this->dispatch('month-changed', $this->currentMonth, $this->currentYear);
     }
 }
