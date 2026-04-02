@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('app:sync-mailcow')->hourly();
+Schedule::command('app:send-attendance-reminders')->everyMinute();
