@@ -115,25 +115,33 @@ class VideoTimelapseService
         if (file_exists($outputPath)) unlink($outputPath);
 
         // Perintah FFmpeg: Gabungkan foto, resize ke 720p, format MP4 H.264 standar HP
-        // Gunakan 'nice' agar tidak makan CPU berlebihan di produksi
+        // Hapus 'nice' jika tidak ada di docker, pakai ffmpeg langsung
         $cmd = [
-            'nice', '-n', '10', 'ffmpeg', '-y', '-f', 'concat', '-safe', '0', 
+            'ffmpeg', '-y', 
+            '-f', 'concat', 
+            '-safe', '0', 
             '-i', storage_path('app/' . $tempDir . '/input.txt'),
             '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
-            '-vcodec', 'libx264', '-crf', '25', '-pix_fmt', 'yuv420p',
+            '-vcodec', 'libx264', 
+            '-preset', 'ultrafast',
+            '-crf', '28', 
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
             $outputPath
         ];
 
         $process = new Process($cmd);
-        $process->setTimeout(60);
+        $process->setTimeout(120); // Beri waktu lebih lama (2 mnt)
         $process->run();
 
         // 4. Cleanup temp folder
         Storage::deleteDirectory($tempDir);
 
         if (!$process->isSuccessful()) {
-            Log::error("FFmpeg Timelapse Error: " . $process->getErrorOutput());
-            throw new \Exception("Gagal mengolah video. Pastikan format foto didukung.");
+            $errorMsg = $process->getErrorOutput();
+            Log::error("FFmpeg Timelapse Error: " . $errorMsg);
+            Log::error("FFmpeg Command: " . implode(' ', $cmd));
+            throw new \Exception("Gagal mengolah video. Detail: " . substr($errorMsg, 0, 100));
         }
 
         return asset('storage/timelapse/' . $outputFile);
