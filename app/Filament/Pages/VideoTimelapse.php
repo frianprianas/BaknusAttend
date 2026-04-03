@@ -41,7 +41,7 @@ class VideoTimelapse extends Page
 
     public function fetchMusic()
     {
-        $path = storage_path('app/public/timelapse_music');
+        $path = public_path('timelapse_music');
         if (!file_exists($path)) {
             return;
         }
@@ -54,7 +54,7 @@ class VideoTimelapse extends Page
                 $this->musicList[] = [
                     'file' => $file,
                     'title' => $title,
-                    'url' => asset('storage/timelapse_music/' . $file)
+                    'url' => asset('timelapse_music/' . $file)
                 ];
             }
         }

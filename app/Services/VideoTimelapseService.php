@@ -87,7 +87,7 @@ class VideoTimelapseService
 
         $hasAudio = false;
         if ($musicFile) {
-            $musicAbsPath = storage_path('app/public/timelapse_music/' . $musicFile);
+            $musicAbsPath = public_path('timelapse_music/' . $musicFile);
             if (file_exists($musicAbsPath)) {
                 $cmd[] = '-i';
                 $cmd[] = $musicAbsPath;
