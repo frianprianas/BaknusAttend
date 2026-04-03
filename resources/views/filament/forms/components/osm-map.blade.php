@@ -1,9 +1,4 @@
-<x-dynamic-component
-    :component="$getFieldWrapperView()"
-    :field="$field"
->
-    <!-- Load CSS Leaflet jika belum ada -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <div
         x-data="{
@@ -140,4 +135,4 @@
             <span class="text-[9px] font-normal italic mt-0.5 text-gray-400">*Bisa diklik untuk pindah marker</span>
         </div>
     </div>
-</x-dynamic-component>
+    </div>
