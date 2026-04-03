@@ -102,22 +102,24 @@ class VideoTimelapseService
         }
         
         // FFmpeg butuh file terakhir diduplikasi/tanpa durasi untuk penanda stop
-        $filesTxt .= "file '" . sprintf("img_%03d.jpg", $index-1) . "'\n";
+        $filesTxt .= "file '" . storage_path('app/' . $tempDir . '/' . sprintf("img_%03d.jpg", $index-1)) . "'\n";
 
-        Storage::put($tempDir . '/input.txt', $filesTxt);
+        $inputTxtPath = storage_path('app/' . $tempDir . '/input.txt');
+        file_put_contents($inputTxtPath, $filesTxt);
 
-        // 3. Jalankan FFmpeg untuk menjahit video (Gunakan path absolut daripada CWD agar aman)
+        // 3. Jalankan FFmpeg untuk menjahit video (Gunakan Teknik Concat dengan Absolute Path)
         $outputFile = 'timelapse_' . $user->id . '_' . $month . '_' . $year . '.mp4';
         $outputPath = storage_path('app/public/timelapse/' . $outputFile);
         Storage::makeDirectory('public/timelapse');
         
         if (file_exists($outputPath)) unlink($outputPath);
 
-        // Perintah FFmpeg: Ambil img_%03d.jpg dari path absolut
+        // Perintah FFmpeg: Gunakan file concat dengan -safe 0
         $cmd = [
             'ffmpeg', '-y', 
-            '-framerate', '2',
-            '-i', storage_path('app/' . $tempDir . '/img_%03d.jpg'),
+            '-f', 'concat', 
+            '-safe', '0',
+            '-i', $inputTxtPath,
             '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
             '-vcodec', 'libx264', 
             '-preset', 'ultrafast',
@@ -127,7 +129,6 @@ class VideoTimelapseService
             $outputPath
         ];
 
-        // Jangan ganti CWD, gunakan sistem default saja
         $process = new Process($cmd);
         $process->setTimeout(120);
         $process->run();
@@ -135,12 +136,15 @@ class VideoTimelapseService
         $errorMsg = $process->getErrorOutput();
         $isSuccess = $process->isSuccessful() && file_exists($outputPath);
 
-        // 4. Cleanup temp folder
-        Storage::deleteDirectory($tempDir);
+        // 4. Cleanup temp folder (Hanya jika sukses, jika gagal jangan dihapus dulu untuk debug)
+        if ($isSuccess) {
+            Storage::deleteDirectory($tempDir);
+        }
 
         if (!$isSuccess) {
             Log::error("FFmpeg Timelapse Error: " . $errorMsg);
-            throw new \Exception("Gagal mengolah video. Detail: " . substr(strip_tags($errorMsg), 0, 160));
+            Log::error("FFmpeg Input.txt: " . $filesTxt);
+            throw new \Exception("Gagal mengolah video. Detail: " . substr(strip_tags($errorMsg), -150));
         }
 
         return asset('storage/timelapse/' . $outputFile);
