@@ -33,10 +33,6 @@ class SchoolSettingResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->label('Nama Lokasi')
                             ->required(),
-                        Forms\Components\ViewField::make('osm_map')
-                            ->view('filament.forms.components.osm-map')
-                            ->columnSpanFull()
-                            ->label('Cari Lokasi di Peta'),
                         Forms\Components\Grid::make()->columns(['default' => 3])
                             ->schema([
                                 Forms\Components\TextInput::make('lat')
