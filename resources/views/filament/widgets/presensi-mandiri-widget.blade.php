@@ -301,13 +301,18 @@
 
             {{-- Profile Card --}}
             <div class="absen-profile-card">
-                <div class="absen-avatar">
+                <a href="https://baknusmail.smkbn666.sch.id" target="_blank" class="absen-avatar group relative overflow-hidden cursor-pointer" title="Ganti Foto Profil">
                     @if($userAvatar)
-                        <img src="{{ $userAvatar }}" alt="Avatar">
+                        <img src="{{ $userAvatar }}" alt="Avatar" class="transition group-hover:scale-110 group-hover:opacity-75">
                     @else
                         <span>{{ strtoupper(substr($userName ?? '?', 0, 1)) }}</span>
                     @endif
-                </div>
+                    
+                    {{-- Overlay Edit (Hanya muncul saat hover) --}}
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                </a>
                 <div>
                     <div class="absen-user-name">{{ $userName }}</div>
                     <div class="absen-user-meta">
