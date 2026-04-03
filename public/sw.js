@@ -1,4 +1,4 @@
-const CACHE_NAME = 'baknus-attend-v2';
+const CACHE_NAME = 'baknus-attend-v3';
 const urlsToCache = [
   '/images/logo_BG.png',
   '/manifest.json'
@@ -13,7 +13,6 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  // Hapus semua cache versi lama secara paksa (khususnya v1 yang menyimpan bug looping halaman /admin)
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -29,18 +28,39 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Strategi NETWORK FIRST untuk file navigasi (HTML) agar tidak pernah memunculkan halaman basi/Page Expired (Looping)
+  // Strategi NETWORK FIRST untuk file navigasi (HTML)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request)
+        .then(response => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Strategi CACHE FIRST untuk asset statis gambar dll.
+  // Strategi NETWORK FIRST juga untuk request Livewire/AJAX
+  if (event.request.url.includes('/livewire/') || event.request.headers.get('X-Livewire')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Strategi CACHE FIRST untuk asset statis (gambar, CSS, JS)
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response && response.ok && response.type !== 'opaque') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => new Response('', { status: 408, statusText: 'Offline' }));
     })
   );
 });
