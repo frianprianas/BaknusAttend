@@ -57,69 +57,49 @@ class VideoTimelapseService
             throw new \Exception("Minimal 3 foto diperlukan untuk membuat video kilas balik.");
         }
 
-        // 2. Siapkan direktori kerja sementara di storage/app/temp_timelapse
-        $tempDir = 'temp_timelapse/' . $user->id . '_' . time();
-        
-        // Pastikan folder temp dibuat secara rekursif
-        if (!Storage::exists($tempDir)) {
-            Storage::makeDirectory($tempDir, 0755, true);
+        // 2. Siapkan direktori kerja di folder TEMP sistem operasi (Dijamin bisa ditulis di Docker)
+        $osTempDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'baknus_timelapse_' . $user->id . '_' . time();
+        if (!file_exists($osTempDir)) {
+            mkdir($osTempDir, 0777, true);
         }
         
-        $filesTxt = "";
+        $filesForCleanup = [];
         $index = 0;
         foreach ($photos as $photo) {
-            // Kita gunakan disk 'public' langsung, jadi path tidak perlu 'public/'
-            // Path di DB biasanya: 'absensi-selfie/nama_file.jpg'
-            $sourcePath = $photo;
-            
-            // Cek di disk public
-            if (!Storage::disk('public')->exists($sourcePath)) {
-                Log::warning("File timelapse skip: {$sourcePath} tidak ditemukan di disk public.");
-                continue;
-            }
+            $sourcePath = 'public/' . $photo;
+            if (!Storage::disk('public')->exists($sourcePath)) continue;
 
-            // Gunakan Storage::put & Storage::get daripada copy() fisik agar aman di Docker
             $tempFileName = sprintf("img_%03d.jpg", $index);
-            $targetPath = $tempDir . '/' . $tempFileName;
+            $targetPath = $osTempDir . DIRECTORY_SEPARATOR . $tempFileName;
             
             try {
-                // Ambil konten dari disk public, simpan ke folder temp (disk default/local)
-                Storage::put($targetPath, Storage::disk('public')->get($sourcePath));
-                
-                // Format file untuk FFmpeg concat (duration 0.6s per image)
-                $filesTxt .= "file '" . $tempFileName . "'\n";
-                $filesTxt .= "duration 0.6\n";
+                // Tulis langsung ke local filesystem OS
+                file_put_contents($targetPath, Storage::disk('public')->get($sourcePath));
+                $filesForCleanup[] = $targetPath;
                 $index++;
             } catch (\Exception $e) {
-                Log::error("Gagal menyalin file timelapse ({$sourcePath}): " . $e->getMessage());
+                Log::error("Gagal tulis file temp timelapse: " . $e->getMessage());
             }
         }
         
         if ($index === 0) {
-            Storage::deleteDirectory($tempDir);
-            $diskRoots = config('filesystems.disks.public.root');
-            throw new \Exception("File foto fisik tidak ditemukan di server. (Mencari di: {$diskRoots})");
+            rmdir($osTempDir);
+            throw new \Exception("File foto fisik tidak ditemukan di server produksi.");
         }
-        
-        // FFmpeg butuh file terakhir diduplikasi/tanpa durasi untuk penanda stop
-        $filesTxt .= "file '" . storage_path('app/' . $tempDir . '/' . sprintf("img_%03d.jpg", $index-1)) . "'\n";
 
-        $inputTxtPath = storage_path('app/' . $tempDir . '/input.txt');
-        file_put_contents($inputTxtPath, $filesTxt);
-
-        // 3. Jalankan FFmpeg untuk menjahit video (Gunakan Teknik Concat dengan Absolute Path)
-        $outputFile = 'timelapse_' . $user->id . '_' . $month . '_' . $year . '.mp4';
-        $outputPath = storage_path('app/public/timelapse/' . $outputFile);
-        Storage::makeDirectory('public/timelapse');
+        // 3. Jalankan FFmpeg menggunakan Image Sequence di folder TEMP OS
+        $outputFileName = 'timelapse_' . $user->id . '_' . $month . '_' . $year . '.mp4';
+        $finalPublicDir = storage_path('app/public/timelapse');
+        if (!file_exists($finalPublicDir)) mkdir($finalPublicDir, 0777, true);
         
+        $outputPath = $finalPublicDir . DIRECTORY_SEPARATOR . $outputFileName;
         if (file_exists($outputPath)) unlink($outputPath);
 
-        // Perintah FFmpeg: Gunakan file concat dengan -safe 0
+        // Gunakan perintah FFmpeg Image Sequence (Paling Stabil)
         $cmd = [
             'ffmpeg', '-y', 
-            '-f', 'concat', 
-            '-safe', '0',
-            '-i', $inputTxtPath,
+            '-framerate', '2',
+            '-i', $osTempDir . DIRECTORY_SEPARATOR . 'img_%03d.jpg',
             '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
             '-vcodec', 'libx264', 
             '-preset', 'ultrafast',
@@ -136,17 +116,17 @@ class VideoTimelapseService
         $errorMsg = $process->getErrorOutput();
         $isSuccess = $process->isSuccessful() && file_exists($outputPath);
 
-        // 4. Cleanup temp folder (Hanya jika sukses, jika gagal jangan dihapus dulu untuk debug)
-        if ($isSuccess) {
-            Storage::deleteDirectory($tempDir);
+        // 4. Cleanup Sempurna: Hapus semua file & folder temp
+        foreach ($filesForCleanup as $f) {
+            if (file_exists($f)) unlink($f);
         }
+        if (file_exists($osTempDir)) rmdir($osTempDir);
 
         if (!$isSuccess) {
             Log::error("FFmpeg Timelapse Error: " . $errorMsg);
-            Log::error("FFmpeg Input.txt: " . $filesTxt);
             throw new \Exception("Gagal mengolah video. Detail: " . substr(strip_tags($errorMsg), -150));
         }
 
-        return asset('storage/timelapse/' . $outputFile);
+        return asset('storage/timelapse/' . $outputFileName);
     }
 }
