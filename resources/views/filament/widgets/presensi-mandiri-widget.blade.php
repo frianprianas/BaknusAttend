@@ -15,15 +15,6 @@
                     window.addEventListener('kehadiran-updated', () => {
                         this.showNativePush();
                     });
-
-                    // Paksa kamera depan untuk semua input file (Bypass FilePond regenerasi)
-                    setInterval(() => {
-                        document.querySelectorAll('input[type="file"].filepond--browser').forEach(inp => {
-                            if (inp.getAttribute('capture') !== 'user') {
-                                inp.setAttribute('capture', 'user');
-                            }
-                        });
-                    }, 500);
                 },
                 showNativePush() {
                     if ('Notification' in window && navigator.serviceWorker && Notification.permission === 'granted') {
