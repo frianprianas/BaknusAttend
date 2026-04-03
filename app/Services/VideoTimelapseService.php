@@ -59,22 +59,35 @@ class VideoTimelapseService
 
         // 2. Siapkan direktori kerja sementara di storage/app/temp_timelapse
         $tempDir = 'temp_timelapse/' . $user->id . '_' . time();
-        Storage::makeDirectory($tempDir);
+        
+        // Pastikan folder temp dibuat secara rekursif
+        if (!Storage::exists($tempDir)) {
+            Storage::makeDirectory($tempDir, 0755, true);
+        }
         
         $filesTxt = "";
         $index = 0;
         foreach ($photos as $photo) {
-            $sourcePath = storage_path('app/public/' . $photo);
-            if (!file_exists($sourcePath)) continue;
-
-            // Copy file ke temp dengan nama urutan agar ffmpeg mudah baca
-            $tempFileName = sprintf("img_%03d.jpg", $index);
-            copy($sourcePath, storage_path('app/' . $tempDir . '/' . $tempFileName));
+            $sourcePath = 'public/' . $photo;
             
-            // Format file untuk FFmpeg concat (duration 0.5s per image)
+            // Cek di disk storage Laravel agar lebih konsisten
+            if (!Storage::exists($sourcePath)) continue;
+
+            // Gunakan Storage::put & Storage::get daripada copy() fisik agar aman di Docker
+            $tempFileName = sprintf("img_%03d.jpg", $index);
+            $targetPath = $tempDir . '/' . $tempFileName;
+            
+            Storage::put($targetPath, Storage::get($sourcePath));
+            
+            // Format file untuk FFmpeg concat (duration 0.6s per image)
             $filesTxt .= "file '" . $tempFileName . "'\n";
             $filesTxt .= "duration 0.6\n";
             $index++;
+        }
+        
+        if ($index === 0) {
+            Storage::deleteDirectory($tempDir);
+            throw new \Exception("File foto fisik tidak ditemukan di server.");
         }
         
         // FFmpeg butuh file terakhir diduplikasi/tanpa durasi untuk penanda stop
