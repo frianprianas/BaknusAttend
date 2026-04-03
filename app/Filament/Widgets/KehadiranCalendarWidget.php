@@ -18,6 +18,8 @@ class KehadiranCalendarWidget extends Widget
     public $daysInMonth;
     public $firstDayOfMonth;
     public $presenceData = [];
+    public $isGeneratingVideo = false;
+
 
     protected $listeners = ['kehadiran-updated' => 'refreshCalendarData'];
 
@@ -97,5 +99,42 @@ class KehadiranCalendarWidget extends Widget
         $this->currentYear = $date->year;
         $this->fetchPresenceData();
         $this->dispatch('month-changed', $this->currentMonth, $this->currentYear);
+    }
+
+    /**
+     * Fitur 'Ide Liar': Membuat video kilas balik dari foto kehadiran
+     */
+    public function generateTimelapse(\App\Services\VideoTimelapseService $service)
+    {
+        $this->isGeneratingVideo = true;
+        
+        try {
+            $user = auth()->user();
+            $videoUrl = $service->generateForUser($user, $this->currentMonth, $this->currentYear);
+            
+            \Filament\Notifications\Notification::make()
+                ->title('Video Kilas Balik Siap!')
+                ->body('Klik untuk mendownload kenangan presensi Anda bulan ini.')
+                ->success()
+                ->actions([
+                    \Filament\Notifications\Actions\Action::make('download')
+                        ->label('Download MP4')
+                        ->url($videoUrl)
+                        ->openUrlInNewTab(),
+                ])
+                ->send();
+
+            // Trigger download otomatis via JS jika ingin (opsional)
+            $this->dispatch('video-ready', ['url' => $videoUrl]);
+            
+        } catch (\Exception $e) {
+            \Filament\Notifications\Notification::make()
+                ->title('Gagal Membuat Video')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        } finally {
+            $this->isGeneratingVideo = false;
+        }
     }
 }
