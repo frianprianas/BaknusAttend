@@ -16,6 +16,9 @@
                 let centerLong = this.long || 113.921327;
                 let zoomLevel = this.lat ? 17 : 5;
 
+                // Menghindari 404 error saat Leaflet mencoba render gambar icon marker:
+                L.Icon.Default.imagePath = '{{ asset('leaflet/images') }}/';
+
                 this.map = L.map($refs.mapContainer).setView([centerLat, centerLong], zoomLevel);
 
                 // Tambahkan tile openstreetmap (GRATIS)
