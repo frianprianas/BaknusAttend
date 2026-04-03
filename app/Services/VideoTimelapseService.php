@@ -106,21 +106,18 @@ class VideoTimelapseService
 
         Storage::put($tempDir . '/input.txt', $filesTxt);
 
-        // 3. Jalankan FFmpeg untuk menjahit video
+        // 3. Jalankan FFmpeg untuk menjahit video (Teknik Image Sequence lebih stabil)
         $outputFile = 'timelapse_' . $user->id . '_' . $month . '_' . $year . '.mp4';
         $outputPath = storage_path('app/public/timelapse/' . $outputFile);
         Storage::makeDirectory('public/timelapse');
         
-        // Jika file sudah ada, hapus dulu agar tidak konflik
         if (file_exists($outputPath)) unlink($outputPath);
 
-        // Perintah FFmpeg: Gabungkan foto, resize ke 720p, format MP4 H.264 standar HP
-        // Hapus 'nice' jika tidak ada di docker, pakai ffmpeg langsung
+        // Perintah FFmpeg Baru: Ambil img_%03d.jpg secara berurutan
         $cmd = [
             'ffmpeg', '-y', 
-            '-f', 'concat', 
-            '-safe', '0', 
-            '-i', storage_path('app/' . $tempDir . '/input.txt'),
+            '-framerate', '2', // 2 frame per detik (0.5 detik per foto)
+            '-i', 'img_%03d.jpg',
             '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
             '-vcodec', 'libx264', 
             '-preset', 'ultrafast',
@@ -130,18 +127,20 @@ class VideoTimelapseService
             $outputPath
         ];
 
-        $process = new Process($cmd);
-        $process->setTimeout(120); // Beri waktu lebih lama (2 mnt)
+        // Jalankan di DALAM folder temp agar ffmpeg mudah akses gambarnya
+        $process = new Process($cmd, storage_path('app/' . $tempDir));
+        $process->setTimeout(120);
         $process->run();
+
+        $errorMsg = $process->getErrorOutput();
+        $isSuccess = $process->isSuccessful() && file_exists($outputPath);
 
         // 4. Cleanup temp folder
         Storage::deleteDirectory($tempDir);
 
-        if (!$process->isSuccessful()) {
-            $errorMsg = $process->getErrorOutput();
+        if (!$isSuccess) {
             Log::error("FFmpeg Timelapse Error: " . $errorMsg);
-            Log::error("FFmpeg Command: " . implode(' ', $cmd));
-            throw new \Exception("Gagal mengolah video. Detail: " . substr($errorMsg, 0, 100));
+            throw new \Exception("Gagal mengolah video. Detail: " . substr(strip_tags($errorMsg), 0, 150));
         }
 
         return asset('storage/timelapse/' . $outputFile);
