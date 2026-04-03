@@ -33,16 +33,22 @@ class SchoolSettingResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->label('Nama Lokasi')
                             ->required(),
-                        Forms\Components\Grid::make()->columns(3)
+                        Forms\Components\ViewField::make('osm_map')
+                            ->view('filament.forms.components.osm-map')
+                            ->columnSpanFull()
+                            ->label('Cari Lokasi di Peta'),
+                        Forms\Components\Grid::make()->columns(['default' => 3])
                             ->schema([
                                 Forms\Components\TextInput::make('lat')
                                     ->label('Latitude')
                                     ->numeric()
+                                    ->live(onBlur: true)
                                     ->required()
                                     ->step('0.00000001'),
                                 Forms\Components\TextInput::make('long')
                                     ->label('Longitude')
                                     ->numeric()
+                                    ->live(onBlur: true)
                                     ->required()
                                     ->step('0.00000001'),
                                 Forms\Components\TextInput::make('radius')
@@ -59,7 +65,7 @@ class SchoolSettingResource extends Resource
                         Forms\Components\Toggle::make('is_reminder_active')
                             ->label('Aktifkan Notifikasi Pengingat')
                             ->default(true),
-                        Forms\Components\Grid::make()->columns(2)
+                        Forms\Components\Grid::make()->columns(['default' => 2])
                             ->schema([
                                 Forms\Components\TimePicker::make('reminder_masuk')
                                     ->label('Pengingat Masuk')
