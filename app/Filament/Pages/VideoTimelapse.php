@@ -26,6 +26,7 @@ class VideoTimelapse extends Page
     public array $musicList = [];
     public ?string $selectedMusic = null;
     public $isGenerating = false;
+    public ?string $generatedVideoUrl = null;
 
     public static function canAccess(): bool
     {
@@ -153,6 +154,7 @@ class VideoTimelapse extends Page
             return;
         }
 
+        $this->generatedVideoUrl = null;
         $this->isGenerating = true;
 
         try {
@@ -171,19 +173,13 @@ class VideoTimelapse extends Page
             // Simulasi proses "berpikir" dan menyusun video agar terlihat dramatis (Efek BaknusAI)
             sleep(4);
 
+            $this->generatedVideoUrl = $videoUrl;
+
             Notification::make()
                 ->title('Video Kilas Balik Siap!')
-                ->body('Video Anda berhasil diproses dan akan terunduh otomatis.')
+                ->body('Video Anda berhasil dirangkai, silakan putar dan bagikan ke sosial media!')
                 ->success()
-                ->actions([
-                    \Filament\Notifications\Actions\Action::make('download')
-                        ->label('Download MP4')
-                        ->url($videoUrl)
-                        ->openUrlInNewTab(),
-                ])
                 ->send();
-
-            $this->dispatch('video-ready', ['url' => $videoUrl]);
 
         } catch (\Exception $e) {
             Notification::make()

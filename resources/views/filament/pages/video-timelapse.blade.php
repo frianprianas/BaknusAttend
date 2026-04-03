@@ -155,20 +155,108 @@
                 </div>
             @endif
         </div>
-    </div>
 
-    <script>
-        document.addEventListener('video-ready', event => {
-            const url = event.detail[0].url;
-            // Pancing download otomatis via javascript tag a
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'Kenangan_Presensi_Saya.mp4';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            // Opsional: confetti atau visual feedback
-        });
-    </script>
+        {{-- Video Siap / Result Modal Layout --}}
+        @if($generatedVideoUrl)
+            <div 
+                x-data="{ 
+                    isSharing: false,
+                    async shareVideo() {
+                        // Pakai Web Share API modern untuk native Share ke IG/WA
+                        if (navigator.share && navigator.canShare) {
+                            this.isSharing = true;
+                            try {
+                                // Download blob dan konversi jd file (karena Instagram/WA butuh object type File, bukan cm link mp4 bg url)
+                                const response = await fetch('{{ $generatedVideoUrl }}');
+                                const blob = await response.blob();
+                                const file = new File([blob], 'Kilas_Balik_Kenangan_Baknus.mp4', { type: 'video/mp4' });
+                                
+                                if (navigator.canShare({ files: [file] })) {
+                                    await navigator.share({
+                                        title: 'Kilas Balik Presensi',
+                                        text: 'Tonton video kilas balik presensiku di BaknusAttend!',
+                                        files: [file]
+                                    });
+                                } else {
+                                    throw new Error('Tidak bisa membagikan file secara langsung pada perangkat ini.');
+                                }
+                            } catch (error) {
+                                console.error('Share error:', error);
+                                // Fallback native url share (Berbagi link URL) kl device gagal nerima format MP4
+                                await navigator.share({
+                                    title: 'Kilas Balik Presensi',
+                                    text: 'Tonton video kilas balik presensiku di Baknus!',
+                                    url: '{{ $generatedVideoUrl }}'
+                                }).catch(console.error);
+                            } finally {
+                                this.isSharing = false;
+                            }
+                        } else {
+                            alert('Maaf, Browser Anda belum mendukung fitur berbagi langsung. Silakan tekan tombol Download Biasa.');
+                        }
+                    }
+                }"
+                class="fixed inset-0 z-[99999] bg-gray-950/80 backdrop-blur-md flex items-center justify-center p-4"
+            >
+                <!-- Pop-up Box -->
+                <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-gray-200/50 dark:border-gray-700/50 transform transition-all duration-300 animate-in zoom-in-95 fade-in">
+                    
+                    {{-- Header --}}
+                    <div class="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/80">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎉</span> 
+                            <h4 class="font-black text-gray-900 dark:text-white tracking-tight">KILAS BALIK SIAP</h4>
+                        </div>
+                        <button wire:click="$set('generatedVideoUrl', null)" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200/50 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    {{-- Body / Video Preview --}}
+                    <div class="w-full bg-black relative aspect-[4/5] sm:aspect-square flex justify-center items-center">
+                        <video 
+                            src="{{ $generatedVideoUrl }}" 
+                            controls 
+                            autoplay
+                            playsinline
+                            loop
+                            class="max-w-full max-h-full h-auto w-auto object-contain shadow-inner drop-shadow-2xl"
+                        ></video>
+                    </div>
+
+                    {{-- Footer Action Buttons --}}
+                    <div class="p-5 flex flex-col gap-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center font-medium leading-relaxed mb-1 px-2">
+                            Pamerkan dedikasimu! Bagikan video ini langsung ke <b class="text-indigo-600 dark:text-indigo-400">Story WA atau Instagram</b> mu.
+                        </p>
+                        
+                        <button 
+                            @click="shareVideo()"
+                            class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 active:from-violet-700 active:to-fuchsia-700 text-white py-3.5 rounded-xl font-bold shadow-[0_10px_20px_rgba(139,92,246,0.3)] transition-all active:scale-95 duration-200"
+                        >
+                            <span x-show="!isSharing" class="flex items-center gap-2">
+                                <svg class="w-5 h-5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg> 
+                                BAGIKAN KE STORY 🔥
+                            </span>
+                            <span x-show="isSharing" class="flex items-center gap-2" style="display: none;">
+                                <svg class="animate-spin -ml-1 mr-1 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 
+                                Mengambil Data...
+                            </span>
+                        </button>
+                        
+                        <a 
+                            href="{{ $generatedVideoUrl }}" 
+                            download="Kilas_Balik_Kenangan_Baknus.mp4"
+                            class="w-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-xl transition-colors active:scale-95 duration-200"
+                        >
+                            <span class="flex items-center gap-1.5 font-bold text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> 
+                                Simpan Manual
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
 </x-filament-panels::page>
