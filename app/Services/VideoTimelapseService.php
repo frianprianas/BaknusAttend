@@ -66,15 +66,34 @@ class VideoTimelapseService
         $filesForCleanup = [];
         $index = 0;
         foreach ($photos as $photo) {
-            $sourcePath = 'public/' . $photo;
-            if (!Storage::disk('public')->exists($sourcePath)) continue;
+            // Kita coba 2 kemungkinan path:
+            // 1. Path apa adanya dari DB (misal: 'absensi-selfie/01KMS.jpg')
+            // 2. Path dengan prefix folder (misal: '01KMS.jpg' -> 'absensi-selfie/01KMS.jpg')
+            
+            $possiblePaths = [
+                $photo,
+                'absensi-selfie/' . $photo
+            ];
+
+            $foundPath = null;
+            foreach ($possiblePaths as $path) {
+                if (Storage::disk('public')->exists($path)) {
+                    $foundPath = $path;
+                    break;
+                }
+            }
+
+            if (!$foundPath) {
+                Log::warning("File timelapse tidak ditemukan. Dicoba: " . implode(', ', $possiblePaths));
+                continue;
+            }
 
             $tempFileName = sprintf("img_%03d.jpg", $index);
             $targetPath = $osTempDir . DIRECTORY_SEPARATOR . $tempFileName;
             
             try {
                 // Tulis langsung ke local filesystem OS
-                file_put_contents($targetPath, Storage::disk('public')->get($sourcePath));
+                file_put_contents($targetPath, Storage::disk('public')->get($foundPath));
                 $filesForCleanup[] = $targetPath;
                 $index++;
             } catch (\Exception $e) {
@@ -83,8 +102,8 @@ class VideoTimelapseService
         }
         
         if ($index === 0) {
-            rmdir($osTempDir);
-            throw new \Exception("File foto fisik tidak ditemukan di server produksi.");
+            if (file_exists($osTempDir)) rmdir($osTempDir);
+            throw new \Exception("File foto fisik tidak ditemukan di server produksi. Pastikan folder absensi-selfie tidak kosong.");
         }
 
         // 3. Jalankan FFmpeg menggunakan Image Sequence di folder TEMP OS
@@ -124,7 +143,7 @@ class VideoTimelapseService
 
         if (!$isSuccess) {
             Log::error("FFmpeg Timelapse Error: " . $errorMsg);
-            throw new \Exception("Gagal mengolah video. Detail: " . substr(strip_tags($errorMsg), -150));
+            throw new \Exception("Gagal mengolah video. Detail: FFmpeg gagal menghasilkan file.");
         }
 
         return asset('storage/timelapse/' . $outputFileName);
