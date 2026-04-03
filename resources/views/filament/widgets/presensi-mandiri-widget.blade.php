@@ -65,39 +65,29 @@
                 captureLiveCamera() {
                     const video = this.$refs.liveVideo;
                     const canvas = document.createElement('canvas');
-                    
-                    // Gunakan resolusi native video
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     const ctx = canvas.getContext('2d');
                     
-                    // Gambar frame dari video ke canvas
+                    // Jangan mirror gambar jika facingMode user secara native tidak mirror data.
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     
                     canvas.toBlob((blob) => {
                         const file = new File([blob], 'selfie_live.jpg', { type: 'image/jpeg' });
                         
-                        // Cari input FilePond yang aktif di halaman
-                        // Kita cari container FilePond dan ambil instance-nya
-                        const pondElement = document.querySelector('.filepond--root');
-                        
-                        if (pondElement && window.FilePond) {
-                            const pond = window.FilePond.find(pondElement);
-                            if (pond) {
-                                // 1. Hapus file lama jika ada
-                                pond.removeFiles();
-                                // 2. Tambahkan file baru hasil jepretan
-                                pond.addFile(file);
-                                
-                                // Info sukses (opsional)
-                                console.log("Foto berhasil diunggah ke form.");
-                            } else {
-                                alert("Sistem form belum siap. Gunakan tombol kamera bawaan.");
+                        // Injeksi otomatis ke FilePond yang ada di form
+                        const pondRoots = document.querySelectorAll('.filepond--root');
+                        let pondInjected = false;
+                        pondRoots.forEach((root) => {
+                            if (window.FilePond && window.FilePond.find(root)) {
+                                window.FilePond.find(root).addFile(file);
+                                pondInjected = true;
                             }
-                        } else {
-                            alert("Elemen upload tidak ditemukan. Gunakan tombol kamera bawaan.");
-                        }
+                        });
                         
+                        if (!pondInjected) {
+                            alert("Gagal memuat foto ke form. Silakan gunakan tombol kamera manual.");
+                        }
                         this.stopCamera();
                     }, 'image/jpeg', 0.9);
                 },
