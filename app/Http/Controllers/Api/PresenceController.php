@@ -145,4 +145,48 @@ class PresenceController extends Controller
             'day' => $days[$now->format('l')]
         ]);
     }
+
+    /**
+     * Mengambil foto wajah (face_reference) dari database untuk disinkronkan ke aplikasi eksternal
+     */
+    public function getUserImage(Request $request)
+    {
+        $search = $request->query('search'); // Bisa email atau rfid
+        
+        if (!$search) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Parameter search (email/rfid) diperlukan'], 400);
+        }
+
+        $user = User::where('email', $search)
+            ->orWhere('rfid', $search)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['status' => 'ERROR', 'message' => 'User tidak ditemukan'], 404);
+        }
+
+        if (!$user->face_reference) {
+            return response()->json(['status' => 'ERROR', 'message' => 'User belum mendaftarkan foto wajah'], 404);
+        }
+
+        $path = storage_path('app/public/' . $user->face_reference);
+
+        if (!file_exists($path)) {
+            return response()->json(['status' => 'ERROR', 'message' => 'File foto tidak ditemukan di server'], 404);
+        }
+
+        $imageData = base64_encode(file_get_contents($path));
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+        return response()->json([
+            'status' => 'SUCCESS',
+            'data' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'filename' => basename($user->face_reference),
+                'byte_size' => filesize($path),
+                'base64' => 'data:image/' . $extension . ';base64,' . $imageData
+            ]
+        ]);
+    }
 }
