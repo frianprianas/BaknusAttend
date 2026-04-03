@@ -87,10 +87,30 @@
 
         L.Icon.Default.imagePath = '{{ asset("leaflet/images") }}/';
         map = L.map('osm-map').setView([centerLat, centerLng], zoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+        var streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
-        }).addTo(map);
+        });
+
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: '© Esri World Imagery'
+        });
+
+        var hybridLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: ''
+        });
+
+        var satelliteHybrid = L.layerGroup([satelliteLayer, hybridLabels]);
+
+        streetLayer.addTo(map);
+
+        L.control.layers({
+            '🗺️ Peta Jalan': streetLayer,
+            '🛰️ Satelit': satelliteHybrid
+        }, null, { position: 'topright', collapsed: false }).addTo(map);
 
         if (coords.lat && coords.lng) {
             marker = L.marker([coords.lat, coords.lng]).addTo(map);
