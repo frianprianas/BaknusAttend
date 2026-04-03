@@ -89,19 +89,20 @@
                 // Reset search
                 this.searchResults = [];
                 this.searchQuery = item.display_name;
+            },
+
+            loadLeaflet() {
+                if (typeof L === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.onload = () => this.initMap();
+                    document.head.appendChild(script);
+                } else {
+                    this.initMap();
+                }
             }
         }"
-        x-init="
-            // Pastikan tidak meload JS dua kali jika pengguna bolak-balik halaman
-            if (typeof L === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-                script.onload = () => initMap();
-                document.head.appendChild(script);
-            } else {
-                initMap();
-            }
-        "
+        x-init="loadLeaflet()"
         wire:ignore.self
         class="w-full relative rounded-xl overflow-hidden shadow-sm border border-gray-300 dark:border-gray-700"
     >
