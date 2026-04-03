@@ -68,26 +68,36 @@ class VideoTimelapseService
         $filesTxt = "";
         $index = 0;
         foreach ($photos as $photo) {
+            // Path dari DB biasanya sudah termasuk subfolder (misal: 'absensi-selfie/image.jpg')
             $sourcePath = 'public/' . $photo;
             
-            // Cek di disk storage Laravel agar lebih konsisten
-            if (!Storage::exists($sourcePath)) continue;
+            // Cek di disk storage Laravel
+            if (!Storage::exists($sourcePath)) {
+                // Fallback: Jika di DB tidak ada folder 'public/', coba tambahkan manual
+                Log::warning("File timelapse skip: {$sourcePath} tidak ditemukan.");
+                continue;
+            }
 
             // Gunakan Storage::put & Storage::get daripada copy() fisik agar aman di Docker
             $tempFileName = sprintf("img_%03d.jpg", $index);
             $targetPath = $tempDir . '/' . $tempFileName;
             
-            Storage::put($targetPath, Storage::get($sourcePath));
-            
-            // Format file untuk FFmpeg concat (duration 0.6s per image)
-            $filesTxt .= "file '" . $tempFileName . "'\n";
-            $filesTxt .= "duration 0.6\n";
-            $index++;
+            try {
+                Storage::put($targetPath, Storage::get($sourcePath));
+                
+                // Format file untuk FFmpeg concat (duration 0.6s per image)
+                $filesTxt .= "file '" . $tempFileName . "'\n";
+                $filesTxt .= "duration 0.6\n";
+                $index++;
+            } catch (\Exception $e) {
+                Log::error("Gagal menyalin file timelapse: " . $e->getMessage());
+            }
         }
         
         if ($index === 0) {
             Storage::deleteDirectory($tempDir);
-            throw new \Exception("File foto fisik tidak ditemukan di server.");
+            $sampleDir = implode(', ', Storage::directories('public'));
+            throw new \Exception("File foto fisik tidak ditemukan di server. (Ditemukan folder: {$sampleDir})");
         }
         
         // FFmpeg butuh file terakhir diduplikasi/tanpa durasi untuk penanda stop
@@ -104,8 +114,9 @@ class VideoTimelapseService
         if (file_exists($outputPath)) unlink($outputPath);
 
         // Perintah FFmpeg: Gabungkan foto, resize ke 720p, format MP4 H.264 standar HP
+        // Gunakan 'nice' agar tidak makan CPU berlebihan di produksi
         $cmd = [
-            'ffmpeg', '-y', '-f', 'concat', '-safe', '0', 
+            'nice', '-n', '10', 'ffmpeg', '-y', '-f', 'concat', '-safe', '0', 
             '-i', storage_path('app/' . $tempDir . '/input.txt'),
             '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
             '-vcodec', 'libx264', '-crf', '25', '-pix_fmt', 'yuv420p',
