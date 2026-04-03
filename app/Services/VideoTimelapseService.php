@@ -16,7 +16,7 @@ class VideoTimelapseService
     /**
      * Generate video timelapse dari array foto yang dipilih (Max 20 foto sesuai request)
      */
-    public function generateFromPhotos($user, array $photos)
+    public function generateFromPhotos($user, array $photos, string $musicFile = null)
     {
         if (count($photos) < 3) {
             throw new \Exception("Minimal 3 foto diperlukan untuk membuat video.");
@@ -65,7 +65,6 @@ class VideoTimelapseService
         }
 
         // 3. Hitung Framerate agar durasi video pas (~10 detik)
-        // Jika foto sedikit, lambatkan (framerate rendah). Jika banyak, percepat.
         $framerate = $index / 10; 
         if ($framerate < 0.8) $framerate = 0.8; // Max 1.2s per foto
         if ($framerate > 5) $framerate = 5;     // Max 5 foto per detik
@@ -79,18 +78,40 @@ class VideoTimelapseService
         $outputPath = $finalPublicDir . DIRECTORY_SEPARATOR . $outputFileName;
         if (file_exists($outputPath)) unlink($outputPath);
 
+        // Susun Command FFmpeg
         $cmd = [
             'ffmpeg', '-y', 
             '-framerate', (string)$framerate,
             '-i', $osTempDir . DIRECTORY_SEPARATOR . 'img_%03d.jpg',
+        ];
+
+        $hasAudio = false;
+        if ($musicFile) {
+            $musicAbsPath = storage_path('app/public/timelapse_music/' . $musicFile);
+            if (file_exists($musicAbsPath)) {
+                $cmd[] = '-i';
+                $cmd[] = $musicAbsPath;
+                $hasAudio = true;
+            }
+        }
+
+        $videoParams = [
             '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
             '-vcodec', 'libx264', 
             '-preset', 'ultrafast',
             '-crf', '25', 
             '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart',
-            $outputPath
         ];
+
+        $cmd = array_merge($cmd, $videoParams);
+
+        if ($hasAudio) {
+            // Gabungkan audio, potong durasi audio agar sama dengan durasi video terpendek (-shortest)
+            $cmd = array_merge($cmd, ['-c:a', 'aac', '-shortest']);
+        }
+
+        $cmd[] = $outputPath;
 
         $process = new Process($cmd);
         $process->setTimeout(180);

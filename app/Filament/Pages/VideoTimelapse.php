@@ -23,11 +23,12 @@ class VideoTimelapse extends Page
 
     public $recentPhotos = [];
     public $selectedPhotos = [];
+    public array $musicList = [];
+    public ?string $selectedMusic = null;
     public $isGenerating = false;
 
     public static function canAccess(): bool
     {
-        // Memastikan menu sidebar dan halaman ini bisa diakses role selain Admin
         $user = auth()->user();
         return $user !== null;
     }
@@ -35,6 +36,28 @@ class VideoTimelapse extends Page
     public function mount()
     {
         $this->fetchPhotos();
+        $this->fetchMusic();
+    }
+
+    public function fetchMusic()
+    {
+        $path = storage_path('app/public/timelapse_music');
+        if (!file_exists($path)) {
+            return;
+        }
+
+        $files = scandir($path);
+        foreach ($files as $file) {
+            if (str_ends_with(strtolower($file), '.mp3')) {
+                // Buat judul dari nama file (hilangkan ekstensi dan ubah underscore jadi spasi)
+                $title = str_replace('_', ' ', pathinfo($file, PATHINFO_FILENAME));
+                $this->musicList[] = [
+                    'file' => $file,
+                    'title' => $title,
+                    'url' => asset('storage/timelapse_music/' . $file)
+                ];
+            }
+        }
     }
 
     public function fetchPhotos()
@@ -102,6 +125,11 @@ class VideoTimelapse extends Page
         }
     }
 
+    public function selectMusic($file)
+    {
+        $this->selectedMusic = $file;
+    }
+
     public function selectAllTampil()
     {
         // Fitur pilih semua dari yang paling baru
@@ -130,7 +158,6 @@ class VideoTimelapse extends Page
         try {
             $user = auth()->user();
             
-            // Urutkan kembali sesuai kronologis aslinya (berikut index pada recentPhotos)
             $orderedSelected = [];
             foreach ($this->recentPhotos as $rp) {
                 if (in_array($rp['path'], $this->selectedPhotos)) {
@@ -139,7 +166,7 @@ class VideoTimelapse extends Page
             }
 
             // Panggil Service baru
-            $videoUrl = $service->generateFromPhotos($user, $orderedSelected);
+            $videoUrl = $service->generateFromPhotos($user, $orderedSelected, $this->selectedMusic);
 
             // Simulasi proses "berpikir" dan menyusun video agar terlihat dramatis (Efek BaknusAI)
             sleep(4);
