@@ -25,6 +25,13 @@ class VideoTimelapse extends Page
     public $selectedPhotos = [];
     public $isGenerating = false;
 
+    public static function canAccess(): bool
+    {
+        // Memastikan menu sidebar dan halaman ini bisa diakses role selain Admin
+        $user = auth()->user();
+        return $user !== null;
+    }
+
     public function mount()
     {
         $this->fetchPhotos();
