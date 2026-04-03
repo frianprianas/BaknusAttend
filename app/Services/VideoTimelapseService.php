@@ -68,13 +68,13 @@ class VideoTimelapseService
         $filesTxt = "";
         $index = 0;
         foreach ($photos as $photo) {
-            // Path dari DB biasanya sudah termasuk subfolder (misal: 'absensi-selfie/image.jpg')
-            $sourcePath = 'public/' . $photo;
+            // Kita gunakan disk 'public' langsung, jadi path tidak perlu 'public/'
+            // Path di DB biasanya: 'absensi-selfie/nama_file.jpg'
+            $sourcePath = $photo;
             
-            // Cek di disk storage Laravel
-            if (!Storage::exists($sourcePath)) {
-                // Fallback: Jika di DB tidak ada folder 'public/', coba tambahkan manual
-                Log::warning("File timelapse skip: {$sourcePath} tidak ditemukan.");
+            // Cek di disk public
+            if (!Storage::disk('public')->exists($sourcePath)) {
+                Log::warning("File timelapse skip: {$sourcePath} tidak ditemukan di disk public.");
                 continue;
             }
 
@@ -83,21 +83,22 @@ class VideoTimelapseService
             $targetPath = $tempDir . '/' . $tempFileName;
             
             try {
-                Storage::put($targetPath, Storage::get($sourcePath));
+                // Ambil konten dari disk public, simpan ke folder temp (disk default/local)
+                Storage::put($targetPath, Storage::disk('public')->get($sourcePath));
                 
                 // Format file untuk FFmpeg concat (duration 0.6s per image)
                 $filesTxt .= "file '" . $tempFileName . "'\n";
                 $filesTxt .= "duration 0.6\n";
                 $index++;
             } catch (\Exception $e) {
-                Log::error("Gagal menyalin file timelapse: " . $e->getMessage());
+                Log::error("Gagal menyalin file timelapse ({$sourcePath}): " . $e->getMessage());
             }
         }
         
         if ($index === 0) {
             Storage::deleteDirectory($tempDir);
-            $sampleDir = implode(', ', Storage::directories('public'));
-            throw new \Exception("File foto fisik tidak ditemukan di server. (Ditemukan folder: {$sampleDir})");
+            $diskRoots = config('filesystems.disks.public.root');
+            throw new \Exception("File foto fisik tidak ditemukan di server. (Mencari di: {$diskRoots})");
         }
         
         // FFmpeg butuh file terakhir diduplikasi/tanpa durasi untuk penanda stop
