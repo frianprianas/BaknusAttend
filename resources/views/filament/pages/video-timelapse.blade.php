@@ -1,5 +1,33 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
+    <div class="space-y-6 relative" x-data="{ generating: @entangle('isGenerating') }">
+        
+        {{-- Layar Loading Penuh "BaknusAI" --}}
+        <div 
+            x-show="generating" 
+            x-transition.opacity.duration.500ms
+            class="fixed inset-0 z-[9999] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto"
+            style="display: none;"
+        >
+            <div class="relative w-24 h-24 mb-8">
+                <!-- Outer Spin -->
+                <div class="absolute inset-0 rounded-full border-t-4 border-indigo-500 animate-spin"></div>
+                <!-- Inner Pulse Glow -->
+                <div class="absolute inset-3 rounded-full bg-indigo-500/30 animate-pulse blur-md"></div>
+                <!-- Icon Camera/AI -->
+                <div class="absolute inset-0 flex items-center justify-center text-indigo-400">
+                    <svg class="w-10 h-10 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </div>
+            </div>
+
+            <h3 class="text-3xl font-black text-white mb-3 tracking-tight drop-shadow-lg">Merangkai Kenangan...</h3>
+            <p class="text-indigo-300 font-medium animate-pulse text-lg">Memproses foto menjadi video kilas balik Anda</p>
+            
+            <div class="mt-12 flex items-center gap-3 bg-black/40 px-5 py-2.5 rounded-full border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                <span class="text-sm text-gray-400">Ditenagai oleh</span>
+                <span class="text-sm text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 font-black italic tracking-widest">BAKNUS-AI ✨</span>
+            </div>
+        </div>
+
         <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-6">
             <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
                 <div>

@@ -141,6 +141,9 @@ class VideoTimelapse extends Page
             // Panggil Service baru
             $videoUrl = $service->generateFromPhotos($user, $orderedSelected);
 
+            // Simulasi proses "berpikir" dan menyusun video agar terlihat dramatis (Efek BaknusAI)
+            sleep(4);
+
             Notification::make()
                 ->title('Video Kilas Balik Siap!')
                 ->body('Video Anda berhasil diproses dan akan terunduh otomatis.')
