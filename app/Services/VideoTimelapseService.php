@@ -14,46 +14,16 @@ use Symfony\Component\Process\Process;
 class VideoTimelapseService
 {
     /**
-     * Generate video timelapse dari foto kehadiran user (Masuk)
-     * Limit: Max 60 Foto (Mencakup 2 bulan atau Pagi+Sore)
+     * Generate video timelapse dari array foto yang dipilih (Max 20 foto sesuai request)
      */
-    public function generateForUser($user, $month = null, $year = null)
+    public function generateFromPhotos($user, array $photos)
     {
-        $month = $month ?? Carbon::now()->month;
-        $year = $year ?? Carbon::now()->year;
-
-        // 1. Ambil list foto (Maks 60 foto)
-        $photos = [];
-        if ($user->role === 'Siswa') {
-            $nis = $user->nipy ?? $user->email;
-            $student = Student::where('nis', $nis)->first();
-            if ($student) {
-                // Ambil semua foto di bulan tersebut (bisa Masuk atau Pulang agar lebih banyak)
-                $photos = KehadiranSiswa::where('nis', $student->nis)
-                    ->whereMonth('waktu_tap', $month)
-                    ->whereYear('waktu_tap', $year)
-                    ->whereNotNull('photo')
-                    ->orderBy('waktu_tap', 'asc')
-                    ->limit(60)
-                    ->pluck('photo')
-                    ->toArray();
-            }
-        } else {
-            $nipy = $user->nipy ?? $user->email;
-            $photos = KehadiranGuruTu::where(function($q) use ($nipy, $user) {
-                    $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
-                })
-                ->whereMonth('waktu_tap', $month)
-                ->whereYear('waktu_tap', $year)
-                ->whereNotNull('photo')
-                ->orderBy('waktu_tap', 'asc')
-                ->limit(60)
-                ->pluck('photo')
-                ->toArray();
+        if (count($photos) < 3) {
+            throw new \Exception("Minimal 3 foto diperlukan untuk membuat video.");
         }
 
-        if (count($photos) < 3) {
-            throw new \Exception("Minimal 3 foto diperlukan di database untuk membuat video.");
+        if (count($photos) > 20) {
+            throw new \Exception("Maksimal 20 foto yang dapat dipilih.");
         }
 
         // 2. Siapkan direktori kerja di TEMP
@@ -100,7 +70,9 @@ class VideoTimelapseService
         if ($framerate < 0.8) $framerate = 0.8; // Max 1.2s per foto
         if ($framerate > 5) $framerate = 5;     // Max 5 foto per detik
 
-        $outputFileName = 'timelapse_' . $user->id . '_' . $month . '_' . $year . '.mp4';
+        $monthStr = date('m');
+        $yearStr = date('Y');
+        $outputFileName = 'timelapse_' . $user->id . '_' . $monthStr . '_' . $yearStr . '.mp4';
         $finalPublicDir = storage_path('app/public/timelapse');
         if (!file_exists($finalPublicDir)) mkdir($finalPublicDir, 0777, true);
         
