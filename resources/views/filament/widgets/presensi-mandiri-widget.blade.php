@@ -29,38 +29,22 @@
                 },
                 openLiveCamera() {
                     this.showLiveCam = true;
-                    // Beri waktu Alpine.js merender template video
-                    setTimeout(async () => {
-                        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                            try {
-                                const stream = await navigator.mediaDevices.getUserMedia({ 
-                                    video: { 
-                                        facingMode: "user",
-                                        width: { ideal: 1280 },
-                                        height: { ideal: 720 }
-                                    } 
-                                });
-                                
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                            .then((stream) => {
                                 this.stream = stream;
                                 const video = this.$refs.liveVideo;
-                                
-                                if (video) {
-                                    video.srcObject = stream;
-                                    video.setAttribute('playsinline', true);
-                                    video.setAttribute('muted', true);
-                                    video.play();
-                                } else {
-                                    throw new Error("Elemen video tidak ditemukan di layar.");
-                                }
-                            } catch (err) {
+                                video.srcObject = stream;
+                                video.play();
+                            })
+                            .catch((err) => {
                                 alert("Kamera tidak dapat diakses: " + err.message + "\nGunakan tombol kamera bawaan di bawah.");
                                 this.stopCamera();
-                            }
-                        } else {
-                            alert("Browser Anda tidak mendukung fitur Live Kamera. Gunakan tombol bawaan.");
-                            this.stopCamera();
-                        }
-                    }, 100);
+                            });
+                    } else {
+                        alert("Browser Anda tidak mendukung fitur Live Kamera. Gunakan tombol bawaan.");
+                        this.stopCamera();
+                    }
                 },
                 captureLiveCamera() {
                     const video = this.$refs.liveVideo;
