@@ -164,6 +164,13 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->userMenuItems([
+                'profile' => \Filament\Navigation\MenuItem::make()
+                    ->label('Ganti Foto Profil')
+                    ->icon('heroicon-o-camera')
+                    ->url('https://baknusmail.smkbn666.sch.id')
+                    ->openUrlInNewTab(),
+            ])
             ->authMiddleware([
                 FilamentAuthenticate::class,
             ]);
