@@ -7,8 +7,8 @@
 
     <div
         x-data="{
-            lat: $wire.$entangle('data.lat').live,
-            long: $wire.$entangle('data.long').live,
+            lat: @entangle('data.lat'),
+            long: @entangle('data.long'),
             map: null,
             marker: null,
             searchQuery: '',
