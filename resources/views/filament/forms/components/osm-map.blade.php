@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="{{ asset('leaflet/leaflet.css') }}" />
 
     <div
         x-data="{
@@ -89,7 +89,7 @@
             loadLeaflet() {
                 if (typeof L === 'undefined') {
                     const script = document.createElement('script');
-                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.src = '{{ asset('leaflet/leaflet.js') }}';
                     script.onload = () => this.initMap();
                     document.head.appendChild(script);
                 } else {
