@@ -55,12 +55,12 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->html()
                     ->getStateUsing(function($record, Tables\Table $table) {
                         try {
-                            $filters = $table->getLivewire()->tableFilters;
-                            $month = $filters['bulan']['value'] ?? now()->format('m');
-                            $year = $filters['tahun']['value'] ?? now()->format('Y');
+                            // Cara paling aman ambil filter di Filament 3
+                            $bulan = request()->query('tableFilters')['bulan']['value'] ?? now()->format('m');
+                            $tahun = request()->query('tableFilters')['tahun']['value'] ?? now()->format('Y');
                             
-                            $month = (int) $month;
-                            $year = (int) $year;
+                            $month = (int) $bulan;
+                            $year = (int) $tahun;
 
                             $service = new \App\Services\AttendanceService();
                             $activeDays = $service->getEffectiveWorkingDays($month, $year);
@@ -74,25 +74,25 @@ class KehadiranGuruTuMonthlyResource extends Resource
                                 ->count();
                             
                             $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
-                            $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700' : ($persen >= 50 ? 'bg-warning-100 text-warning-700' : 'bg-danger-100 text-danger-700');
+                            $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700 font-bold' : ($persen >= 50 ? 'bg-warning-100 text-warning-700 font-bold' : 'bg-danger-100 text-danger-700 font-bold');
                             
                             return "
                                 <div class='flex flex-col gap-1'>
                                     <div class='flex items-center gap-1.5'>
-                                        <span class='text-[10px] font-bold text-gray-500 uppercase'>Hari aktif bulan ini: {$activeDays} hari</span>
+                                        <span class='text-[10px] text-gray-500 uppercase'>Hari aktif bulan ini: <b class='text-gray-700'>{$activeDays} hari</b></span>
                                         <span class='text-[10px] font-bold text-gray-400'>|</span>
-                                        <span class='text-[10px] font-bold text-success-600 uppercase'>Total Hadir: {$hadirCount}x</span>
+                                        <span class='text-[10px] text-success-600 uppercase'>Total Hadir: <b class='text-success-800'>{$hadirCount}x</b></span>
                                     </div>
                                     <div class='flex items-center gap-2'>
                                         <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
                                             <div class='h-full " . ($persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500')) . "' style='width: {$persen}%'></div>
                                         </div>
-                                        <span class='text-xs font-black {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
+                                        <span class='text-xs {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
                                     </div>
                                 </div>
                             ";
                         } catch (\Exception $e) {
-                            return "<span class='text-xs text-danger-500'>Error Loading Stats</span>";
+                            return "<span class='text-[10px] text-gray-400 italic'>Statistik belum tersedia...</span>";
                         }
                     }),
             ])
@@ -111,8 +111,8 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->label('Tahun')
                     ->options(function() {
                         $years = [];
-                        $currentYear = now()->year;
-                        for ($i = $currentYear; $i >= $currentYear - 3; $i--) {
+                        $currentYear = (int) now()->year;
+                        for ($i = $currentYear; $i >= $currentYear - 2; $i--) {
                             $years[$i] = $i;
                         }
                         return $years;
