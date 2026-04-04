@@ -21,6 +21,8 @@ class KehadiranSiswaResource extends Resource
     protected static ?string $navigationLabel = 'Laporan Kehadiran';
     protected static ?string $navigationGroup = null;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function canViewAny(): bool
     {
         $user = auth()->user();
