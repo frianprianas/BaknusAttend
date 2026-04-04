@@ -145,6 +145,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,
+                \App\Filament\Pages\AttendanceOverview::class,
                 \App\Filament\Pages\IzinSakitPage::class,
                 \App\Filament\Pages\VideoTimelapse::class,
                 \App\Filament\Pages\TimelapseSettings::class,

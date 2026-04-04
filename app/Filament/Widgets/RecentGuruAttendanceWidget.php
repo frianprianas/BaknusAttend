@@ -40,15 +40,7 @@ class RecentGuruAttendanceWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        $user = auth()->user();
-        if (!$user || $user->role !== 'Admin') return false;
-        
-        // Sembunyikan dari Dashboard utama jika merupakan Admin
-        if (request()->routeIs('filament.admin.pages.dashboard')) {
-            return false;
-        }
-
-        return true;
+        return auth()->user()?->role === 'Admin';
     }
 
     public function table(Table $table): Table
