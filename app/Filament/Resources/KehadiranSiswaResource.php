@@ -96,7 +96,10 @@ class KehadiranSiswaResource extends Resource
                         
                         return "
                             <div class='flex items-center gap-2'>
-                                <img src='{$photoUrl}' class='w-8 h-8 rounded-full object-cover border border-gray-200' />
+                                <img src='{$photoUrl}' 
+                                    wire:click=\"mountTableAction('view_photo', {id: '{$data->id}'})\"
+                                    class='w-8 h-8 rounded-full object-cover border border-gray-200 cursor-zoom-in pointer-events-auto' 
+                                />
                                 <span class='font-bold text-success-600'>{$jam}</span>
                             </div>
                         ";
@@ -119,7 +122,10 @@ class KehadiranSiswaResource extends Resource
                         
                         return "
                             <div class='flex items-center gap-2'>
-                                <img src='{$photoUrl}' class='w-8 h-8 rounded-full object-cover border border-gray-200' />
+                                <img src='{$photoUrl}' 
+                                    wire:click=\"mountTableAction('view_photo', {id: '{$data->id}'})\"
+                                    class='w-8 h-8 rounded-full object-cover border border-gray-200 cursor-zoom-in pointer-events-auto' 
+                                />
                                 <span class='font-bold text-warning-600'>{$jam}</span>
                             </div>
                         ";
@@ -154,8 +160,19 @@ class KehadiranSiswaResource extends Resource
                         };
                     }),
             ])
-            ->actions([])
-            ->bulkActions([])
+            ->actions([
+                Tables\Actions\Action::make('view_photo')
+                    ->label('Lihat Foto')
+                    ->modalHeading('Detail Foto Presensi Siswa')
+                    ->modalContent(fn ($arguments) => view('filament.components.image-modal', [
+                        'url' => ($data = KehadiranSiswa::find($arguments['id'])) && $data->photo 
+                             ? asset('storage/' . $data->photo) 
+                             : url('/images/user-placeholder.png')
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    ->hidden(),
+            ])
             ->paginated(true);
     }
 
