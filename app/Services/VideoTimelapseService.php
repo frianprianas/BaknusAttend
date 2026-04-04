@@ -50,7 +50,14 @@ class VideoTimelapseService
             $targetPath = $osTempDir . DIRECTORY_SEPARATOR . $tempFileName;
             
             try {
+                $fullDiskPath = storage_path('app/public/' . $foundPath);
+                
+                // Tulis raw dulu agar bisa baca EXIF
                 file_put_contents($targetPath, Storage::disk('public')->get($foundPath));
+
+                // Baca EXIF orientation dan rotasi fisik via GD agar FFmpeg tidak miring
+                $this->fixImageOrientation($targetPath);
+
                 $filesForCleanup[] = $targetPath;
                 $index++;
             } catch (\Exception $e) {
@@ -130,5 +137,38 @@ class VideoTimelapseService
         }
 
         return asset('storage/timelapse/' . $outputFileName);
+    }
+
+    /**
+     * Baca EXIF orientation dan rotasi gambar secara fisik.
+     * Foto dari HP menyimpan data "miring" di metadata EXIF,
+     * browser otomatis baca ini tapi FFmpeg TIDAK.
+     */
+    private function fixImageOrientation(string $imagePath): void
+    {
+        if (!function_exists('exif_read_data')) return;
+
+        $exif = @exif_read_data($imagePath);
+        if (!$exif || !isset($exif['Orientation'])) return;
+
+        $orientation = $exif['Orientation'];
+        if ($orientation == 1) return; // Sudah benar, tidak perlu rotasi
+
+        $img = @imagecreatefromjpeg($imagePath);
+        if (!$img) return;
+
+        $rotated = match ($orientation) {
+            3 => imagerotate($img, 180, 0),  // Terbalik
+            6 => imagerotate($img, -90, 0),  // HP portrait (paling sering)
+            8 => imagerotate($img, 90, 0),   // HP portrait terbalik
+            default => null,
+        };
+
+        if ($rotated) {
+            imagejpeg($rotated, $imagePath, 90);
+            imagedestroy($rotated);
+        }
+
+        imagedestroy($img);
     }
 }
