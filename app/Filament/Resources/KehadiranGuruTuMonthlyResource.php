@@ -36,6 +36,7 @@ class KehadiranGuruTuMonthlyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        // Hanya ambil Guru dan TU
         return parent::getEloquentQuery()
             ->whereIn('role', ['Guru', 'TU'])
             ->orderBy('name', 'asc');
@@ -45,6 +46,38 @@ class KehadiranGuruTuMonthlyResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('face_reference')
+                    ->label('Foto Master')
+                    ->html()
+                    ->getStateUsing(function($record) {
+                        if (!$record->face_reference) {
+                            return "<div class='flex items-center justify-center w-12 h-12 bg-gray-50 border border-dashed border-gray-300 rounded-xl'><span class='text-[8px] text-gray-400 italic text-center leading-tight'>Belum ada<br>foto</span></div>";
+                        }
+                        $url = asset('storage/' . $record->face_reference);
+                        return "
+                            <div x-data='{ open: false }' class='relative'>
+                                <img 
+                                    @click='open = true'
+                                    src='{$url}' 
+                                    class='w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-md hover:scale-105 transition-transform cursor-zoom-in' 
+                                />
+                                <!-- Mini Lightbox untuk Foto Master -->
+                                <template x-teleport='body'>
+                                    <div x-show='open' x-cloak @click='open = false' class='fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-8'>
+                                        <div class='relative max-w-sm'>
+                                            <img src='{$url}' class='w-full rounded-2xl border-[5px] border-white shadow-2xl' />
+                                            <div class='absolute -top-4 -right-4 bg-red-500 text-white p-2 rounded-full shadow-lg'>
+                                                <svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path d='M6 18L18 6M6 6l12 12' stroke-linecap='round' stroke-linejoin='round' stroke-width='3'></path></svg>
+                                            </div>
+                                            <div class='text-center mt-4 text-white font-bold text-sm'>Foto Master: {$record->name}</div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        ";
+                    })
+                    ->grow(false),
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Pegawai')
                     ->description(fn($record) => "ID: " . ($record->nipy ?? $record->email))
@@ -56,9 +89,7 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->html()
                     ->getStateUsing(function($record, Tables\Table $table) {
                         try {
-                            // AMBIL FILTER DENGAN CARA PALING STABIL (Deteksi Berlapis)
                             $formDate = $table->getLivewire()->tableFilters ?? [];
-                            
                             $selMonth = $formDate['bulan']['value'] ?? request()->query('tableFilters')['bulan']['value'] ?? now()->format('m');
                             $selYear = $formDate['tahun']['value'] ?? request()->query('tableFilters')['tahun']['value'] ?? now()->format('Y');
                             
@@ -95,7 +126,6 @@ class KehadiranGuruTuMonthlyResource extends Resource
                                 </div>
                             ";
                         } catch (\Exception $e) {
-                            // FALLBACK JIKA ERROR MASIH TERJADI (Biar Tetap Tampil)
                             return "<span class='text-[10px] text-gray-400 italic px-2 py-1 bg-gray-50 rounded border border-gray-200 shadow-sm'>Menghitung data...</span>";
                         }
                     }),
