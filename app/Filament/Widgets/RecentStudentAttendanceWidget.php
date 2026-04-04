@@ -43,7 +43,15 @@ class RecentStudentAttendanceWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->role === 'Admin';
+        $user = auth()->user();
+        if (!$user || $user->role !== 'Admin') return false;
+        
+        // Sembunyikan dari Dashboard utama jika merupakan Admin agar tidak duplikat dengan menu Presensi/Absensi
+        if (request()->routeIs('filament.admin.pages.dashboard')) {
+            return false;
+        }
+
+        return true;
     }
 
     public function table(Table $table): Table
