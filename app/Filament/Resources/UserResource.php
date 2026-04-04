@@ -67,7 +67,7 @@ class UserResource extends Resource
                     ->default('TU'),
                 Forms\Components\TextInput::make('target_hari_kerja')
                     ->label('Target Presensi (Hari)')
-                    ->helperText('Otomatis terisi berdasarkan: (Senin-Jumat) - (Libur di Kalender Libur).')
+                    ->helperText(fn() => (new \App\Services\AttendanceService())->getCalculationDetail())
                     ->numeric()
                     ->default(fn() => (new \App\Services\AttendanceService())->getEffectiveWorkingDays())
                     ->suffix('Hari')

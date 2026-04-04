@@ -43,4 +43,35 @@ class AttendanceService
 
         return $effectiveDays > 0 ? $effectiveDays : 0;
     }
+
+    /**
+     * Mengembalikan string detail perhitungan.
+     */
+    public function getCalculationDetail($month = null, $year = null): string
+    {
+        $month = $month ?? now()->format('m');
+        $year = $year ?? now()->format('Y');
+
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+        $monthName = $startDate->translatedFormat('F');
+
+        $endDate = $startDate->copy()->endOfMonth();
+
+        $weekdaysCount = 0;
+        $tempDate = $startDate->copy();
+        while ($tempDate <= $endDate) {
+            if ($tempDate->isWeekday()) $weekdaysCount++;
+            $tempDate->addDay();
+        }
+
+        $holidaysCount = Holiday::whereYear('holiday_date', $year)
+            ->whereMonth('holiday_date', $month)
+            ->get()
+            ->filter(fn($h) => $h->holiday_date->isWeekday())
+            ->count();
+
+        $total = $weekdaysCount - $holidaysCount;
+
+        return "Bulan {$monthName}: {$weekdaysCount} hari kerja (Senin-Jumat) - {$holidaysCount} hari libur = {$total} hari aktif.";
+    }
 }
