@@ -355,6 +355,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
         // --- END FACE RECOGNITION ---
 
         $currentTime = now();
+
+        try {
+            $this->addWatermarkToImage($photoFinal, clone $currentTime, $formData['lat'], $formData['long']);
+        } catch (\Exception $e) {
+            // Fallback: Jika GD Library bermasalah, foto akan tetap tersimpan tanpa watermark.
+        }
+
         $status = 'Hadir';
         $keterangan = "{$tipeAbsens} - Presensi Mandiri (Dashboard)";
 
@@ -421,5 +428,61 @@ class PresensiMandiriWidget extends Widget implements HasForms
             cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
         
         return $angle * $earthRadius;
+    }
+
+    private function addWatermarkToImage(string $path, Carbon $time, $lat, $long)
+    {
+        $fullPath = storage_path('app/public/' . $path);
+        if (!file_exists($fullPath)) return;
+
+        $mime = mime_content_type($fullPath);
+        $img = null;
+        if ($mime == 'image/jpeg') $img = @imagecreatefromjpeg($fullPath);
+        elseif ($mime == 'image/png') $img = @imagecreatefrompng($fullPath);
+        elseif ($mime == 'image/webp') $img = @imagecreatefromwebp($fullPath);
+
+        if (!$img) return;
+
+        $width = imagesx($img);
+        $height = imagesy($img);
+
+        // Tinggi background banner
+        $bannerHeight = 65;
+        $bannerY = $height - $bannerHeight;
+
+        // Siapkan warna
+        // Aktifkan alpha blending untuk background transparan
+        imagealphablending($img, true);
+        imagesavealpha($img, true);
+
+        // Hitam transparan (40 dari 127 = sekitar 30% tembus pandang)
+        $blackAlpha = imagecolorallocatealpha($img, 0, 0, 0, 40); 
+        $white = imagecolorallocate($img, 255, 255, 255);
+        $yellow = imagecolorallocate($img, 255, 255, 0);
+        $cyan = imagecolorallocate($img, 0, 255, 255);
+
+        // Gambar background banner di bawah
+        imagefilledrectangle($img, 0, $bannerY, $width, $height, $blackAlpha);
+
+        // Pakai font native terbesar GD = ukuran 5
+        $font = 5;
+        
+        $userName = $this->userName ?? 'Unknown';
+        // Pisahkan teks
+        $userStr = "Nama   : " . $userName;
+        $timeStr = "Waktu  : " . $time->format('d M Y H:i:s') . " WIB";
+        $locStr  = "Lokasi : " . $lat . ", " . $long;
+
+        // Cetak teks berurutan
+        imagestring($img, $font, 15, $bannerY + 8,  $userStr, $cyan);
+        imagestring($img, $font, 15, $bannerY + 25, $timeStr, $white);
+        imagestring($img, $font, 15, $bannerY + 42, $locStr, $yellow);
+
+        // Simpan timpa foto lama
+        if ($mime == 'image/jpeg') imagejpeg($img, $fullPath, 90);
+        elseif ($mime == 'image/png') imagepng($img, $fullPath);
+        elseif ($mime == 'image/webp') imagewebp($img, $fullPath, 90);
+
+        imagedestroy($img);
     }
 }
