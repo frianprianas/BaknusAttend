@@ -52,8 +52,7 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->label('Periode')
                     ->getStateUsing(fn($record) => Carbon::parse($record->bulan_tahun . '-01')->translatedFormat('F Y'))
                     ->weight('bold')
-                    ->color('primary')
-                    ->sortable(),
+                    ->color('primary'),
 
                 Tables\Columns\TextColumn::make('pegawai_name')
                     ->label('Nama Pegawai')
@@ -67,35 +66,8 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('statistik')
-                    ->label('Statistik Kehadiran')
+                    ->label('Rincian Hadir')
                     ->html()
-                    ->getStateUsing(function($record) {
-                        $date = Carbon::parse($record->bulan_tahun . '-01');
-                        $month = $date->month;
-                        $year = $date->year;
-                        
-                        $service = new \App\Services\AttendanceService();
-                        $activeDays = $service->getEffectiveWorkingDays($month, $year);
-                        
-                        $hadirCount = KehadiranGuruTu::where('nipy', $record->nipy)
-                            ->whereMonth('waktu_tap', $month)
-                            ->whereYear('waktu_tap', $year)
-                            ->where('keterangan', 'like', '%Masuk%')
-                            ->count();
-                        
-                        $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
-                        
-                        return "
-                            <div class='flex items-center gap-2'>
-                                <span class='px-2 py-0.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold border border-gray-200'>Aktif: {$activeDays}</span>
-                                <span class='px-2 py-0.5 bg-success-50 text-success-700 rounded-lg text-xs font-bold border border-success-100'>Hadir: {$hadirCount}</span>
-                                <span class='px-2 py-0.5 bg-info-50 text-info-700 rounded-lg text-xs font-bold border border-info-100'>{$persen}%</span>
-                            </div>
-                        ";
-                    }),
-
-                Tables\Columns\ProgressBarColumn::make('progress')
-                    ->label('Grafik')
                     ->getStateUsing(function($record) {
                         $date = Carbon::parse($record->bulan_tahun . '-01');
                         $service = new \App\Services\AttendanceService();
@@ -106,9 +78,25 @@ class KehadiranGuruTuMonthlyResource extends Resource
                             ->where('keterangan', 'like', '%Masuk%')
                             ->count();
                         
-                        return $activeDays > 0 ? ($hadirCount / $activeDays) : 0;
-                    })
-                    ->color(fn($state) => $state >= 0.8 ? 'success' : ($state >= 0.5 ? 'warning' : 'danger')),
+                        $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
+                        $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700' : ($persen >= 50 ? 'bg-warning-100 text-warning-700' : 'bg-danger-100 text-danger-700');
+                        
+                        return "
+                            <div class='flex flex-col gap-1'>
+                                <div class='flex items-center gap-1.5'>
+                                    <span class='text-[10px] font-bold text-gray-500 uppercase'>Aktif: {$activeDays}</span>
+                                    <span class='text-[10px] font-bold text-gray-400'>|</span>
+                                    <span class='text-[10px] font-bold text-success-600 uppercase'>Hadir: {$hadirCount}</span>
+                                </div>
+                                <div class='flex items-center gap-2'>
+                                    <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
+                                        <div class='h-full " . ($persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500')) . "' style='width: {$persen}%'></div>
+                                    </div>
+                                    <span class='text-xs font-black {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
+                                </div>
+                            </div>
+                        ";
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('bulan')
