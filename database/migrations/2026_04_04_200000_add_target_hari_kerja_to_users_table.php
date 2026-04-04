@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->integer('target_hari_kerja')->default(20)->comment('Target hari kerja guru/TU per bulan');
+            $table->integer('target_hari_kerja')->nullable()->comment('Target hari kerja guru/TU per bulan (NULL = Otomatis dari Kalender Libur)');
         });
     }
 

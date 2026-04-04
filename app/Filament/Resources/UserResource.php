@@ -67,12 +67,12 @@ class UserResource extends Resource
                     ->default('TU'),
                 Forms\Components\TextInput::make('target_hari_kerja')
                     ->label('Target Presensi (Hari)')
-                    ->helperText('Jumlah hari target kehadiran dalam satu bulan (Gunakan sebagai acuan laporan)')
+                    ->helperText('Kosongkan untuk mengikuti hitungan otomatis dari Kalender Libur (Senin-Jumat dikurangi libur).')
                     ->numeric()
-                    ->default(20)
+                    ->nullable()
+                    ->placeholder('Otomatis')
                     ->suffix('Hari')
-                    ->prefix('Min.')
-                    ->required(),
+                    ->prefix('Min.'),
                 Forms\Components\TextInput::make('rfid')
                     ->label('Kode Kartu RFID')
                     ->unique(ignoreRecord: true)
