@@ -121,19 +121,7 @@ class KehadiranSiswaResource extends Resource
                         };
                     }),
             ])
-            ->actions([
-                Tables\Actions\Action::make('view_photo')
-                    ->label('Lihat Foto')
-                    ->modalHeading('Detail Foto Presensi Siswa')
-                    ->modalContent(fn ($arguments) => view('filament.components.image-modal', [
-                        'url' => ($data = KehadiranSiswa::find($arguments['id'] ?? null)) && $data->photo 
-                             ? asset('storage/' . $data->photo) 
-                             : url('/images/user-placeholder.png')
-                    ]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup')
-                    ->extraAttributes(['class' => 'hidden']),
-            ])
+            ->actions([])
             ->bulkActions([])
             ->paginated(true)
             ->defaultPaginationPageOption(25);
