@@ -21,28 +21,25 @@ class ListHolidays extends ListRecords
                 ->action(function () {
                     try {
                         $year = now()->year;
-                        // Coba pakai API alternatif yang lebih stabil
-                        $response = \Illuminate\Support\Facades\Http::get("https://api-harilibur.vercel.app/api?year={$year}");
+                        // Pakai API referensi User yang terbukti work dan lengkap (thanks!)
+                        $response = \Illuminate\Support\Facades\Http::get("https://libur.deno.dev/api");
                         
                         if ($response->successful()) {
                             $holidays = $response->json();
                             
                             if (empty($holidays) || !is_array($holidays)) {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Data Kosong')
-                                    ->body("Belum ada data hari libur nasional resmi untuk tahun {$year} di server pusat.")
-                                    ->warning()
-                                    ->send();
-                                return;
+                                throw new \Exception('Data dari API kosong atau tidak sesuai format.');
                             }
 
                             $count = 0;
                             foreach ($holidays as $h) {
-                                // Struktur dari API-HariLibur: 'holiday_date' dan 'holiday_name'
-                                $date = $h['holiday_date'] ?? $h['tanggal'] ?? null;
-                                $name = $h['holiday_name'] ?? $h['keterangan'] ?? 'Libur Nasional';
+                                $date = $h['date'] ?? null;
+                                $name = $h['name'] ?? 'Libur Nasional';
 
                                 if (!$date) continue;
+                                
+                                // Pastikan HANYA ambil data tahun berjalan
+                                if (!str_starts_with($date, (string)$year)) continue;
 
                                 $exists = \App\Models\Holiday::where('holiday_date', $date)->exists();
                                 
@@ -56,19 +53,19 @@ class ListHolidays extends ListRecords
                             }
                             
                             \Filament\Notifications\Notification::make()
-                                ->title('Berhasil Impor')
+                                ->title('Sinkronisasi Berhasil ✨')
                                 ->body($count > 0 
-                                    ? $count . ' hari libur nasional baru telah ditambahkan.' 
-                                    : 'Semua hari libur nasional untuk tahun ' . $year . ' sudah ada di daftar.')
+                                    ? $count . ' hari libur nasional untuk tahun ' . $year . ' telah ditambahkan.' 
+                                    : 'Kalender libur tahun ' . $year . ' Anda sudah sesuai dengan data pusat.')
                                 ->success()
                                 ->send();
                         } else {
-                            throw new \Exception('API merespon dengan kode: ' . $response->status());
+                            throw new \Exception('Koneksi Gagal: ' . $response->status());
                         }
                     } catch (\Exception $e) {
                         \Filament\Notifications\Notification::make()
-                            ->title('Gagal Impor')
-                            ->body('Terjadi kesalahan sinkronisasi: ' . $e->getMessage())
+                            ->title('Gagal Sinkronisasi')
+                            ->body('Terjadi kesalahan: ' . $e->getMessage())
                             ->danger()
                             ->send();
                     }
