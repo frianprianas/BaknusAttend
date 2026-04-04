@@ -90,14 +90,14 @@
                         @endforeach
                         
                         {{-- Opsi Tanpa Musik --}}
-                        <div class="flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all {{ !$selectedMusic ? 'border-gray-500 bg-white dark:bg-gray-800 shadow-md' : 'border-transparent bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-300' }}"
-                            wire:click="selectMusic(null)">
+                        <div class="flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all {{ $selectedMusic === '__none__' ? 'border-gray-500 bg-white dark:bg-gray-800 shadow-md' : 'border-transparent bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-300' }}"
+                            wire:click="selectMusic('__none__')">
                             <div class="w-10 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-md text-gray-500">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
                             </div>
                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanpa Musik</span>
-                            <div class="ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center {{ !$selectedMusic ? 'border-gray-600 bg-gray-600 text-white' : 'border-gray-400' }}">
-                                @if(!$selectedMusic)
+                            <div class="ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center {{ $selectedMusic === '__none__' ? 'border-gray-600 bg-gray-600 text-white' : 'border-gray-400' }}">
+                                @if($selectedMusic === '__none__')
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                                 @endif
                             </div>

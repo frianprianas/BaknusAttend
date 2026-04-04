@@ -25,7 +25,7 @@ class VideoTimelapse extends Page
     public $recentPhotos = [];
     public $selectedPhotos = [];
     public array $musicList = [];
-    public ?string $selectedMusic = null;
+    public ?string $selectedMusic = '__none__';
     public $isGenerating = false;
     public ?string $generatedVideoUrl = null;
 
@@ -119,7 +119,7 @@ class VideoTimelapse extends Page
 
     public function selectMusic($file)
     {
-        $this->selectedMusic = $file;
+        $this->selectedMusic = $file ?: '__none__';
     }
 
     public function selectAllTampil()
@@ -158,8 +158,9 @@ class VideoTimelapse extends Page
                 }
             }
 
-            // Panggil Service baru
-            $videoUrl = $service->generateFromPhotos($user, $orderedSelected, $this->selectedMusic);
+            // Panggil Service baru — kirim null jika '__none__'
+            $musicToUse = ($this->selectedMusic && $this->selectedMusic !== '__none__') ? $this->selectedMusic : null;
+            $videoUrl = $service->generateFromPhotos($user, $orderedSelected, $musicToUse);
 
             // Simulasi proses "berpikir" dan menyusun video agar terlihat dramatis (Efek BaknusAI)
             sleep(4);

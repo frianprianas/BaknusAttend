@@ -69,9 +69,7 @@ class VideoTimelapseService
         if ($framerate < 0.8) $framerate = 0.8; // Max 1.2s per foto
         if ($framerate > 5) $framerate = 5;     // Max 5 foto per detik
 
-        $monthStr = date('m');
-        $yearStr = date('Y');
-        $outputFileName = 'timelapse_' . $user->id . '_' . $monthStr . '_' . $yearStr . '.mp4';
+        $outputFileName = 'timelapse_' . $user->id . '_' . time() . '.mp4';
         $finalPublicDir = storage_path('app/public/timelapse');
         if (!file_exists($finalPublicDir)) mkdir($finalPublicDir, 0777, true);
         
