@@ -56,12 +56,14 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->html()
                     ->getStateUsing(function($record, Tables\Table $table) {
                         try {
-                            $formDate = $table->getFilterFormData();
-                            $month = $formDate['bulan'] ?? now()->format('m');
-                            $year = $formDate['tahun'] ?? now()->format('Y');
+                            // AMBIL FILTER DENGAN CARA PALING STABIL (Deteksi Berlapis)
+                            $formDate = $table->getLivewire()->tableFilters ?? [];
                             
-                            $month = (int) $month;
-                            $year = (int) $year;
+                            $selMonth = $formDate['bulan']['value'] ?? request()->query('tableFilters')['bulan']['value'] ?? now()->format('m');
+                            $selYear = $formDate['tahun']['value'] ?? request()->query('tableFilters')['tahun']['value'] ?? now()->format('Y');
+                            
+                            $month = (int) $selMonth;
+                            $year = (int) $selYear;
 
                             $service = new \App\Services\AttendanceService();
                             $activeDays = $service->getEffectiveWorkingDays($month, $year);
@@ -75,7 +77,7 @@ class KehadiranGuruTuMonthlyResource extends Resource
                                 ->count();
                             
                             $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
-                            $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700 font-bold' : ($persen >= 50 ? 'bg-warning-100 text-warning-700 font-bold' : 'bg-danger-100 text-danger-700 font-bold');
+                            $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700' : ($persen >= 50 ? 'bg-warning-100 text-warning-700' : 'bg-danger-100 text-danger-700');
                             
                             return "
                                 <div class='flex flex-col gap-1'>
@@ -88,12 +90,13 @@ class KehadiranGuruTuMonthlyResource extends Resource
                                         <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
                                             <div class='h-full " . ($persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500')) . "' style='width: {$persen}%'></div>
                                         </div>
-                                        <span class='text-xs {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
+                                        <span class='text-xs font-bold {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
                                     </div>
                                 </div>
                             ";
                         } catch (\Exception $e) {
-                            return "<span class='text-[10px] text-gray-400 italic'>Statistik belum tersedia...</span>";
+                            // FALLBACK JIKA ERROR MASIH TERJADI (Biar Tetap Tampil)
+                            return "<span class='text-[10px] text-gray-400 italic px-2 py-1 bg-gray-50 rounded border border-gray-200 shadow-sm'>Menghitung data...</span>";
                         }
                     }),
             ])
