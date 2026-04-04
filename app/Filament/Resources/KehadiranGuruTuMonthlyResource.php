@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\KehadiranGuruTuMonthlyResource\Pages;
+use App\Models\User;
 use App\Models\KehadiranGuruTu;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,7 +16,7 @@ use Illuminate\Support\Carbon;
 
 class KehadiranGuruTuMonthlyResource extends Resource
 {
-    protected static ?string $model = KehadiranGuruTu::class;
+    protected static ?string $model = User::class; // Pakai User sebagai basis (agar yg 0 pun muncul)
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'Rekap Bulanan Guru/TU';
@@ -34,47 +35,41 @@ class KehadiranGuruTuMonthlyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        // Hanya ambil Guru dan TU
         return parent::getEloquentQuery()
-            ->select([
-                DB::raw('MIN(id) as id'),
-                'nipy',
-                DB::raw("DATE_FORMAT(waktu_tap, '%Y-%m') as bulan_tahun"),
-            ])
-            ->groupBy('nipy', DB::raw("DATE_FORMAT(waktu_tap, '%Y-%m')"))
-            ->orderBy('bulan_tahun', 'desc');
+            ->whereIn('role', ['Guru', 'TU'])
+            ->orderBy('name', 'asc');
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('bulan_tahun')
-                    ->label('Periode')
-                    ->getStateUsing(fn($record) => Carbon::parse($record->bulan_tahun . '-01')->translatedFormat('F Y'))
-                    ->weight('bold')
-                    ->color('primary'),
-
-                Tables\Columns\TextColumn::make('pegawai_name')
+                Tables\Columns\TextColumn::make('name')
                     ->label('Nama Pegawai')
-                    ->getStateUsing(function ($record) {
-                        $user = \App\Models\User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
-                        return $user ? $user->name : $record->nipy;
-                    })
-                    ->description(fn($record) => "ID: " . $record->nipy)
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->where('nipy', 'like', "%{$search}%");
-                    }),
+                    ->description(fn($record) => "ID: " . ($record->nipy ?? $record->email))
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('statistik')
-                    ->label('Rincian Hadir')
+                    ->label('Statistik Kehadiran')
                     ->html()
-                    ->getStateUsing(function($record) {
-                        $date = Carbon::parse($record->bulan_tahun . '-01');
+                    ->getStateUsing(function($record, Tables\Table $table) {
+                        // Ambil Filter dari Tabel (Bulan & Tahun)
+                        $filters = $table->getFilterFormData();
+                        $month = $filters['bulan'] ?? now()->month;
+                        $year = $filters['tahun'] ?? now()->year;
+                        
+                        $date = Carbon::create($year, $month, 1);
                         $service = new \App\Services\AttendanceService();
-                        $activeDays = $service->getEffectiveWorkingDays($date->month, $date->year);
-                        $hadirCount = KehadiranGuruTu::where('nipy', $record->nipy)
-                            ->whereMonth('waktu_tap', $date->month)
-                            ->whereYear('waktu_tap', $date->year)
+                        $activeDays = $service->getEffectiveWorkingDays($month, $year);
+                        
+                        // Cari presence dia di bulan tersebut
+                        $hadirCount = KehadiranGuruTu::where(function($q) use ($record) {
+                                $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
+                            })
+                            ->whereMonth('waktu_tap', $month)
+                            ->whereYear('waktu_tap', $year)
                             ->where('keterangan', 'like', '%Masuk%')
                             ->count();
                         
@@ -84,9 +79,9 @@ class KehadiranGuruTuMonthlyResource extends Resource
                         return "
                             <div class='flex flex-col gap-1'>
                                 <div class='flex items-center gap-1.5'>
-                                    <span class='text-[10px] font-bold text-gray-500 uppercase'>Aktif: {$activeDays}</span>
+                                    <span class='text-[10px] font-bold text-gray-500 uppercase'>Hari aktif bulan ini: {$activeDays} hari</span>
                                     <span class='text-[10px] font-bold text-gray-400'>|</span>
-                                    <span class='text-[10px] font-bold text-success-600 uppercase'>Hadir: {$hadirCount}</span>
+                                    <span class='text-[10px] font-bold text-success-600 uppercase'>Total Hadir: {$hadirCount}x</span>
                                 </div>
                                 <div class='flex items-center gap-2'>
                                     <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
@@ -100,20 +95,26 @@ class KehadiranGuruTuMonthlyResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('bulan')
-                    ->label('Filter Bulan')
+                    ->label('Bulan')
+                    ->options([
+                        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                        '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                        '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                        '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                    ])
+                    ->default(now()->format('m')),
+
+                Tables\Filters\SelectFilter::make('tahun')
+                    ->label('Tahun')
                     ->options(function() {
-                        $months = [];
-                        for ($i = 0; $i < 12; $i++) {
-                            $m = now()->subMonths($i);
-                            $months[$m->format('Y-m')] = $m->translatedFormat('F Y');
+                        $years = [];
+                        $currentYear = now()->year;
+                        for ($i = $currentYear; $i >= $currentYear - 3; $i--) {
+                            $years[$i] = $i;
                         }
-                        return $months;
+                        return $years;
                     })
-                    ->query(function (Builder $query, array $data): Builder {
-                        if (empty($data['value'])) return $query;
-                        return $query->where(DB::raw("DATE_FORMAT(waktu_tap, '%Y-%m')"), $data['value']);
-                    })
-                    ->default(now()->format('Y-m')),
+                    ->default(now()->year),
             ])
             ->actions([])
             ->bulkActions([])
