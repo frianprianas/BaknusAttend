@@ -42,16 +42,7 @@ class GuruTuAttendanceWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        $user = auth()->user();
-        if (!$user || $user->role !== 'Admin') return false;
-        
-        // JANGAN tampilkan di Dashboard utama agar Dashboard hanya isi Cards (Permintaan User)
-        $routeName = request()->route()?->getName() ?? '';
-        if (str_contains($routeName, '.pages.dashboard')) {
-            return false;
-        }
-
-        return true;
+        return auth()->user()?->role === 'Admin';
     }
 
     public function table(Table $table): Table

@@ -153,8 +153,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 \App\Filament\Widgets\DashboardStatsWidget::class,
-                \App\Filament\Widgets\RecentStudentAttendanceWidget::class,
-                \App\Filament\Widgets\GuruTuAttendanceWidget::class,
                 \App\Filament\Widgets\PresensiMandiriWidget::class,
             ])
             ->middleware([
