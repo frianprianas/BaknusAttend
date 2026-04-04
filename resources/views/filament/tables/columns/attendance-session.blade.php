@@ -44,11 +44,11 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
-                    class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
+                    class="fixed inset-0 z-[9999] flex items-center justify-center p-8 bg-black/95 backdrop-blur-md"
                     @keydown.escape.window="open = false"
                 >
                     <div 
-                        class="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+                        class="relative max-w-[70vw] max-h-[75vh] flex flex-col items-center"
                         @click.away="open = false"
                     >
                         <img 
