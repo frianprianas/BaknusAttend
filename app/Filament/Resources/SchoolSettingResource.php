@@ -103,6 +103,18 @@ class SchoolSettingResource extends Resource
                             ]),
                     ])
                     ->collapsible(),
+                
+                Forms\Components\Section::make('📅 Acuan Kehadiran Kerja')
+                    ->description('Tentukan standar jumlah hari kerja guru/TU dalam satu bulan. Nilai ini akan menjadi acuan saat menghitung persentase kehadiran guru.')
+                    ->schema([
+                        Forms\Components\TextInput::make('default_target_hari_kerja')
+                            ->label('Standar Target Sekolah (Hari)')
+                            ->numeric()
+                            ->default(20)
+                            ->suffix('Hari')
+                            ->helperText('Contoh: 20 hari kerja/bulan. Nilai ini akan dipakai otomatis jika di profil Guru tsb tidak diatur secara khusus.')
+                            ->required(),
+                    ]),
             ]);
     }
 

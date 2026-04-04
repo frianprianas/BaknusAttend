@@ -65,6 +65,14 @@ class UserResource extends Resource
                     ])
                     ->required()
                     ->default('TU'),
+                Forms\Components\TextInput::make('target_hari_kerja')
+                    ->label('Target Presensi (Hari)')
+                    ->helperText('Jumlah hari target kehadiran dalam satu bulan (Gunakan sebagai acuan laporan)')
+                    ->numeric()
+                    ->default(20)
+                    ->suffix('Hari')
+                    ->prefix('Min.')
+                    ->required(),
                 Forms\Components\TextInput::make('rfid')
                     ->label('Kode Kartu RFID')
                     ->unique(ignoreRecord: true)
