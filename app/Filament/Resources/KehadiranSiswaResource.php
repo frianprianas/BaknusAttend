@@ -86,7 +86,16 @@ class KehadiranSiswaResource extends Resource
                     ->defaultImageUrl(url('/images/user-placeholder.png'))
                     ->disk('public')
                     // Memaksa foto muncul di HP
-                    ->visibility(fn () => true),
+                    ->visibility(fn () => true)
+                    ->action(
+                        Tables\Actions\Action::make('view_photo')
+                            ->modalHeading('Foto Presensi Siswa')
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(fn ($action) => $action->label('Tutup'))
+                            ->modalContent(fn ($record) => view('filament.components.image-modal', [
+                                'url' => $record->photo ? asset('storage/' . $record->photo) : url('/images/user-placeholder.png')
+                            ]))
+                    ),
 
                 // Nama hanya terlihat oleh Admin
                 Tables\Columns\TextColumn::make('student.name')

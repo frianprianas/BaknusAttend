@@ -81,7 +81,16 @@ class KehadiranGuruTuResource extends Resource
                     ->circular()
                     ->defaultImageUrl(url('/images/user-placeholder.png'))
                     ->disk('public')
-                    ->visibility(fn () => true),
+                    ->visibility(fn () => true)
+                    ->action(
+                        Tables\Actions\Action::make('view_photo')
+                            ->modalHeading('Foto Presensi Guru/TU')
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(fn ($action) => $action->label('Tutup'))
+                            ->modalContent(fn ($record) => view('filament.components.image-modal', [
+                                'url' => $record->photo ? asset('storage/' . $record->photo) : url('/images/user-placeholder.png')
+                            ]))
+                    ),
 
                 // Kolom Nama hanya terlihat oleh Admin
                 Tables\Columns\TextColumn::make('pegawai_name')
