@@ -55,7 +55,6 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->html()
                     ->getStateUsing(function($record, Tables\Table $table) {
                         try {
-                            // Cara paling aman ambil filter di Filament 3
                             $bulan = request()->query('tableFilters')['bulan']['value'] ?? now()->format('m');
                             $tahun = request()->query('tableFilters')['tahun']['value'] ?? now()->format('Y');
                             
@@ -105,6 +104,7 @@ class KehadiranGuruTuMonthlyResource extends Resource
                         '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
                         '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
                     ])
+                    ->query(fn (Builder $query) => $query) // SANGAT PENTING: Jangan ubah query tabel User
                     ->default(now()->format('m')),
 
                 Tables\Filters\SelectFilter::make('tahun')
@@ -117,6 +117,7 @@ class KehadiranGuruTuMonthlyResource extends Resource
                         }
                         return $years;
                     })
+                    ->query(fn (Builder $query) => $query) // SANGAT PENTING: Jangan ubah query tabel User
                     ->default(now()->year),
             ])
             ->actions([])
