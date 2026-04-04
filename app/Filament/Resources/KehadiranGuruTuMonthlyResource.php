@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -55,11 +56,12 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->html()
                     ->getStateUsing(function($record, Tables\Table $table) {
                         try {
-                            $bulan = request()->query('tableFilters')['bulan']['value'] ?? now()->format('m');
-                            $tahun = request()->query('tableFilters')['tahun']['value'] ?? now()->format('Y');
+                            $formDate = $table->getFilterFormData();
+                            $month = $formDate['bulan'] ?? now()->format('m');
+                            $year = $formDate['tahun'] ?? now()->format('Y');
                             
-                            $month = (int) $bulan;
-                            $year = (int) $tahun;
+                            $month = (int) $month;
+                            $year = (int) $year;
 
                             $service = new \App\Services\AttendanceService();
                             $activeDays = $service->getEffectiveWorkingDays($month, $year);
@@ -97,18 +99,18 @@ class KehadiranGuruTuMonthlyResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('bulan')
-                    ->label('Bulan')
+                    ->label('Pilih Bulan')
                     ->options([
                         '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
                         '04' => 'April', '05' => 'Mei', '06' => 'Juni',
                         '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
                         '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
                     ])
-                    ->query(fn (Builder $query) => $query) // SANGAT PENTING: Jangan ubah query tabel User
+                    ->query(fn (Builder $query) => $query)
                     ->default(now()->format('m')),
 
                 Tables\Filters\SelectFilter::make('tahun')
-                    ->label('Tahun')
+                    ->label('Pilih Tahun')
                     ->options(function() {
                         $years = [];
                         $currentYear = (int) now()->year;
@@ -117,9 +119,10 @@ class KehadiranGuruTuMonthlyResource extends Resource
                         }
                         return $years;
                     })
-                    ->query(fn (Builder $query) => $query) // SANGAT PENTING: Jangan ubah query tabel User
+                    ->query(fn (Builder $query) => $query)
                     ->default(now()->year),
-            ])
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(2)
             ->actions([])
             ->bulkActions([])
             ->paginated(true)
