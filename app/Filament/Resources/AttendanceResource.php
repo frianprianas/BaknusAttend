@@ -17,6 +17,8 @@ class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function getEloquentQuery(): Builder
     {
         $user = auth()->user();
