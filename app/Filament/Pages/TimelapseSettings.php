@@ -10,6 +10,8 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\File;
+use App\Models\TimelapseMusic;
+use Filament\Forms\Components\TextInput;
 
 class TimelapseSettings extends Page implements HasForms
 {
@@ -24,7 +26,10 @@ class TimelapseSettings extends Page implements HasForms
     protected static string $view = 'filament.pages.timelapse-settings';
 
     public ?array $data = [];
-    public array $musicFiles = [];
+    public $musicFiles = [];
+    
+    public $editingMusicId = null;
+    public $editingTitle = '';
 
     public static function canAccess(): bool
     {
@@ -39,22 +44,11 @@ class TimelapseSettings extends Page implements HasForms
 
     public function loadMusic(): void
     {
+        $this->musicFiles = TimelapseMusic::orderBy('created_at', 'desc')->get()->toArray();
+        
         $path = public_path('timelapse_music');
         if (!File::exists($path)) {
             File::makeDirectory($path, 0755, true);
-        }
-
-        $files = File::files($path);
-        $this->musicFiles = [];
-        foreach ($files as $file) {
-            if ($file->getExtension() === 'mp3') {
-                $this->musicFiles[] = [
-                    'name' => $file->getFilename(),
-                    'size' => round($file->getSize() / 1024 / 1024, 2) . ' MB',
-                    'path' => $file->getRealPath(),
-                    'url' => asset('timelapse_music/' . $file->getFilename()),
-                ];
-            }
         }
     }
 
@@ -65,13 +59,16 @@ class TimelapseSettings extends Page implements HasForms
                 Section::make('Tambah Musik Baru')
                     ->description('Upload file MP3 (Maksimal 3MB) untuk dijadikan pilihan backsound bagi user.')
                     ->schema([
+                        TextInput::make('title')
+                            ->label('Judul Musik')
+                            ->placeholder('Contoh: Semangat Pagi')
+                            ->required(),
                         FileUpload::make('music')
                             ->label('File MP3')
                             ->acceptedFileTypes(['audio/mpeg', 'audio/mp3'])
                             ->maxSize(3072) // 3MB
                             ->disk('public')
                             ->directory('timelapse_music')
-                            ->storeFileNamesIn('original_name')
                             ->required(),
                     ])
             ])
@@ -82,43 +79,76 @@ class TimelapseSettings extends Page implements HasForms
     {
         $state = $this->form->getState();
         $tempPath = $state['music'] ?? null;
+        $title = $state['title'] ?? 'Tanpa Judul';
 
         if (!$tempPath) return;
 
-        // Path di storage/app/public/...
         $storageDir = storage_path('app/public');
         $fullPath = $storageDir . '/' . $tempPath;
 
         if (File::exists($fullPath)) {
             $filename = basename($fullPath);
-            // Bersihkan nama file (slug) agar tidak ada karakter aneh
             $cleanName = time() . '_' . str_replace([' ', '#', '&'], '_', $filename);
-            
             $targetPath = public_path('timelapse_music/' . $cleanName);
             
-            if (!File::exists(public_path('timelapse_music'))) {
-                File::makeDirectory(public_path('timelapse_music'), 0755, true);
-            }
-
             File::move($fullPath, $targetPath);
+
+            TimelapseMusic::create([
+                'title' => $title,
+                'filename' => $cleanName,
+                'size' => round(File::size($targetPath) / 1024 / 1024, 2) . ' MB',
+            ]);
 
             Notification::make()
                 ->title('Musik Berhasil Diunggah')
-                ->body("File $cleanName telah ditambahkan ke koleksi.")
                 ->success()
                 ->send();
         }
 
-        $this->data = []; // Reset form data
+        $this->data = [];
         $this->form->fill();
         $this->loadMusic();
     }
 
-    public function deleteMusic(string $filename): void
+    public function editTitle($id)
     {
-        $path = public_path('timelapse_music/' . $filename);
-        if (File::exists($path)) {
-            File::delete($path);
+        $music = TimelapseMusic::find($id);
+        if ($music) {
+            $this->editingMusicId = $id;
+            $this->editingTitle = $music->title;
+            // Menggunakan format array explisit untuk menghindari error named parameter di PHP
+            $this->dispatch('open-modal', id: 'edit-title-modal');
+        }
+    }
+
+    public function updateTitle()
+    {
+        $music = TimelapseMusic::find($this->editingMusicId);
+        if ($music) {
+            $music->update(['title' => $this->editingTitle]);
+            
+            Notification::make()
+                ->title('Judul Diperbarui')
+                ->success()
+                ->send();
+                
+            $this->editingMusicId = null;
+            $this->dispatch('close-modal', id: 'edit-title-modal');
+            $this->loadMusic();
+        }
+    }
+
+    public function deleteMusic($id): void
+    {
+        $music = TimelapseMusic::find($id);
+        if ($music) {
+            $path = public_path('timelapse_music/' . $music->filename);
+            if (File::exists($path)) {
+                File::delete($path);
+            }
+            
+            $music->delete();
+
             Notification::make()
                 ->title('Musik Berhasil Dihapus')
                 ->success()

@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use App\Services\VideoTimelapseService;
 use Filament\Notifications\Notification;
+use App\Models\TimelapseMusic;
 
 class VideoTimelapse extends Page
 {
@@ -42,23 +43,13 @@ class VideoTimelapse extends Page
 
     public function fetchMusic()
     {
-        $path = public_path('timelapse_music');
-        if (!file_exists($path)) {
-            return;
-        }
-
-        $files = scandir($path);
-        foreach ($files as $file) {
-            if (str_ends_with(strtolower($file), '.mp3')) {
-                // Buat judul dari nama file (hilangkan ekstensi dan ubah underscore jadi spasi)
-                $title = str_replace('_', ' ', pathinfo($file, PATHINFO_FILENAME));
-                $this->musicList[] = [
-                    'file' => $file,
-                    'title' => $title,
-                    'url' => asset('timelapse_music/' . $file)
-                ];
-            }
-        }
+        $this->musicList = TimelapseMusic::all()->map(function ($music) {
+            return [
+                'file' => $music->filename,
+                'title' => $music->title,
+                'url' => asset('timelapse_music/' . $music->filename)
+            ];
+        })->toArray();
     }
 
     public function fetchPhotos()
