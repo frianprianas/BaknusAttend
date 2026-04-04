@@ -67,12 +67,12 @@ class UserResource extends Resource
                     ->default('TU'),
                 Forms\Components\TextInput::make('target_hari_kerja')
                     ->label('Target Presensi (Hari)')
-                    ->helperText('Kosongkan untuk mengikuti hitungan otomatis dari Kalender Libur (Senin-Jumat dikurangi libur).')
+                    ->helperText('Otomatis terisi berdasarkan: (Senin-Jumat) - (Libur di Kalender Libur).')
                     ->numeric()
-                    ->nullable()
-                    ->placeholder('Otomatis')
+                    ->default(fn() => (new \App\Services\AttendanceService())->getEffectiveWorkingDays())
                     ->suffix('Hari')
-                    ->prefix('Min.'),
+                    ->prefix('Min.')
+                    ->required(),
                 Forms\Components\TextInput::make('rfid')
                     ->label('Kode Kartu RFID')
                     ->unique(ignoreRecord: true)
