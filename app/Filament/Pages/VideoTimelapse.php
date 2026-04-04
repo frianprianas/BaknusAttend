@@ -31,7 +31,7 @@ class VideoTimelapse extends Page
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        return $user !== null;
+        return $user !== null && $user->role !== 'Admin';
     }
 
     public function mount()
