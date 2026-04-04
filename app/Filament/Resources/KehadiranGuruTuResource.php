@@ -104,11 +104,21 @@ class KehadiranGuruTuResource extends Resource
                                     <div class='flex items-center gap-2 p-1 bg-success-50/50 rounded-lg border border-success-100 mb-1 w-full max-w-[150px]'>
                                         <div x-data=\"{ open: false }\" class='relative'>
                                             <img src='{$photoUrl}' @click='open = true' class='w-10 h-10 rounded-lg object-cover cursor-zoom-in ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
-                                            <div x-show='open' x-cloak @click.away='open = false' class='fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'>
-                                                <img src='{$photoUrl}' class='max-w-full max-h-full rounded-2xl shadow-2xl border-4 border-white' />
-                                                <button @click='open = false' class='absolute top-4 right-4 text-white hover:text-red-500'>
-                                                    <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
-                                                </button>
+                                            <div x-show='open' x-cloak 
+                                                 x-transition:enter='transition ease-out duration-300'
+                                                 x-transition:enter-start='opacity-0 scale-95'
+                                                 x-transition:enter-end='opacity-100 scale-100'
+                                                 x-transition:leave='transition ease-in duration-200'
+                                                 x-transition:leave-start='opacity-100 scale-100'
+                                                 x-transition:leave-end='opacity-0 scale-95'
+                                                 @click.away='open = false' 
+                                                 class='fixed inset-0 z-[999] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md'>
+                                                <div class='relative max-w-[90vw] max-h-[90vh] flex items-center justify-center'>
+                                                    <img src='{$photoUrl}' class='rounded-xl shadow-2xl border-[6px] border-white object-contain max-w-full max-h-full transition-transform' />
+                                                    <button @click='open = false' class='absolute -top-12 -right-4 text-white hover:text-red-400 p-2 transition-colors'>
+                                                        <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class='flex flex-col'>
@@ -138,11 +148,21 @@ class KehadiranGuruTuResource extends Resource
                                     <div class='flex items-center gap-2 p-1 bg-amber-50/50 rounded-lg border border-amber-100 w-full max-w-[150px]'>
                                          <div x-data=\"{ open: false }\" class='relative'>
                                             <img src='{$photoUrl}' @click='open = true' class='w-10 h-10 rounded-lg object-cover cursor-zoom-in ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
-                                            <div x-show='open' x-cloak @click.away='open = false' class='fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'>
-                                                <img src='{$photoUrl}' class='max-w-full max-h-full rounded-2xl shadow-2xl border-4 border-white' />
-                                                <button @click='open = false' class='absolute top-4 right-4 text-white hover:text-red-500'>
-                                                    <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
-                                                </button>
+                                            <div x-show='open' x-cloak 
+                                                 x-transition:enter='transition ease-out duration-300'
+                                                 x-transition:enter-start='opacity-0 scale-95'
+                                                 x-transition:enter-end='opacity-100 scale-100'
+                                                 x-transition:leave='transition ease-in duration-200'
+                                                 x-transition:leave-start='opacity-100 scale-100'
+                                                 x-transition:leave-end='opacity-0 scale-95'
+                                                 @click.away='open = false' 
+                                                 class='fixed inset-0 z-[999] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md'>
+                                                <div class='relative max-w-[90vw] max-h-[90vh] flex items-center justify-center'>
+                                                    <img src='{$photoUrl}' class='rounded-xl shadow-2xl border-[6px] border-white object-contain max-w-full max-h-full transition-transform' />
+                                                    <button @click='open = false' class='absolute -top-12 -right-4 text-white hover:text-red-400 p-2 transition-colors'>
+                                                        <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class='flex flex-col'>
