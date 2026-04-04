@@ -236,6 +236,36 @@ class PresensiMandiriWidget extends Widget implements HasForms
              return;
         }
 
+        // --- VALIDASI IP PUBLIK (Anti Fake GPS via koneksi luar sekolah) ---
+        if ($setting->is_ip_validation_active) {
+            $allowedIps = array_filter([
+                $setting->allowed_ip_1,
+                $setting->allowed_ip_2,
+                $setting->allowed_ip_3,
+            ]);
+
+            if (!empty($allowedIps)) {
+                $clientIp = request()->ip();
+                // Cek juga X-Forwarded-For untuk kasus di balik proxy/load balancer
+                $forwardedIp = request()->header('X-Forwarded-For');
+                if ($forwardedIp) {
+                    // Ambil IP pertama dari chain (IP asli user)
+                    $clientIp = trim(explode(',', $forwardedIp)[0]);
+                }
+
+                if (!in_array($clientIp, $allowedIps)) {
+                    Notification::make()
+                        ->title('Akses Ditolak: Bukan Jaringan Sekolah')
+                        ->body('Anda harus menggunakan WiFi sekolah untuk melakukan presensi. IP Anda: ' . $clientIp)
+                        ->danger()
+                        ->persistent()
+                        ->send();
+                    return;
+                }
+            }
+        }
+        // --- AKHIR VALIDASI IP ---
+
         $distance = $this->haversineGreatCircleDistance(
             $formData['lat'], 
             $formData['long'], 

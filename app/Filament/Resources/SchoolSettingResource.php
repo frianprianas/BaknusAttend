@@ -73,6 +73,36 @@ class SchoolSettingResource extends Resource
                                     ->required(),
                             ]),
                     ]),
+
+                Forms\Components\Section::make('🔒 Keamanan: Validasi IP Publik Sekolah')
+                    ->description('Jika diaktifkan, user hanya bisa absen dari koneksi internet sekolah (WiFi sekolah). IP publik sekolah harus diisi. Validasi ini berjalan SEBELUM pengecekan AWS sehingga menghemat biaya dan mencegah Fake GPS.')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_ip_validation_active')
+                            ->label('Aktifkan Validasi IP Publik')
+                            ->helperText('Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah.')
+                            ->default(false)
+                            ->live(),
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
+                            ->schema([
+                                Forms\Components\TextInput::make('allowed_ip_1')
+                                    ->label('IP Publik Sekolah #1')
+                                    ->placeholder('Contoh: 114.125.10.20')
+                                    ->helperText('IP utama (wajib diisi jika fitur aktif)')
+                                    ->ip()
+                                    ->requiredIf('is_ip_validation_active', true),
+                                Forms\Components\TextInput::make('allowed_ip_2')
+                                    ->label('IP Publik Sekolah #2')
+                                    ->placeholder('Opsional — ISP cadangan')
+                                    ->ip()
+                                    ->nullable(),
+                                Forms\Components\TextInput::make('allowed_ip_3')
+                                    ->label('IP Publik Sekolah #3')
+                                    ->placeholder('Opsional — ISP cadangan 2')
+                                    ->ip()
+                                    ->nullable(),
+                            ]),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
