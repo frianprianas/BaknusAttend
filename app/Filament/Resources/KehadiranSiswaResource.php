@@ -57,28 +57,36 @@ class KehadiranSiswaResource extends Resource
                 Tables\Columns\Layout\Split::make([
                     Tables\Columns\TextColumn::make('tanggal')
                         ->label('Tanggal & Statistik')
-                        ->getStateUsing(fn($record) => Carbon::parse($record->tanggal)->translatedFormat('l, j F Y'))
-                        ->description(function($record) {
+                        ->html()
+                        ->getStateUsing(function($record) {
                             $date = Carbon::parse($record->tanggal);
-                            $month = $date->month;
-                            $year = $date->year;
+                            $formattedDate = $date->translatedFormat('l, j F Y');
                             
                             $service = new \App\Services\AttendanceService();
-                            $activeDays = $service->getEffectiveWorkingDays($month, $year);
+                            $activeDays = $service->getEffectiveWorkingDays($date->month, $date->year);
                             
                             $hadirCount = KehadiranSiswa::where('nis', $record->nis)
-                                ->whereMonth('waktu_tap', $month)
-                                ->whereYear('waktu_tap', $year)
+                                ->whereMonth('waktu_tap', $date->month)
+                                ->whereYear('waktu_tap', $date->year)
                                 ->where('keterangan', 'like', '%Masuk%')
                                 ->count();
-                                
-                            return "Hari aktif: {$activeDays} | Hadir: {$hadirCount}x";
+                            
+                            $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
+                            
+                            return "
+                                <div class='flex flex-col gap-0.5'>
+                                    <span class='text-sm font-bold text-primary-600 dark:text-primary-400'>{$formattedDate}</span>
+                                    <div class='flex items-center gap-1.5'>
+                                        <span class='text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md border border-gray-200 dark:border-gray-700 font-medium'>Aktif: {$activeDays}</span>
+                                        <span class='text-[10px] px-1.5 py-0.5 bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400 rounded-md border border-success-100 dark:border-success-800 font-bold'>Hadir: {$hadirCount}</span>
+                                        <span class='text-[10px] px-1.5 py-0.5 bg-info-50 dark:bg-info-900/30 text-info-700 dark:text-info-400 rounded-md border border-info-100 dark:border-info-800 font-black'>{$persen}%</span>
+                                    </div>
+                                </div>
+                            ";
                         })
                         ->grow(false)
                         ->searchable()
-                        ->sortable()
-                        ->weight('bold')
-                        ->color('success'),
+                        ->sortable(),
 
                     Tables\Columns\TextColumn::make('student_name')
                         ->label('Nama Siswa')
