@@ -24,7 +24,6 @@ class KehadiranSiswaResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        // Admin dan Siswa bisa melihat menu ini
         return in_array(auth()->user()?->role, ['Admin', 'Siswa']);
     }
 
@@ -39,7 +38,6 @@ class KehadiranSiswaResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Grouping data berdasarkan NIS dan Tanggal agar jadi satu baris
         $query->select([
             DB::raw('MIN(id) as id'),
             'nis',
@@ -63,85 +61,112 @@ class KehadiranSiswaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->contentGrid([
+                'md' => null,
+                'sm' => 1,
+            ])
             ->columns([
-                Tables\Columns\TextColumn::make('tanggal')
-                    ->label('Tanggal')
-                    ->date('d/m/Y')
-                    ->sortable(),
+                Tables\Columns\Layout\Split::make([
+                    Tables\Columns\TextColumn::make('tanggal')
+                        ->label('Tanggal')
+                        ->date('d/m/y')
+                        ->grow(false)
+                        ->fontFamily('mono')
+                        ->searchable()
+                        ->sortable(),
 
-                Tables\Columns\TextColumn::make('student_name')
-                    ->label('Nama Siswa')
-                    ->getStateUsing(function ($record) {
-                        return $record->student?->name ?? $record->nis;
-                    })
-                    ->description(fn($record) => $record->nis)
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->where('nis', 'like', "%{$search}%");
-                    }),
+                    Tables\Columns\TextColumn::make('student_name')
+                        ->label('Nama Siswa')
+                        ->getStateUsing(function ($record) {
+                            return $record->student?->name ?? $record->nis;
+                        })
+                        ->description(fn($record) => $record->nis)
+                        ->searchable(query: function (Builder $query, string $search): Builder {
+                            return $query->where('nis', 'like', "%{$search}%");
+                        }),
 
-                Tables\Columns\TextColumn::make('masuk')
-                    ->label('Masuk')
-                    ->html()
-                    ->getStateUsing(function ($record) {
-                        $data = KehadiranSiswa::where('nis', $record->nis)
-                            ->whereDate('waktu_tap', $record->tanggal)
-                            ->where('keterangan', 'like', '%Masuk%')
-                            ->orderBy('waktu_tap', 'asc')
-                            ->first();
+                    Tables\Columns\Layout\Stack::make([
+                        // MASUK
+                        Tables\Columns\TextColumn::make('masuk')
+                            ->html()
+                            ->getStateUsing(function ($record) {
+                                $data = KehadiranSiswa::where('nis', $record->nis)
+                                    ->whereDate('waktu_tap', $record->tanggal)
+                                    ->where('keterangan', 'like', '%Masuk%')
+                                    ->orderBy('waktu_tap', 'asc')
+                                    ->first();
 
-                        if (!$data) return '<span class="text-gray-400 text-xs italic italic">---</span>';
+                                if (!$data) return "<div class='text-[10px] text-gray-300'>--- No CheckIn</div>";
 
-                        $jam = Carbon::parse($data->waktu_tap)->format('H:i');
-                        $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
-                        
-                        return "
-                            <div class='flex items-center gap-2'>
-                                <img src='{$photoUrl}' 
-                                    wire:click=\"mountTableAction('view_photo', {id: '{$data->id}'})\"
-                                    class='w-8 h-8 rounded-full object-cover border border-gray-200 cursor-zoom-in pointer-events-auto' 
-                                />
-                                <span class='font-bold text-success-600'>{$jam}</span>
-                            </div>
-                        ";
-                    }),
+                                $jam = Carbon::parse($data->waktu_tap)->format('H:i');
+                                $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+                                
+                                return "
+                                    <div class='flex items-center gap-2 p-1 bg-success-50/50 rounded-lg border border-success-100 mb-1 w-full max-w-[150px]'>
+                                        <div x-data=\"{ open: false }\" class='relative'>
+                                            <img src='{$photoUrl}' @click='open = true' class='w-10 h-10 rounded-lg object-cover cursor-zoom-in ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
+                                            <div x-show='open' x-cloak @click.away='open = false' class='fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'>
+                                                <img src='{$photoUrl}' class='max-w-full max-h-full rounded-2xl shadow-2xl border-4 border-white' />
+                                                <button @click='open = false' class='absolute top-4 right-4 text-white hover:text-red-500 font-bold'>
+                                                    <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class='flex flex-col'>
+                                            <span class='text-xs font-bold text-success-700 leading-none'>{$jam}</span>
+                                            <span class='text-[8px] text-success-500 uppercase font-bold tracking-tight'>Masuk</span>
+                                        </div>
+                                    </div>
+                                ";
+                            }),
 
-                Tables\Columns\TextColumn::make('pulang')
-                    ->label('Pulang')
-                    ->html()
-                    ->getStateUsing(function ($record) {
-                        $data = KehadiranSiswa::where('nis', $record->nis)
-                            ->whereDate('waktu_tap', $record->tanggal)
-                            ->where('keterangan', 'like', '%Pulang%')
-                            ->orderBy('waktu_tap', 'desc')
-                            ->first();
+                        // PULANG
+                        Tables\Columns\TextColumn::make('pulang')
+                            ->html()
+                            ->getStateUsing(function ($record) {
+                                $data = KehadiranSiswa::where('nis', $record->nis)
+                                    ->whereDate('waktu_tap', $record->tanggal)
+                                    ->where('keterangan', 'like', '%Pulang%')
+                                    ->orderBy('waktu_tap', 'desc')
+                                    ->first();
 
-                        if (!$data) return '<span class="text-gray-400 text-xs italic italic">---</span>';
+                                if (!$data) return "<div class='text-[10px] text-gray-300'>--- No CheckOut</div>";
 
-                        $jam = Carbon::parse($data->waktu_tap)->format('H:i');
-                        $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
-                        
-                        return "
-                            <div class='flex items-center gap-2'>
-                                <img src='{$photoUrl}' 
-                                    wire:click=\"mountTableAction('view_photo', {id: '{$data->id}'})\"
-                                    class='w-8 h-8 rounded-full object-cover border border-gray-200 cursor-zoom-in pointer-events-auto' 
-                                />
-                                <span class='font-bold text-warning-600'>{$jam}</span>
-                            </div>
-                        ";
-                    }),
+                                $jam = Carbon::parse($data->waktu_tap)->format('H:i');
+                                $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+                                
+                                return "
+                                    <div class='flex items-center gap-2 p-1 bg-amber-50/50 rounded-lg border border-amber-100 w-full max-w-[150px]'>
+                                         <div x-data=\"{ open: false }\" class='relative'>
+                                            <img src='{$photoUrl}' @click='open = true' class='w-10 h-10 rounded-lg object-cover cursor-zoom-in ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
+                                            <div x-show='open' x-cloak @click.away='open = false' class='fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'>
+                                                <img src='{$photoUrl}' class='max-w-full max-h-full rounded-2xl shadow-2xl border-4 border-white' />
+                                                <button @click='open = false' class='absolute top-4 right-4 text-white hover:text-red-500 font-bold'>
+                                                    <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 6l12 12M6 18L18 6'></path></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class='flex flex-col'>
+                                            <span class='text-xs font-bold text-amber-700 leading-none'>{$jam}</span>
+                                            <span class='text-[8px] text-amber-500 uppercase font-bold tracking-tight'>Pulang</span>
+                                        </div>
+                                    </div>
+                                ";
+                            }),
+                    ])->space(1),
 
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'Hadir' => 'success',
-                        'Izin' => 'info',
-                        'Sakit' => 'warning',
-                        'Alpa' => 'danger',
-                        'Terlambat' => 'warning',
-                        default => 'gray',
-                    }),
+                    Tables\Columns\TextColumn::make('status')
+                        ->badge()
+                        ->color(fn(string $state): string => match ($state) {
+                            'Hadir' => 'success',
+                            'Izin' => 'info',
+                            'Sakit' => 'warning',
+                            'Alpa' => 'danger',
+                            'Terlambat' => 'warning',
+                            default => 'gray',
+                        })
+                        ->grow(false),
+                ])->from('md'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tanggal')
@@ -160,20 +185,10 @@ class KehadiranSiswaResource extends Resource
                         };
                     }),
             ])
-            ->actions([
-                Tables\Actions\Action::make('view_photo')
-                    ->label('Lihat Foto')
-                    ->modalHeading('Detail Foto Presensi Siswa')
-                    ->modalContent(fn ($arguments) => view('filament.components.image-modal', [
-                        'url' => ($data = KehadiranSiswa::find($arguments['id'])) && $data->photo 
-                             ? asset('storage/' . $data->photo) 
-                             : url('/images/user-placeholder.png')
-                    ]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup')
-                    ->hidden(),
-            ])
-            ->paginated(true);
+            ->actions([])
+            ->bulkActions([])
+            ->paginated(true)
+            ->defaultPaginationPageOption(25);
     }
 
     public static function getPages(): array
