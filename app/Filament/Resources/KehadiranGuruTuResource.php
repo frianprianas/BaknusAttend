@@ -34,24 +34,19 @@ class KehadiranGuruTuResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-        $user = auth()->user();
-
-        $query->select([
-            DB::raw('MIN(id) as id'),
-            'nipy',
-            DB::raw('DATE(waktu_tap) as tanggal'),
-            DB::raw('MAX(status) as status'),
-        ])
-        ->groupBy('nipy', DB::raw('DATE(waktu_tap)'));
-
-        if ($user && $user->role !== 'Admin') {
-            $query->where(function ($q) use ($user) {
-                $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
-            });
-        }
-
-        return $query->orderBy('tanggal', 'desc');
+        return parent::getEloquentQuery()
+            ->select([
+                DB::raw('MIN(id) as id'),
+                'nipy',
+                DB::raw('DATE(waktu_tap) as tanggal'),
+                DB::raw('MAX(status) as status'),
+            ])
+            ->groupBy('nipy', DB::raw('DATE(waktu_tap)'))
+            ->when(auth()->user()?->role !== 'Admin', function ($query) {
+                $user = auth()->user();
+                $query->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+            })
+            ->orderBy('tanggal', 'desc');
     }
 
     public static function table(Table $table): Table
@@ -79,34 +74,20 @@ class KehadiranGuruTuResource extends Resource
                         }),
 
                     Tables\Columns\Layout\Stack::make([
-                        // MASUK
                         Tables\Columns\ViewColumn::make('masuk')
                             ->view('filament.tables.columns.attendance-session')
                             ->viewData([
                                 'isMasuk' => true,
                                 'label' => 'Masuk',
-                                'getSessionData' => function($record) {
-                                    return KehadiranGuruTu::where('nipy', $record->nipy)
-                                        ->whereDate('waktu_tap', $record->tanggal)
-                                        ->where('keterangan', 'like', '%Masuk%')
-                                        ->orderBy('waktu_tap', 'asc')
-                                        ->first();
-                                }
+                                'modelClass' => KehadiranGuruTu::class
                             ]),
 
-                        // PULANG
                         Tables\Columns\ViewColumn::make('pulang')
                             ->view('filament.tables.columns.attendance-session')
                             ->viewData([
                                 'isMasuk' => false,
                                 'label' => 'Pulang',
-                                'getSessionData' => function($record) {
-                                    return KehadiranGuruTu::where('nipy', $record->nipy)
-                                        ->whereDate('waktu_tap', $record->tanggal)
-                                        ->where('keterangan', 'like', '%Pulang%')
-                                        ->orderBy('waktu_tap', 'desc')
-                                        ->first();
-                                }
+                                'modelClass' => KehadiranGuruTu::class
                             ]),
                     ])->space(1),
 

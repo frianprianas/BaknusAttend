@@ -1,6 +1,17 @@
 <div class="flex items-center gap-2 p-1 rounded-lg border w-full max-w-[140px] {{ $isMasuk ? 'bg-success-50/50 border-success-100' : 'bg-amber-50/50 border-amber-100' }}">
     @php
-        $data = $getSessionData($getRecord());
+        $record = $getRecord();
+        $model = $modelClass;
+        $idField = ($model === \App\Models\KehadiranSiswa::class) ? 'nis' : 'nipy';
+        
+        $query = $model::where($idField, $record->{$idField})
+            ->whereDate('waktu_tap', $record->tanggal);
+
+        if ($isMasuk) {
+            $data = $query->where('keterangan', 'like', '%Masuk%')->orderBy('waktu_tap', 'asc')->first();
+        } else {
+            $data = $query->where('keterangan', 'like', '%Pulang%')->orderBy('waktu_tap', 'desc')->first();
+        }
     @endphp
 
     @if($data)
@@ -12,7 +23,7 @@
         <button 
             type="button"
             wire:click="mountTableAction('view_photo', {id: '{{ $data->id }}'})"
-            class="flex-shrink-0 group relative overflow-hidden rounded-lg shadow-sm hover:scale-105 transition-transform"
+            class="flex-shrink-0 group relative overflow-hidden rounded-lg shadow-sm hover:scale-105 transition-transform pointer-events-auto"
         >
             <img src="{{ $photoUrl }}" class="w-10 h-10 object-cover ring-2 ring-white" />
             <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
