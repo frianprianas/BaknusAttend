@@ -69,6 +69,11 @@ class UserResource extends Resource
                     ->label('Target Presensi (Hari)')
                     ->helperText(fn() => (new \App\Services\AttendanceService())->getCalculationDetail())
                     ->numeric()
+                    ->afterStateHydrated(function (Forms\Components\TextInput $component, $state) {
+                        if (blank($state)) {
+                            $component->state((new \App\Services\AttendanceService())->getEffectiveWorkingDays());
+                        }
+                    })
                     ->default(fn() => (new \App\Services\AttendanceService())->getEffectiveWorkingDays())
                     ->suffix('Hari')
                     ->prefix('Min.')
