@@ -56,19 +56,36 @@ class KehadiranSiswaResource extends Resource
             ->columns([
                 Tables\Columns\Layout\Split::make([
                     Tables\Columns\TextColumn::make('tanggal')
-                        ->label('Tanggal')
-                        ->date('d/m/y')
+                        ->label('Tanggal & Statistik')
+                        ->getStateUsing(fn($record) => Carbon::parse($record->tanggal)->translatedFormat('l, j F Y'))
+                        ->description(function($record) {
+                            $date = Carbon::parse($record->tanggal);
+                            $month = $date->month;
+                            $year = $date->year;
+                            
+                            $service = new \App\Services\AttendanceService();
+                            $activeDays = $service->getEffectiveWorkingDays($month, $year);
+                            
+                            $hadirCount = KehadiranSiswa::where('nis', $record->nis)
+                                ->whereMonth('waktu_tap', $month)
+                                ->whereYear('waktu_tap', $year)
+                                ->where('keterangan', 'like', '%Masuk%')
+                                ->count();
+                                
+                            return "Hari aktif: {$activeDays} | Hadir: {$hadirCount}x";
+                        })
                         ->grow(false)
-                        ->fontFamily('mono')
                         ->searchable()
-                        ->sortable(),
+                        ->sortable()
+                        ->weight('bold')
+                        ->color('success'),
 
                     Tables\Columns\TextColumn::make('student_name')
                         ->label('Nama Siswa')
                         ->getStateUsing(function ($record) {
                             return $record->student?->name ?? $record->nis;
                         })
-                        ->description(fn($record) => $record->nis)
+                        ->description(fn($record) => "NIS: " . $record->nis)
                         ->searchable(query: function (Builder $query, string $search): Builder {
                             return $query->where('nis', 'like', "%{$search}%");
                         }),
