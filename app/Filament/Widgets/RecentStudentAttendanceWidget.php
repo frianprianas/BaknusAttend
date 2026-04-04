@@ -176,7 +176,8 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ]),
             ])
             ->defaultSort('waktu_tap', 'desc')
-            ->paginated([25, 50, 100, 'all'])
+            ->paginated(true)
+            ->paginationPageOptions([25, 50, 100])
             ->striped()
             ->emptyStateHeading('Belum ada kehadiran hari ini')
             ->emptyStateDescription('Data akan muncul setelah siswa melakukan tap RFID.')

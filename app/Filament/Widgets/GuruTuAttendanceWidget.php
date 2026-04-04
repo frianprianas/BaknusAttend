@@ -10,7 +10,7 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Carbon;
 
-class RecentGuruAttendanceWidget extends BaseWidget
+class GuruTuAttendanceWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
 
@@ -162,7 +162,8 @@ class RecentGuruAttendanceWidget extends BaseWidget
                     ]),
             ])
             ->defaultSort('waktu_tap', 'desc')
-            ->paginated([10, 25, 50])
+            ->paginated(true)
+            ->paginationPageOptions([10, 25, 50])
             ->defaultPaginationPageOption(25)
             ->striped()
             ->emptyStateHeading('Belum ada kehadiran hari ini')

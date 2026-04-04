@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
 use App\Filament\Widgets\DashboardStatsWidget;
-use App\Filament\Widgets\RecentGuruAttendanceWidget;
+use App\Filament\Widgets\GuruTuAttendanceWidget;
 use App\Filament\Widgets\RecentStudentAttendanceWidget;
 
 class AttendanceOverview extends Page
@@ -27,7 +27,7 @@ class AttendanceOverview extends Page
         return [
             DashboardStatsWidget::class,
             RecentStudentAttendanceWidget::class,
-            RecentGuruAttendanceWidget::class,
+            GuruTuAttendanceWidget::class,
         ];
     }
 }
