@@ -26,6 +26,12 @@ class AttendanceOverview extends Page
     {
         return [
             DashboardStatsWidget::class,
+        ];
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
             RecentStudentAttendanceWidget::class,
             RecentGuruAttendanceWidget::class,
         ];

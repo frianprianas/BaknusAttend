@@ -34,15 +34,7 @@ class DashboardStatsWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        $user = auth()->user();
-        if (!$user) return false;
-
-        // Jika Admin, sembunyikan dari Dashboard utama karena sudah dipindah ke halaman khusus "Presensi / Absensi"
-        if ($user->role === 'Admin' && request()->routeIs('filament.admin.pages.dashboard')) {
-            return false;
-        }
-
-        return true;
+        return auth()->check();
     }
 
     protected function getStats(): array
