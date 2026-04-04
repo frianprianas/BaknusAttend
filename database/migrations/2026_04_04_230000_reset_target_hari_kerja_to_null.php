@@ -12,7 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Riset semua data target_hari_kerja menjadi NULL agar sistem beralih ke Mode Otomatis
+        // 1. Ubah kolom menjadi nullable secara resmi di database
+        Schema::table('users', function (Blueprint $table) {
+            $table->integer('target_hari_kerja')->nullable()->comment('Target hari kerja guru/TU per bulan')->change();
+        });
+
+        // 2. Riset data menjadi NULL
         DB::table('users')->update(['target_hari_kerja' => null]);
     }
 
