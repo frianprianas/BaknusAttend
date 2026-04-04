@@ -18,12 +18,13 @@ class KehadiranGuruTuResource extends Resource
     protected static ?string $model = KehadiranGuruTu::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static ?string $navigationLabel = 'Laporan Kehadiran';
-    protected static ?string $navigationGroup = null;
+    protected static ?string $navigationLabel = 'Laporan Guru/TU';
+    protected static ?string $navigationGroup = 'Laporan';
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role !== 'Admin';
+        // Admin, Guru, dan TU bisa melihat menu ini
+        return in_array(auth()->user()?->role, ['Admin', 'Guru', 'TU']);
     }
 
     public static function canViewAny(): bool
@@ -39,7 +40,7 @@ class KehadiranGuruTuResource extends Resource
 
         // Grouping data berdasarkan NIPY dan Tanggal agar jadi satu baris
         $query->select([
-            DB::raw('MIN(id) as id'), // ID bayangan untuk Filament
+            DB::raw('MIN(id) as id'),
             'nipy',
             DB::raw('DATE(waktu_tap) as tanggal'),
             DB::raw('MAX(status) as status'),
@@ -53,28 +54,6 @@ class KehadiranGuruTuResource extends Resource
         }
 
         return $query->orderBy('tanggal', 'desc');
-    }
-
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('nipy')
-                    ->label('NIPY')
-                    ->required(),
-                Forms\Components\DateTimePicker::make('waktu_tap')
-                    ->label('Waktu Tap')
-                    ->required(),
-                Forms\Components\Select::make('status')
-                    ->label('Status')
-                    ->options([
-                        'Hadir' => 'Hadir',
-                        'Izin' => 'Izin',
-                        'Sakit' => 'Sakit',
-                        'Dinas Luar' => 'Dinas Luar',
-                    ])
-                    ->required(),
-            ]);
     }
 
     public static function table(Table $table): Table
@@ -97,9 +76,8 @@ class KehadiranGuruTuResource extends Resource
                         return $query->where('nipy', 'like', "%{$search}%");
                     }),
 
-                // KOLOM MASUK (JAM + FOTO)
                 Tables\Columns\TextColumn::make('masuk')
-                    ->label('Sesi Masuk')
+                    ->label('Masuk')
                     ->html()
                     ->getStateUsing(function ($record) {
                         $data = KehadiranGuruTu::where('nipy', $record->nipy)
@@ -114,19 +92,15 @@ class KehadiranGuruTuResource extends Resource
                         $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
                         
                         return "
-                            <div class='flex items-center gap-3'>
-                                <img src='{$photoUrl}' class='w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm' />
-                                <div class='flex flex-col'>
-                                    <span class='font-bold text-success-600'>{$jam}</span>
-                                    <span class='text-[10px] text-gray-400 uppercase tracking-tighter'>Absen Masuk</span>
-                                </div>
+                            <div class='flex items-center gap-2'>
+                                <img src='{$photoUrl}' class='w-8 h-8 rounded-full object-cover border border-gray-200' />
+                                <span class='font-bold text-success-600'>{$jam}</span>
                             </div>
                         ";
                     }),
 
-                // KOLOM PULANG (JAM + FOTO)
                 Tables\Columns\TextColumn::make('pulang')
-                    ->label('Sesi Pulang')
+                    ->label('Pulang')
                     ->html()
                     ->getStateUsing(function ($record) {
                         $data = KehadiranGuruTu::where('nipy', $record->nipy)
@@ -135,18 +109,15 @@ class KehadiranGuruTuResource extends Resource
                             ->orderBy('waktu_tap', 'desc')
                             ->first();
 
-                        if (!$data) return '<span class="text-gray-400 text-[10px] italic">Belum Pulang</span>';
+                        if (!$data) return '<span class="text-gray-400 text-xs italic italic">---</span>';
 
                         $jam = Carbon::parse($data->waktu_tap)->format('H:i');
                         $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
                         
                         return "
-                            <div class='flex items-center gap-3'>
-                                <img src='{$photoUrl}' class='w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm' />
-                                <div class='flex flex-col'>
-                                    <span class='font-bold text-warning-600'>{$jam}</span>
-                                    <span class='text-[10px] text-gray-400 uppercase tracking-tighter'>Absen Pulang</span>
-                                </div>
+                            <div class='flex items-center gap-2'>
+                                <img src='{$photoUrl}' class='w-8 h-8 rounded-full object-cover border border-gray-200' />
+                                <span class='font-bold text-warning-600'>{$jam}</span>
                             </div>
                         ";
                     }),
@@ -181,9 +152,7 @@ class KehadiranGuruTuResource extends Resource
             ])
             ->actions([])
             ->bulkActions([])
-            ->paginated(true)
-            ->paginationPageOptions([10, 25, 50, 100])
-            ->defaultPaginationPageOption(25);
+            ->paginated(true);
     }
 
     public static function getPages(): array

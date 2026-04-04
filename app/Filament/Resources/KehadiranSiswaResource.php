@@ -3,27 +3,29 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\KehadiranSiswaResource\Pages;
-use App\Filament\Resources\KehadiranSiswaResource\RelationManagers;
 use App\Models\KehadiranSiswa;
+use App\Models\Student;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class KehadiranSiswaResource extends Resource
 {
     protected static ?string $model = KehadiranSiswa::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static ?string $navigationLabel = 'Laporan Kehadiran';
-    protected static ?string $navigationGroup = null;
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationLabel = 'Laporan Siswa';
+    protected static ?string $navigationGroup = 'Laporan';
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role !== 'Admin';
+        // Admin dan Siswa bisa melihat menu ini
+        return in_array(auth()->user()?->role, ['Admin', 'Siswa']);
     }
 
     public static function canViewAny(): bool
@@ -37,8 +39,17 @@ class KehadiranSiswaResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
+        // Grouping data berdasarkan NIS dan Tanggal agar jadi satu baris
+        $query->select([
+            DB::raw('MIN(id) as id'),
+            'nis',
+            DB::raw('DATE(waktu_tap) as tanggal'),
+            DB::raw('MAX(status) as status'),
+        ])
+        ->groupBy('nis', DB::raw('DATE(waktu_tap)'));
+
         if ($user && $user->role === 'Siswa') {
-            $student = \App\Models\Student::where('email', $user->email)->first();
+            $student = Student::where('email', $user->email)->first();
             if ($student) {
                 $query->where('nis', $student->nis);
             } else {
@@ -46,93 +57,72 @@ class KehadiranSiswaResource extends Resource
             }
         }
 
-        return $query;
-    }
-
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('nis')
-                    ->label('NIS')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('rfid_uid')
-                    ->label('RFID UID')
-                    ->maxLength(255),
-                Forms\Components\DateTimePicker::make('waktu_tap')
-                    ->label('Waktu Tap')
-                    ->required()
-                    ->default(now()),
-                Forms\Components\Select::make('status')
-                    ->label('Status')
-                    ->options([
-                        'Hadir' => 'Hadir',
-                        'Izin' => 'Izin',
-                        'Sakit' => 'Sakit',
-                        'Alpa' => 'Alpa',
-                        'Terlambat' => 'Terlambat',
-                    ])
-                    ->required()
-                    ->default('Hadir'),
-                Forms\Components\Textarea::make('keterangan')
-                    ->label('Keterangan')
-                    ->columnSpanFull(),
-            ]);
+        return $query->orderBy('tanggal', 'desc');
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('photo')
-                    ->label('Foto')
-                    ->circular()
-                    ->defaultImageUrl(url('/images/user-placeholder.png'))
-                    ->disk('public')
-                    // Memaksa foto muncul di HP
-                    ->visibility(fn () => true)
-                    ->action(
-                        Tables\Actions\Action::make('view_photo')
-                            ->modalHeading('Foto Presensi Siswa')
-                            ->modalSubmitAction(false)
-                            ->modalCancelAction(fn ($action) => $action->label('Tutup'))
-                            ->modalContent(fn ($record) => view('filament.components.image-modal', [
-                                'url' => $record->photo ? asset('storage/' . $record->photo) : url('/images/user-placeholder.png')
-                            ]))
-                    ),
-
-                // Nama hanya terlihat oleh Admin
-                Tables\Columns\TextColumn::make('student.name')
-                    ->label('Nama Siswa')
-                    ->getStateUsing(fn($record) => $record->student?->name ?? 'Siswa: ' . $record->nis)
-                    ->searchable()
-                    ->sortable()
-                    ->visible(fn () => auth()->user()?->role === 'Admin'),
-
-                Tables\Columns\TextColumn::make('waktu_tap_date')
+                Tables\Columns\TextColumn::make('tanggal')
                     ->label('Tanggal')
                     ->date('d/m/Y')
-                    ->getStateUsing(fn($record) => $record->waktu_tap)
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('waktu_tap')
-                    ->label('Jam')
-                    ->dateTime('H:i')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('tipe_absen')
-                    ->label('Tipe')
+                Tables\Columns\TextColumn::make('student_name')
+                    ->label('Nama Siswa')
                     ->getStateUsing(function ($record) {
-                        if (str_contains(strtolower($record->keterangan ?? ''), 'masuk')) return 'Masuk';
-                        if (str_contains(strtolower($record->keterangan ?? ''), 'pulang')) return 'Pulang';
-                        return 'Masuk';
+                        return $record->student?->name ?? $record->nis;
                     })
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'Masuk' => 'success',
-                        'Pulang' => 'warning',
-                        default => 'gray',
+                    ->description(fn($record) => $record->nis)
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('nis', 'like', "%{$search}%");
+                    }),
+
+                Tables\Columns\TextColumn::make('masuk')
+                    ->label('Masuk')
+                    ->html()
+                    ->getStateUsing(function ($record) {
+                        $data = KehadiranSiswa::where('nis', $record->nis)
+                            ->whereDate('waktu_tap', $record->tanggal)
+                            ->where('keterangan', 'like', '%Masuk%')
+                            ->orderBy('waktu_tap', 'asc')
+                            ->first();
+
+                        if (!$data) return '<span class="text-gray-400 text-xs italic italic">---</span>';
+
+                        $jam = Carbon::parse($data->waktu_tap)->format('H:i');
+                        $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+                        
+                        return "
+                            <div class='flex items-center gap-2'>
+                                <img src='{$photoUrl}' class='w-8 h-8 rounded-full object-cover border border-gray-200' />
+                                <span class='font-bold text-success-600'>{$jam}</span>
+                            </div>
+                        ";
+                    }),
+
+                Tables\Columns\TextColumn::make('pulang')
+                    ->label('Pulang')
+                    ->html()
+                    ->getStateUsing(function ($record) {
+                        $data = KehadiranSiswa::where('nis', $record->nis)
+                            ->whereDate('waktu_tap', $record->tanggal)
+                            ->where('keterangan', 'like', '%Pulang%')
+                            ->orderBy('waktu_tap', 'desc')
+                            ->first();
+
+                        if (!$data) return '<span class="text-gray-400 text-xs italic italic">---</span>';
+
+                        $jam = Carbon::parse($data->waktu_tap)->format('H:i');
+                        $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+                        
+                        return "
+                            <div class='flex items-center gap-2'>
+                                <img src='{$photoUrl}' class='w-8 h-8 rounded-full object-cover border border-gray-200' />
+                                <span class='font-bold text-warning-600'>{$jam}</span>
+                            </div>
+                        ";
                     }),
 
                 Tables\Columns\TextColumn::make('status')
@@ -145,23 +135,28 @@ class KehadiranSiswaResource extends Resource
                         'Alpa' => 'danger',
                         'Terlambat' => 'warning',
                         default => 'gray',
-                    })
-                    ->searchable(),
+                    }),
             ])
-            ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
-                ])->visible(fn () => auth()->user()?->role === 'Admin'),
+            ->filters([
+                Tables\Filters\SelectFilter::make('tanggal')
+                    ->label('Periode')
+                    ->options([
+                        'today'   => 'Hari Ini',
+                        'week'    => 'Minggu Ini',
+                        'month'   => 'Bulan Ini',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'today' => $query->whereDate('waktu_tap', now()),
+                            'week'  => $query->whereBetween('waktu_tap', [now()->startOfWeek(), now()->endOfWeek()]),
+                            'month' => $query->whereMonth('waktu_tap', now()->month)->whereYear('waktu_tap', now()->year),
+                            default => $query,
+                        };
+                    }),
             ])
-            ->bulkActions(auth()->user()?->role === 'Admin' ? [
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ] : [])
-            ->paginated(true)
-            ->paginationPageOptions([10, 25, 50, 100])
-            ->defaultPaginationPageOption(25);
+            ->actions([])
+            ->bulkActions([])
+            ->paginated(true);
     }
 
     public static function getPages(): array
