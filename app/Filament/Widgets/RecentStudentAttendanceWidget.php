@@ -15,7 +15,7 @@ class RecentStudentAttendanceWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $heading = 'Rekap Kehadiran';
+    protected static ?string $heading = 'Rekap Kehadiran Siswa — Hari Ini';
 
     public function getHeading(): string
     {

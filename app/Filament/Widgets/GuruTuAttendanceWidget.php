@@ -16,7 +16,9 @@ class GuruTuAttendanceWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $heading = 'Rekap Kehadiran';
+    protected static ?string $heading = 'Rekap Kehadiran Guru & TU — Hari Ini';
+
+    protected static bool $isLazy = true;
 
     public function getHeading(): string
     {
