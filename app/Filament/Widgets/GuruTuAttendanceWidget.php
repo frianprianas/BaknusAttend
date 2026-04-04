@@ -73,7 +73,7 @@ class GuruTuAttendanceWidget extends BaseWidget
                     ->label('Nama')
                     ->limit(20)
                     ->getStateUsing(function ($record) {
-                        $user = User::where('nipy', $record->nipy)->first();
+                        $user = User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
                         return $user?->name ?? '–';
                     }),
 
@@ -87,7 +87,7 @@ class GuruTuAttendanceWidget extends BaseWidget
                     ->badge()
                     ->color('primary')
                     ->getStateUsing(function ($record) {
-                        $user = User::where('nipy', $record->nipy)->first();
+                        $user = User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
                         return $user?->role ?? '–';
                     })
                     ->hiddenFrom('md'),
