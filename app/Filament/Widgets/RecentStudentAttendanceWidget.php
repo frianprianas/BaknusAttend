@@ -46,8 +46,9 @@ class RecentStudentAttendanceWidget extends BaseWidget
         $user = auth()->user();
         if (!$user || $user->role !== 'Admin') return false;
         
-        // Sembunyikan dari Dashboard utama jika merupakan Admin agar tidak duplikat dengan menu Presensi/Absensi
-        if (request()->routeIs('filament.admin.pages.dashboard')) {
+        // JANGAN tampilkan di Dashboard utama agar Dashboard hanya isi Cards (Permintaan User)
+        $routeName = request()->route()?->getName() ?? '';
+        if (str_contains($routeName, '.pages.dashboard')) {
             return false;
         }
 
