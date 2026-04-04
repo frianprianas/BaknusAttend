@@ -154,6 +154,12 @@ class DashboardStatsWidget extends BaseWidget
                 ->description($izinPending > 0 ? 'Menunggu persetujuan Admin' : 'Tidak ada pengajuan baru')
                 ->color($izinPending > 0 ? 'warning' : 'gray')
                 ->url('/admin/izin-guru-tus'),
+
+            Stat::make('Hari Aktif ' . Carbon::now()->translatedFormat('F'), (new \App\Services\AttendanceService())->getEffectiveWorkingDays() . ' Hari')
+                ->description('Senin-Jumat dikurangi Libur Sekolah')
+                ->descriptionIcon('heroicon-m-calendar')
+                ->color('info')
+                ->icon('heroicon-o-calendar-days'),
         ];
     }
 }
