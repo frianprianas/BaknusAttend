@@ -15,7 +15,10 @@ class AttendanceOverview extends Page
     protected static ?string $navigationGroup = 'Laporan';
     protected static ?int $navigationSort = 1;
 
-    protected static bool $shouldRegisterNavigation = false;
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     protected static string $view = 'filament.pages.attendance-overview';
 
