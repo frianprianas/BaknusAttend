@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
 
 class KehadiranGuruTuMonthlyResource extends Resource
 {
-    protected static ?string $model = User::class; // Pakai User sebagai basis (agar yg 0 pun muncul)
+    protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'Rekap Bulanan Guru/TU';
@@ -35,7 +35,6 @@ class KehadiranGuruTuMonthlyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Hanya ambil Guru dan TU
         return parent::getEloquentQuery()
             ->whereIn('role', ['Guru', 'TU'])
             ->orderBy('name', 'asc');
@@ -55,42 +54,46 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     ->label('Statistik Kehadiran')
                     ->html()
                     ->getStateUsing(function($record, Tables\Table $table) {
-                        // Ambil Filter dari Tabel (Bulan & Tahun)
-                        $filters = $table->getFilterFormData();
-                        $month = $filters['bulan'] ?? now()->month;
-                        $year = $filters['tahun'] ?? now()->year;
-                        
-                        $date = Carbon::create($year, $month, 1);
-                        $service = new \App\Services\AttendanceService();
-                        $activeDays = $service->getEffectiveWorkingDays($month, $year);
-                        
-                        // Cari presence dia di bulan tersebut
-                        $hadirCount = KehadiranGuruTu::where(function($q) use ($record) {
-                                $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
-                            })
-                            ->whereMonth('waktu_tap', $month)
-                            ->whereYear('waktu_tap', $year)
-                            ->where('keterangan', 'like', '%Masuk%')
-                            ->count();
-                        
-                        $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
-                        $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700' : ($persen >= 50 ? 'bg-warning-100 text-warning-700' : 'bg-danger-100 text-danger-700');
-                        
-                        return "
-                            <div class='flex flex-col gap-1'>
-                                <div class='flex items-center gap-1.5'>
-                                    <span class='text-[10px] font-bold text-gray-500 uppercase'>Hari aktif bulan ini: {$activeDays} hari</span>
-                                    <span class='text-[10px] font-bold text-gray-400'>|</span>
-                                    <span class='text-[10px] font-bold text-success-600 uppercase'>Total Hadir: {$hadirCount}x</span>
-                                </div>
-                                <div class='flex items-center gap-2'>
-                                    <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
-                                        <div class='h-full " . ($persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500')) . "' style='width: {$persen}%'></div>
+                        try {
+                            $filters = $table->getLivewire()->tableFilters;
+                            $month = $filters['bulan']['value'] ?? now()->format('m');
+                            $year = $filters['tahun']['value'] ?? now()->format('Y');
+                            
+                            $month = (int) $month;
+                            $year = (int) $year;
+
+                            $service = new \App\Services\AttendanceService();
+                            $activeDays = $service->getEffectiveWorkingDays($month, $year);
+                            
+                            $hadirCount = KehadiranGuruTu::where(function($q) use ($record) {
+                                    $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
+                                })
+                                ->whereMonth('waktu_tap', $month)
+                                ->whereYear('waktu_tap', $year)
+                                ->where('keterangan', 'like', '%Masuk%')
+                                ->count();
+                            
+                            $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
+                            $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700' : ($persen >= 50 ? 'bg-warning-100 text-warning-700' : 'bg-danger-100 text-danger-700');
+                            
+                            return "
+                                <div class='flex flex-col gap-1'>
+                                    <div class='flex items-center gap-1.5'>
+                                        <span class='text-[10px] font-bold text-gray-500 uppercase'>Hari aktif bulan ini: {$activeDays} hari</span>
+                                        <span class='text-[10px] font-bold text-gray-400'>|</span>
+                                        <span class='text-[10px] font-bold text-success-600 uppercase'>Total Hadir: {$hadirCount}x</span>
                                     </div>
-                                    <span class='text-xs font-black {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
+                                    <div class='flex items-center gap-2'>
+                                        <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
+                                            <div class='h-full " . ($persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500')) . "' style='width: {$persen}%'></div>
+                                        </div>
+                                        <span class='text-xs font-black {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ";
+                            ";
+                        } catch (\Exception $e) {
+                            return "<span class='text-xs text-danger-500'>Error Loading Stats</span>";
+                        }
                     }),
             ])
             ->filters([
