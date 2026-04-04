@@ -61,10 +61,6 @@ class KehadiranSiswaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->contentGrid([
-                'md' => null,
-                'sm' => 1,
-            ])
             ->columns([
                 Tables\Columns\Layout\Split::make([
                     Tables\Columns\TextColumn::make('tanggal')
@@ -102,27 +98,18 @@ class KehadiranSiswaResource extends Resource
                                 $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
                                 
                                 return "
-                                    <div class='flex items-center gap-2 p-1 bg-success-50/50 rounded-lg border border-success-100 mb-1 w-full max-w-[150px]'>
-                                        <div x-data=\"{ open: false }\" class='relative'>
-                                            <img src='{$photoUrl}' @click='open = true' class='w-10 h-10 rounded-lg object-cover cursor-zoom-in ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
-                                            <div x-show='open' x-cloak 
-                                                 x-transition:enter='transition ease-out duration-300'
-                                                 x-transition:enter-start='opacity-0 scale-95'
-                                                 x-transition:enter-end='opacity-100 scale-100'
-                                                 x-transition:leave='transition ease-in duration-200'
-                                                 x-transition:leave-start='opacity-100 scale-100'
-                                                 x-transition:leave-end='opacity-0 scale-95'
-                                                 @click.away='open = false' 
-                                                 class='fixed inset-0 z-[999] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md'>
-                                                <div class='relative max-w-[90vw] max-h-[90vh] flex items-center justify-center'>
-                                                    <img src='{$photoUrl}' class='rounded-xl shadow-2xl border-[6px] border-white object-contain max-w-full max-h-full transition-transform' />
-                                                    <button @click='open = false' class='absolute -top-12 -right-4 text-white hover:text-red-400 p-2 transition-colors'>
-                                                        <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
-                                                    </button>
-                                                </div>
+                                    <div class='flex items-center gap-2 p-1 bg-success-50/50 rounded-lg border border-success-100 mb-1 w-full max-w-[140px]'>
+                                        <button 
+                                            type='button'
+                                            wire:click=\"mountTableAction('view_photo', {id: '{$data->id}'})\"
+                                            class='flex-shrink-0 group relative'
+                                        >
+                                            <img src='{$photoUrl}' class='w-10 h-10 rounded-lg object-cover ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
+                                            <div class='absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center transition-opacity'>
+                                                <svg class='w-4 h-4 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'></path></svg>
                                             </div>
-                                        </div>
-                                        <div class='flex flex-col'>
+                                        </button>
+                                        <div class='flex flex-col text-left'>
                                             <span class='text-xs font-bold text-success-700 leading-none'>{$jam}</span>
                                             <span class='text-[8px] text-success-500 uppercase font-bold tracking-tight'>Masuk</span>
                                         </div>
@@ -146,27 +133,18 @@ class KehadiranSiswaResource extends Resource
                                 $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
                                 
                                 return "
-                                    <div class='flex items-center gap-2 p-1 bg-amber-50/50 rounded-lg border border-amber-100 w-full max-w-[150px]'>
-                                         <div x-data=\"{ open: false }\" class='relative'>
-                                            <img src='{$photoUrl}' @click='open = true' class='w-10 h-10 rounded-lg object-cover cursor-zoom-in ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
-                                            <div x-show='open' x-cloak 
-                                                 x-transition:enter='transition ease-out duration-300'
-                                                 x-transition:enter-start='opacity-0 scale-95'
-                                                 x-transition:enter-end='opacity-100 scale-100'
-                                                 x-transition:leave='transition ease-in duration-200'
-                                                 x-transition:leave-start='opacity-100 scale-100'
-                                                 x-transition:leave-end='opacity-0 scale-95'
-                                                 @click.away='open = false' 
-                                                 class='fixed inset-0 z-[999] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md'>
-                                                <div class='relative max-w-[90vw] max-h-[90vh] flex items-center justify-center'>
-                                                    <img src='{$photoUrl}' class='rounded-xl shadow-2xl border-[6px] border-white object-contain max-w-full max-h-full transition-transform' />
-                                                    <button @click='open = false' class='absolute -top-12 -right-4 text-white hover:text-red-400 p-2 transition-colors'>
-                                                        <svg class='w-10 h-10' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'></path></svg>
-                                                    </button>
-                                                </div>
+                                    <div class='flex items-center gap-2 p-1 bg-amber-50/50 rounded-lg border border-amber-100 w-full max-w-[140px]'>
+                                        <button 
+                                            type='button'
+                                            wire:click=\"mountTableAction('view_photo', {id: '{$data->id}'})\"
+                                            class='flex-shrink-0 group relative'
+                                        >
+                                            <img src='{$photoUrl}' class='w-10 h-10 rounded-lg object-cover ring-2 ring-white shadow-sm hover:scale-105 transition-all' />
+                                            <div class='absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center transition-opacity'>
+                                                <svg class='w-4 h-4 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'></path></svg>
                                             </div>
-                                        </div>
-                                        <div class='flex flex-col'>
+                                        </button>
+                                        <div class='flex flex-col text-left'>
                                             <span class='text-xs font-bold text-amber-700 leading-none'>{$jam}</span>
                                             <span class='text-[8px] text-amber-500 uppercase font-bold tracking-tight'>Pulang</span>
                                         </div>
@@ -205,7 +183,19 @@ class KehadiranSiswaResource extends Resource
                         };
                     }),
             ])
-            ->actions([])
+            ->actions([
+                Tables\Actions\Action::make('view_photo')
+                    ->label('Lihat Foto')
+                    ->modalHeading('Detail Foto Presensi Siswa')
+                    ->modalContent(fn ($arguments) => view('filament.components.image-modal', [
+                        'url' => ($data = KehadiranSiswa::find($arguments['id'])) && $data->photo 
+                             ? asset('storage/' . $data->photo) 
+                             : url('/images/user-placeholder.png')
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    ->hidden(),
+            ])
             ->bulkActions([])
             ->paginated(true)
             ->defaultPaginationPageOption(25);
