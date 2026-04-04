@@ -33,7 +33,7 @@
                 </div>
             </button>
 
-            <!-- Modal Teleport (DILEMPAR KE BODY BIAR TIDAK SEGEDE GABAN) -->
+            <!-- Modal Teleport -->
             <template x-teleport="body">
                 <div 
                     x-show="open" 
@@ -44,27 +44,32 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
-                    class="fixed inset-0 z-[9999] flex items-center justify-center p-8 bg-black/95 backdrop-blur-md"
+                    class="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md"
                     @keydown.escape.window="open = false"
                 >
+                    <!-- Container Gambar Proporsional -->
                     <div 
-                        class="relative max-w-[70vw] max-h-[75vh] flex flex-col items-center"
+                        class="relative w-full max-w-sm" 
                         @click.away="open = false"
                     >
                         <img 
                             src="{{ $photoUrl }}" 
-                            class="rounded-xl shadow-2xl border-[6px] border-white object-contain max-w-full max-h-full shadow-white/10"
-                            x-transition:enter="transition ease-out duration-300 transform"
-                            x-transition:enter-start="scale-90"
-                            x-transition:enter-end="scale-100"
+                            class="w-full rounded-2xl shadow-2xl border-[5px] border-white object-cover aspect-[3/4] shadow-black/50"
                         />
+                        
+                        <!-- Tombol Close Melayang di Kanan Atas -->
                         <button 
                             @click="open = false" 
-                            class="mt-4 bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-full border border-white/20 backdrop-blur-sm transition-all text-sm font-bold flex items-center gap-2"
+                            class="absolute -top-4 -right-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110"
                         >
-                            <x-heroicon-o-x-mark class="w-5 h-5" />
-                            Tutup
+                            <x-heroicon-o-x-mark class="w-6 h-6 stroke-[3px]" />
                         </button>
+
+                        <div class="absolute bottom-4 left-0 right-0 text-center">
+                             <div class="inline-block bg-black/50 backdrop-blur-md text-white px-4 py-1 rounded-full text-xs font-bold border border-white/20">
+                                Sesi {{ $label }} - {{ $jam }}
+                             </div>
+                        </div>
                     </div>
                 </div>
             </template>
