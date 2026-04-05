@@ -60,6 +60,27 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    /**
+     * Cek apakah user ini adalah Wali Kelas.
+     */
+    public function isWaliKelas(): bool
+    {
+        return \App\Models\ClassRoom::where('nipy', $this->nipy)
+            ->orWhere('nipy', $this->email)
+            ->exists();
+    }
+
+    /**
+     * Ambil daftar ID kelas yang dikelola oleh user ini sebagai Wali Kelas.
+     */
+    public function managedClassIds(): array
+    {
+        return \App\Models\ClassRoom::where('nipy', $this->nipy)
+            ->orWhere('nipy', $this->email)
+            ->pluck('id')
+            ->toArray();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         // Izinkan semua yang login untuk masuk ke dasbor (Filament v3 requirement)

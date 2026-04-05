@@ -40,9 +40,12 @@ class ClassRoomResource extends Resource
                     ->label('Nama Kelas')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('nipy')
-                    ->label('NIPY / Wali Kelas')
-                    ->maxLength(255),
+                Forms\Components\Select::make('nipy')
+                    ->label('Wali Kelas')
+                    ->options(fn() => \App\Models\User::whereIn('role', ['Guru', 'TU'])->pluck('name', 'nipy'))
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Pilih Wali Kelas'),
                 Forms\Components\TextInput::make('km')
                     ->label('Ketua Murid (KM)')
                     ->maxLength(255),

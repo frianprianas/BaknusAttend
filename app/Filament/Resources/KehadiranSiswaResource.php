@@ -24,13 +24,14 @@ class KehadiranSiswaResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek || auth()->user()?->role === 'Siswa';
+        $user = auth()->user();
+        return $user && ($user->role === 'Admin' || $user->is_kepsek || $user->role === 'Siswa' || $user->isWaliKelas());
     }
 
     public static function canViewAny(): bool
     {
         $user = auth()->user();
-        return $user && ($user->role === 'Admin' || $user->is_kepsek || $user->role === 'Siswa');
+        return $user && ($user->role === 'Admin' || $user->is_kepsek || $user->role === 'Siswa' || $user->isWaliKelas());
     }
 
     public static function getEloquentQuery(): Builder
@@ -44,8 +45,21 @@ class KehadiranSiswaResource extends Resource
             ])
             ->groupBy('nis', DB::raw('DATE(waktu_tap)'))
             ->when(!(auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek), function ($query) {
-                $student = \App\Models\Student::where('email', auth()->user()->email)->first();
-                $query->where('nis', $student ? $student->nis : 'none');
+                $user = auth()->user();
+                
+                // JIKA SISWA: Lihat diri sendiri
+                if ($user->role === 'Siswa') {
+                    $student = \App\Models\Student::where('email', $user->email)->first();
+                    $query->where('nis', $student ? $student->nis : 'none');
+                } 
+                // JIKA WALI KELAS: Lihat satu kelas binaannya saja
+                elseif ($user->isWaliKelas()) {
+                    $classIds = $user->managedClassIds();
+                    $query->whereIn('nis', \App\Models\Student::whereIn('class_room_id', $classIds)->pluck('nis'));
+                }
+                else {
+                    $query->where('nis', 'none');
+                }
             })
             ->orderBy('tanggal', 'desc');
     }
