@@ -26,12 +26,12 @@ class KehadiranGuruTuMonthlyResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role === 'Admin';
+        return auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek;
     }
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role === 'Admin';
+        return auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek;
     }
 
     public static function getEloquentQuery(): Builder

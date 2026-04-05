@@ -24,13 +24,13 @@ class KehadiranSiswaResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return in_array(auth()->user()?->role, ['Admin', 'Siswa']);
+        return auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek || auth()->user()?->role === 'Siswa';
     }
 
     public static function canViewAny(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['Admin', 'Siswa']);
+        return $user && ($user->role === 'Admin' || $user->is_kepsek || $user->role === 'Siswa');
     }
 
     public static function getEloquentQuery(): Builder
@@ -43,7 +43,7 @@ class KehadiranSiswaResource extends Resource
                 DB::raw('MAX(status) as status'),
             ])
             ->groupBy('nis', DB::raw('DATE(waktu_tap)'))
-            ->when(auth()->user()?->role === 'Siswa', function ($query) {
+            ->when(!(auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek), function ($query) {
                 $student = \App\Models\Student::where('email', auth()->user()->email)->first();
                 $query->where('nis', $student ? $student->nis : 'none');
             })

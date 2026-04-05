@@ -29,7 +29,7 @@ class KehadiranGuruTuResource extends Resource
     public static function canViewAny(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['Admin', 'Guru', 'TU']);
+        return $user && ($user->role === 'Admin' || $user->is_kepsek || in_array($user->role, ['Guru', 'TU']));
     }
 
     public static function getEloquentQuery(): Builder
@@ -42,7 +42,7 @@ class KehadiranGuruTuResource extends Resource
                 DB::raw('MAX(status) as status'),
             ])
             ->groupBy('nipy', DB::raw('DATE(waktu_tap)'))
-            ->when(auth()->user()?->role !== 'Admin', function ($query) {
+            ->when(!(auth()->user()?->role === 'Admin' || auth()->user()?->is_kepsek), function ($query) {
                 $user = auth()->user();
                 $query->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
             })

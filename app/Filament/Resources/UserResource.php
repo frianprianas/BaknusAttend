@@ -84,6 +84,11 @@ class UserResource extends Resource
                     ->maxLength(255)
                     ->placeholder('Contoh: 0012345678')
                     ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('is_kepsek')
+                    ->label('Jabatan: Kepala Sekolah (Kepsek)')
+                    ->helperText('Aktifkan jika guru/staff ini menjabat sebagai Kepala Sekolah agar dapat melihat menu Laporan.')
+                    ->default(false),
             ]);
     }
 
@@ -122,6 +127,12 @@ class UserResource extends Resource
                     ->searchable()
                     ->placeholder('-')
                     ->hiddenFrom('md'),
+
+                Tables\Columns\IconColumn::make('is_kepsek')
+                    ->label('Kepsek')
+                    ->boolean()
+                    ->sortable()
+                    ->tooltip('Status Kepala Sekolah'),
 
                 Tables\Columns\IconColumn::make('push_status')
                     ->label('Notif HP')

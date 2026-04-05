@@ -29,6 +29,7 @@ class User extends Authenticatable implements FilamentUser
         'rfid',
         'face_reference',
         'target_hari_kerja',
+        'is_kepsek',
     ];
 
     public function attendances()
