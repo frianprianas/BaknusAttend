@@ -143,6 +143,15 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->image()
                         ->acceptedFileTypes(['image/*'])
                         ->extraInputAttributes(['capture' => 'user', 'accept' => 'image/*'])
+                        ->extraAttributes([
+                            'x-init' => "
+                                let input = \$el.querySelector('input[type=file]');
+                                if (input) {
+                                    input.setAttribute('capture', 'user');
+                                    input.setAttribute('accept', 'image/*');
+                                }
+                            "
+                        ])
                         ->required($tipeAbsens !== 'Selesai')
                         ->maxSize(8192)
                         ->imageResizeTargetWidth('640')
@@ -198,6 +207,15 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->image()
                                 ->acceptedFileTypes(['image/*'])
                                 ->extraInputAttributes(['capture' => 'user', 'accept' => 'image/*'])
+                                ->extraAttributes([
+                                    'x-init' => "
+                                        let input = \$el.querySelector('input[type=file]');
+                                        if (input) {
+                                            input.setAttribute('capture', 'user');
+                                            input.setAttribute('accept', 'image/*');
+                                        }
+                                    "
+                                ])
                                 ->required()
                                 ->maxSize(8192)
                                 ->imageResizeMode('cover')
@@ -221,6 +239,15 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->image()
                                 ->acceptedFileTypes(['image/*'])
                                 ->extraInputAttributes(['capture' => 'user', 'accept' => 'image/*'])
+                                ->extraAttributes([
+                                    'x-init' => "
+                                        let input = \$el.querySelector('input[type=file]');
+                                        if (input) {
+                                            input.setAttribute('capture', 'user');
+                                            input.setAttribute('accept', 'image/*');
+                                        }
+                                    "
+                                ])
                                 ->required()
                                 ->maxSize(8192)
                                 ->imageResizeMode('cover')
