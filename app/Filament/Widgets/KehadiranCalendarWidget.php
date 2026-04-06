@@ -65,18 +65,27 @@ class KehadiranCalendarWidget extends Widget
         foreach ($presences as $p) {
             $day = (int) Carbon::parse($p->waktu_tap)->format('j');
             $time = Carbon::parse($p->waktu_tap)->format('H:i');
+            $isDL = (bool) ($p->is_dinas_luar ?? false);
             
             if (!isset($this->presenceData[$day])) {
                 // Presensi pertama kali di hari itu (Masuk)
                 $this->presenceData[$day] = [
-                    'status' => 'light',
+                    'status' => $isDL ? 'orange' : 'light',
                     'jam_masuk' => $time,
                     'jam_pulang' => '-',
+                    'is_dinas_luar' => $isDL,
                 ];
             } else {
                 // Presensi kedua dan seterusnya di hari yang sama (Pulang)
-                $this->presenceData[$day]['status'] = 'dark';
                 $this->presenceData[$day]['jam_pulang'] = $time;
+                
+                // Jika salah satu (masuk atau pulang) berstatus Dinas Luar, set status jadi orange
+                if ($isDL || ($this->presenceData[$day]['is_dinas_luar'] ?? false)) {
+                    $this->presenceData[$day]['status'] = 'orange';
+                    $this->presenceData[$day]['is_dinas_luar'] = true;
+                } else {
+                    $this->presenceData[$day]['status'] = 'dark';
+                }
             }
         }
     }

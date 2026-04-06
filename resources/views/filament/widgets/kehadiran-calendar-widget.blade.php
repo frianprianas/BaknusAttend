@@ -58,6 +58,7 @@
             .dark .legend-item { color: #94a3b8; }
             .dot-full  { background: #6366f1; box-shadow: 0 2px 6px rgba(99,102,241,.4); }
             .dot-in    { background: #38bdf8; box-shadow: 0 2px 6px rgba(56,189,248,.4); }
+            .dot-orange { background: #f59e0b; box-shadow: 0 2px 6px rgba(245,158,11,.4); }
             .dot-none  { background: #e2e8f0; }
             .dark .dot-none { background: #334155; }
 
@@ -100,6 +101,12 @@
                 box-shadow: 0 4px 16px rgba(56,189,248,.35);
             }
             .cal-cell-in:hover { box-shadow: 0 8px 24px rgba(56,189,248,.50); }
+
+            .cal-cell-orange {
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                box-shadow: 0 4px 16px rgba(245,158,11,.35);
+            }
+            .cal-cell-orange:hover { box-shadow: 0 8px 24px rgba(245,158,11,.50); }
 
             .cal-day-num-colored { font-size: .9rem; font-weight: 900; color: #fff; letter-spacing: -.01em; }
             .cal-day-num-plain   { font-size: .9rem; font-weight: 700; color: #94a3b8; letter-spacing: -.01em; }
@@ -154,6 +161,7 @@
             <div class="cal-legend">
                 <div class="legend-item"><div class="legend-dot dot-full"></div> Hadir Lengkap</div>
                 <div class="legend-item"><div class="legend-dot dot-in"></div> Masuk Saja</div>
+                <div class="legend-item"><div class="legend-dot dot-orange"></div> Dinas Luar</div>
                 <div class="legend-item"><div class="legend-dot dot-none"></div> Tanpa Data</div>
             </div>
 
@@ -177,11 +185,11 @@
                         $jam_masuk = $dataDay['jam_masuk'] ?? '-';
                         $jam_pulang = $dataDay['jam_pulang'] ?? '-';
 
-                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : 'cal-cell-none');
-                        $numClass  = in_array($status, ['dark','light']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
+                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : ($status === 'orange' ? 'cal-cell-orange' : 'cal-cell-none'));
+                        $numClass  = in_array($status, ['dark','light','orange']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
                     @endphp
                     <div class="cal-cell {{ $cellClass }}" 
-                         @if(in_array($status, ['dark','light']))
+                         @if(in_array($status, ['dark','light','orange']))
                          x-data="{ open: false }" 
                          @click="open = !open" 
                          @click.outside="open = false" 
@@ -189,7 +197,7 @@
                          @endif
                     >
                         <span class="{{ $numClass }}">{{ $day }}</span>
-                        @if(in_array($status, ['dark','light']))
+                        @if(in_array($status, ['dark','light','orange']))
                             <div class="cal-pip"></div>
 
                             {{-- Gelembung Pop-up Detail Jam --}}
