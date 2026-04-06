@@ -247,13 +247,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
             if (!empty($allowedIps)) {
                 $clientIp = request()->ip();
 
-                // Cek header proxy yang lebih spesifik
-                if (request()->header('CF-Connecting-IP')) {
-                    $clientIp = request()->header('CF-Connecting-IP');
-                } elseif (request()->header('X-Real-IP')) {
-                    $clientIp = request()->header('X-Real-IP');
-                } elseif ($forwardedIp = request()->header('X-Forwarded-For')) {
-                    $clientIp = trim(explode(',', $forwardedIp)[0]);
+                if ($cf = request()->header('CF-Connecting-IP')) {
+                    $clientIp = $cf;
+                } elseif ($real = request()->header('X-Real-IP')) {
+                    $clientIp = $real;
+                } elseif ($forward = request()->header('X-Forwarded-For')) {
+                    $clientIp = trim(explode(',', $forward)[0]);
                 }
 
                 if (!in_array($clientIp, $allowedIps)) {

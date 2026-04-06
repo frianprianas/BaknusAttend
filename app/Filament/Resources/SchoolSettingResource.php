@@ -80,15 +80,26 @@ class SchoolSettingResource extends Resource
                         Forms\Components\Toggle::make('is_ip_validation_active')
                             ->label('Aktifkan Validasi IP Publik')
                             ->helperText(function() {
+                                $ips = [
+                                    'Standard (Request IP)' => request()->ip(),
+                                    'X-Forwarded-For' => request()->header('X-Forwarded-For'),
+                                    'X-Real-IP' => request()->header('X-Real-IP'),
+                                    'CF-Connecting-IP' => request()->header('CF-Connecting-IP'),
+                                ];
+                                
                                 $clientIp = request()->ip();
-                                if (request()->header('CF-Connecting-IP')) {
-                                    $clientIp = request()->header('CF-Connecting-IP');
-                                } elseif (request()->header('X-Real-IP')) {
-                                    $clientIp = request()->header('X-Real-IP');
-                                } elseif ($forwardedIp = request()->header('X-Forwarded-For')) {
-                                    $clientIp = trim(explode(',', $forwardedIp)[0]);
+                                if ($cf = request()->header('CF-Connecting-IP')) $clientIp = $cf;
+                                elseif ($real = request()->header('X-Real-IP')) $clientIp = $real;
+                                elseif ($forward = request()->header('X-Forwarded-For')) $clientIp = trim(explode(',', $forward)[0]);
+
+                                $info = "IP Terdeteksi: <b class='text-danger'>$clientIp</b><br/>";
+                                $info .= "<small>Detail Header (Debug):<br/>";
+                                foreach($ips as $key => $val) {
+                                    if($val) $info .= "- $key: $val<br/>";
                                 }
-                                return "Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah. IP Anda saat ini terdeteksi sebagai: " . $clientIp;
+                                $info .= "</small>";
+
+                                return new \Illuminate\Support\HtmlString("Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah.<br/>" . $info);
                             })
                             ->default(false)
                             ->live(),
