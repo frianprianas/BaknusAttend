@@ -142,17 +142,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->label('📷 Ambil Foto Selfie')
                         ->multiple(false)
                         ->image()
-                        ->acceptedFileTypes(['image/*'])
                         ->extraInputAttributes([
                             'capture' => 'user', 
-                            'accept' => 'image/*;capture=user'
+                            'accept' => 'image/jpeg, image/png;capture=user'
                         ])
                         ->required($tipeAbsens !== 'Selesai')
                         ->maxSize(8192)
-                        ->imageResizeTargetWidth('640')
-                        ->imageResizeTargetHeight('640')
-                        ->imageResizeMode('cover')
-                        ->imageCropAspectRatio('1:1')
                         ->disk('public')
                         ->directory('absensi-selfie')
                         ->hidden($tipeAbsens === 'Selesai'),
@@ -200,17 +195,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->label('📷 Ambil Foto Wajah Master')
                                 ->multiple(false)
                                 ->image()
-                                ->acceptedFileTypes(['image/*'])
                                 ->extraInputAttributes([
                                     'capture' => 'user', 
-                                    'accept' => 'image/*;capture=user'
+                                    'accept' => 'image/jpeg, image/png;capture=user'
                                 ])
                                 ->required()
                                 ->maxSize(8192)
-                                ->imageResizeMode('cover')
-                                ->imageCropAspectRatio('1:1')
-                                ->imageResizeTargetWidth('640')
-                                ->imageResizeTargetHeight('640')
                                 ->disk('public')
                                 ->directory('face-references'),
                         ]),
@@ -226,17 +216,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->label('📷 Ambil Foto Selfie')
                                 ->multiple(false)
                                 ->image()
-                                ->acceptedFileTypes(['image/*'])
                                 ->extraInputAttributes([
                                     'capture' => 'user', 
-                                    'accept' => 'image/*;capture=user'
+                                    'accept' => 'image/jpeg, image/png;capture=user'
                                 ])
                                 ->required()
                                 ->maxSize(8192)
-                                ->imageResizeMode('cover')
-                                ->imageCropAspectRatio('1:1')
-                                ->imageResizeTargetWidth('640')
-                                ->imageResizeTargetHeight('640')
                                 ->disk('public')
                                 ->directory('absensi-selfie'),
                         ]),
