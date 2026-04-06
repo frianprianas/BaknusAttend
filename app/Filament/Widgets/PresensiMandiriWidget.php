@@ -140,17 +140,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->visible(fn ($get) => $get('is_dinas_luar')),
                     FileUpload::make('photo_selfie')
                         ->label('📷 Ambil Foto Selfie')
+                        ->multiple(false)
                         ->image()
                         ->acceptedFileTypes(['image/*'])
-                        ->extraInputAttributes(['capture' => 'user', 'accept' => 'image/*'])
-                        ->extraAttributes([
-                            'x-init' => "
-                                let input = \$el.querySelector('input[type=file]');
-                                if (input) {
-                                    input.setAttribute('capture', 'user');
-                                    input.setAttribute('accept', 'image/*');
-                                }
-                            "
+                        ->extraInputAttributes([
+                            'capture' => 'user', 
+                            'accept' => 'image/*;capture=user'
                         ])
                         ->required($tipeAbsens !== 'Selesai')
                         ->maxSize(8192)
@@ -158,7 +153,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->imageResizeTargetHeight('640')
                         ->imageResizeMode('cover')
                         ->imageCropAspectRatio('1:1')
-                        ->imageEditorMode(2)
                         ->disk('public')
                         ->directory('absensi-selfie')
                         ->hidden($tipeAbsens === 'Selesai'),
@@ -204,17 +198,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->content("⚠️ Anda belum memiliki foto master. Ambil foto dengan wajah menghadap kamera, tanpa masker, pencahayaan terang."),
                             FileUpload::make('photo_master')
                                 ->label('📷 Ambil Foto Wajah Master')
+                                ->multiple(false)
                                 ->image()
                                 ->acceptedFileTypes(['image/*'])
-                                ->extraInputAttributes(['capture' => 'user', 'accept' => 'image/*'])
-                                ->extraAttributes([
-                                    'x-init' => "
-                                        let input = \$el.querySelector('input[type=file]');
-                                        if (input) {
-                                            input.setAttribute('capture', 'user');
-                                            input.setAttribute('accept', 'image/*');
-                                        }
-                                    "
+                                ->extraInputAttributes([
+                                    'capture' => 'user', 
+                                    'accept' => 'image/*;capture=user'
                                 ])
                                 ->required()
                                 ->maxSize(8192)
@@ -222,7 +211,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->imageCropAspectRatio('1:1')
                                 ->imageResizeTargetWidth('640')
                                 ->imageResizeTargetHeight('640')
-                                ->imageEditorMode(2)
                                 ->disk('public')
                                 ->directory('face-references'),
                         ]),
@@ -236,17 +224,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->content("✅ Foto master sudah diambil. Sekarang ambil selfie terakhir untuk absen $tipeAbsens."),
                             FileUpload::make('photo_selfie')
                                 ->label('📷 Ambil Foto Selfie')
+                                ->multiple(false)
                                 ->image()
                                 ->acceptedFileTypes(['image/*'])
-                                ->extraInputAttributes(['capture' => 'user', 'accept' => 'image/*'])
-                                ->extraAttributes([
-                                    'x-init' => "
-                                        let input = \$el.querySelector('input[type=file]');
-                                        if (input) {
-                                            input.setAttribute('capture', 'user');
-                                            input.setAttribute('accept', 'image/*');
-                                        }
-                                    "
+                                ->extraInputAttributes([
+                                    'capture' => 'user', 
+                                    'accept' => 'image/*;capture=user'
                                 ])
                                 ->required()
                                 ->maxSize(8192)
@@ -254,7 +237,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->imageCropAspectRatio('1:1')
                                 ->imageResizeTargetWidth('640')
                                 ->imageResizeTargetHeight('640')
-                                ->imageEditorMode(2)
                                 ->disk('public')
                                 ->directory('absensi-selfie'),
                         ]),
