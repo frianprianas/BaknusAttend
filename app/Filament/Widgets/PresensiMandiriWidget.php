@@ -132,13 +132,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                             : "Silakan ambil foto selfie untuk verifikasi kehadiran Anda."),
                     Toggle::make('is_dinas_luar')
                         ->label('Dinas Luar')
-                        ->onIcon('heroicon-m-briefcase')
-                        ->offIcon('heroicon-m-home')
-                        ->inline(false)
                         ->live(),
                     TextInput::make('lokasi_dinas_luar')
-                        ->label('Tempat / Keterangan Dinas Luar')
-                        ->placeholder('Misal: Rapat di Dinas Pendidikan')
+                        ->label('Tempat / Keterangan')
+                        ->placeholder('Misal: Rapat di Dinas')
                         ->required()
                         ->visible(fn ($get) => $get('is_dinas_luar')),
                     FileUpload::make('photo_selfie')
@@ -185,13 +182,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ->schema([
                 Toggle::make('is_dinas_luar')
                     ->label('Dinas Luar')
-                    ->onIcon('heroicon-m-briefcase')
-                    ->offIcon('heroicon-m-home')
-                    ->inline(false)
                     ->live(),
                 TextInput::make('lokasi_dinas_luar')
-                    ->label('Tempat / Keterangan Dinas Luar')
-                    ->placeholder('Misal: Rapat di Dinas Pendidikan')
+                    ->label('Tempat / Keterangan')
+                    ->placeholder('Misal: Rapat di Dinas')
                     ->required()
                     ->visible(fn ($get) => $get('is_dinas_luar')),
                 Wizard::make([
