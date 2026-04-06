@@ -79,7 +79,17 @@ class SchoolSettingResource extends Resource
                     ->schema([
                         Forms\Components\Toggle::make('is_ip_validation_active')
                             ->label('Aktifkan Validasi IP Publik')
-                            ->helperText('Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah.')
+                            ->helperText(function() {
+                                $clientIp = request()->ip();
+                                if (request()->header('CF-Connecting-IP')) {
+                                    $clientIp = request()->header('CF-Connecting-IP');
+                                } elseif (request()->header('X-Real-IP')) {
+                                    $clientIp = request()->header('X-Real-IP');
+                                } elseif ($forwardedIp = request()->header('X-Forwarded-For')) {
+                                    $clientIp = trim(explode(',', $forwardedIp)[0]);
+                                }
+                                return "Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah. IP Anda saat ini terdeteksi sebagai: " . $clientIp;
+                            })
                             ->default(false)
                             ->live(),
                         Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
