@@ -406,20 +406,45 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // A. Fungsi Paksa Kamera Selfie
         const forceSelfieMode = () => {
             document.querySelectorAll('input[type="file"]').forEach(input => {
                 if (input.getAttribute('capture') !== 'user') {
                     input.setAttribute('capture', 'user');
-                    input.setAttribute('accept', 'image/*');
+                    input.setAttribute('accept', 'image/jpeg, image/png;capture=user');
                 }
             });
         };
 
-        // Pantau jika ada tombol kamera baru yang muncul
+        // B. Fungsi Konfirmasi Pop-up
+        const confirmSelfie = (e) => {
+            let el = e.target.closest('.filepond--root') || 
+                     e.target.closest('.filepond--label-action') || 
+                     e.target.closest('.filepond--action-browse-item') ||
+                     e.target.closest('input[type="file"]');
+            
+            if (el && !el.dataset.isConfirming) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (confirm("Gunakan Kamera Depan (Selfie)?")) {
+                    el.dataset.isConfirming = "true";
+                    el.click(); // Teruskan aksi buka kamera
+                    setTimeout(() => { delete el.dataset.isConfirming; }, 1000);
+                }
+                return false;
+            }
+        };
+
+        // Pasang Mata-mata DOM (Observer) untuk paksa kamera depan
         const observer = new MutationObserver(forceSelfieMode);
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // Cadangan: Cek tiap 2 detik
+        // Pasang Interseptor Klik Pop-up (Mode Capturing Agar Didahulukan)
+        document.addEventListener('click', confirmSelfie, true);
+
+        // Backup berkala & aktifkan awal
         setInterval(forceSelfieMode, 2000);
+        forceSelfieMode();
     });
 </script>
