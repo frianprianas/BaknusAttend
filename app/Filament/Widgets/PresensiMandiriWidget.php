@@ -9,9 +9,12 @@ use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Services\AwsFaceService;
 use Carbon\Carbon;
+use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
@@ -127,13 +130,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->content($tipeAbsens === 'Selesai'
                             ? "✅ Anda sudah menyelesaikan absensi hari ini (Masuk & Pulang). Terima kasih!"
                             : "Silakan ambil foto selfie untuk verifikasi kehadiran Anda."),
-                    Forms\Components\Toggle::make('is_dinas_luar')
+                    Toggle::make('is_dinas_luar')
                         ->label('Dinas Luar')
                         ->onIcon('heroicon-m-briefcase')
                         ->offIcon('heroicon-m-home')
                         ->inline(false)
                         ->live(),
-                    Forms\Components\TextInput::make('lokasi_dinas_luar')
+                    TextInput::make('lokasi_dinas_luar')
                         ->label('Tempat / Keterangan Dinas Luar')
                         ->placeholder('Misal: Rapat di Dinas Pendidikan')
                         ->required()
@@ -180,13 +183,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
         // -------------------------------------------------------
         return $form
             ->schema([
-                Forms\Components\Toggle::make('is_dinas_luar')
+                Toggle::make('is_dinas_luar')
                     ->label('Dinas Luar')
                     ->onIcon('heroicon-m-briefcase')
                     ->offIcon('heroicon-m-home')
                     ->inline(false)
                     ->live(),
-                Forms\Components\TextInput::make('lokasi_dinas_luar')
+                TextInput::make('lokasi_dinas_luar')
                     ->label('Tempat / Keterangan Dinas Luar')
                     ->placeholder('Misal: Rapat di Dinas Pendidikan')
                     ->required()
