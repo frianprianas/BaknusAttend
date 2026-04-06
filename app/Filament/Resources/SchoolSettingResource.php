@@ -104,14 +104,33 @@ class SchoolSettingResource extends Resource
                                 return new \Illuminate\Support\HtmlString("
                                     Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah.<br/>" . $info . "
                                     <script>
-                                        fetch('https://api.ipify.org?format=json')
-                                            .then(response => response.json())
-                                            .then(data => {
-                                                document.getElementById('client-ip-debug').innerText = data.ip;
-                                            })
-                                            .catch(() => {
-                                                document.getElementById('client-ip-debug').innerText = 'Gagal mendeteksi IP Publik';
-                                            });
+                                        const providers = [
+                                            'https://api.ipify.org?format=json',
+                                            'https://checkip.amazonaws.com'
+                                        ];
+
+                                        async function getPublicIp() {
+                                            const el = document.getElementById('client-ip-debug');
+                                            try {
+                                                // Coba Ipify (JSON)
+                                                let res = await fetch('https://api.ipify.org?format=json');
+                                                let data = await res.json();
+                                                el.innerText = data.ip;
+                                                return;
+                                            } catch (e) {}
+
+                                            try {
+                                                // Coba Amazon (Plain Text)
+                                                let res = await fetch('https://checkip.amazonaws.com');
+                                                let ip = await res.text();
+                                                el.innerText = ip.trim();
+                                                return;
+                                            } catch (e) {}
+
+                                            el.innerText = 'Gagal mendeteksi IP Publik (Cek Firewall Sekolah)';
+                                            el.classList.replace('text-success', 'text-danger');
+                                        }
+                                        getPublicIp();
                                     </script>
                                 ");
                             })

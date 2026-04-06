@@ -147,10 +147,19 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     Hidden::make('client_public_ip')
                         ->extraAttributes([
                             'x-init' => "
-                                fetch('https://api.ipify.org?format=json')
-                                    .then(response => response.json())
-                                    .then(data => \$state = data.ip)
-                                    .catch(() => {})
+                                (async() => {
+                                    try {
+                                        let res = await fetch('https://api.ipify.org?format=json');
+                                        let data = await res.json();
+                                        \$state = data.ip;
+                                    } catch (e) {
+                                        try {
+                                            let res = await fetch('https://checkip.amazonaws.com');
+                                            let ip = await res.text();
+                                            \$state = ip.trim();
+                                        } catch (e) {}
+                                    }
+                                })();
                             ",
                         ]),
                 ])
@@ -216,10 +225,19 @@ class PresensiMandiriWidget extends Widget implements HasForms
                  Hidden::make('client_public_ip')
                     ->extraAttributes([
                         'x-init' => "
-                            fetch('https://api.ipify.org?format=json')
-                                .then(response => response.json())
-                                .then(data => \$state = data.ip)
-                                .catch(() => {})
+                            (async() => {
+                                try {
+                                    let res = await fetch('https://api.ipify.org?format=json');
+                                    let data = await res.json();
+                                    \$state = data.ip;
+                                } catch (e) {
+                                    try {
+                                        let res = await fetch('https://checkip.amazonaws.com');
+                                        let ip = await res.text();
+                                        \$state = ip.trim();
+                                    } catch (e) {}
+                                }
+                            })();
                         ",
                     ]),
              ])
