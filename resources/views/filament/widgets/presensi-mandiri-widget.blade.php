@@ -377,3 +377,23 @@
         </div>
     </x-filament::section>
 </x-filament-widgets::widget>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forceSelfieMode = () => {
+            document.querySelectorAll('input[type="file"]').forEach(input => {
+                if (input.getAttribute('capture') !== 'user') {
+                    input.setAttribute('capture', 'user');
+                    input.setAttribute('accept', 'image/*');
+                }
+            });
+        };
+
+        // Pantau jika ada tombol kamera baru yang muncul
+        const observer = new MutationObserver(forceSelfieMode);
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Cadangan: Cek tiap 2 detik
+        setInterval(forceSelfieMode, 2000);
+    });
+</script>
