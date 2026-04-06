@@ -130,7 +130,7 @@ class SchoolSettingResource extends Resource
                             })
                             ->default(false)
                             ->live(),
-                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 2])
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
                             ->schema([
                                 Forms\Components\TextInput::make('allowed_ip_1')
                                     ->label('IP Publik Sekolah #1')
@@ -151,6 +151,16 @@ class SchoolSettingResource extends Resource
                                 Forms\Components\TextInput::make('allowed_ip_4')
                                     ->label('IP Publik Sekolah #4')
                                     ->placeholder('Opsional — ISP cadangan 3')
+                                    ->ip()
+                                    ->nullable(),
+                                Forms\Components\TextInput::make('allowed_ip_5')
+                                    ->label('IP Publik Sekolah #5')
+                                    ->placeholder('Opsional — ISP cadangan 4')
+                                    ->ip()
+                                    ->nullable(),
+                                Forms\Components\TextInput::make('allowed_ip_6')
+                                    ->label('IP Publik Sekolah #6')
+                                    ->placeholder('Opsional — ISP cadangan 5')
                                     ->ip()
                                     ->nullable(),
                             ]),

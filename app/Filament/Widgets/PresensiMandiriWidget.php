@@ -269,6 +269,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 $setting->allowed_ip_2,
                 $setting->allowed_ip_3,
                 $setting->allowed_ip_4,
+                $setting->allowed_ip_5,
+                $setting->allowed_ip_6,
             ]));
 
             if (!empty($allowedIps)) {
