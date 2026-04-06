@@ -346,6 +346,17 @@
                         </div>
                     </div>
 
+                    {{-- Pesan Pengingat Kamera Depan --}}
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 shadow-sm">
+                        <div class="text-blue-500 scale-110 mt-0.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-[11px] font-bold text-blue-800 leading-tight">BUKA KAMER DEPAN?</p>
+                            <p class="text-[10px] text-blue-600 leading-relaxed mt-0.5">Mohon pastikan Anda menggunakan <b>Kamera Selfie</b>. Jika kamera belakang terbuka, silakan klik tombol switch/putar kamera di HP Anda.</p>
+                        </div>
+                    </div>
+
                     {{ $this->form }}
 
                     <div class="mt-6">
