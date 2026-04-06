@@ -139,6 +139,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->imageResizeMode('cover')
                         ->imageCropAspectRatio('1:1')
                         ->imageEditorMode(2)
+                        ->extraFilePondOptions([
+                            'imageTransformOutputQuality' => 80,
+                        ])
                         ->disk('public')
                         ->directory('absensi-selfie')
                         ->hidden($tipeAbsens === 'Selesai'),
@@ -186,6 +189,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->imageResizeTargetWidth('640')
                                 ->imageResizeTargetHeight('640')
                                 ->imageEditorMode(2)
+                                ->extraFilePondOptions([
+                                    'imageTransformOutputQuality' => 80,
+                                ])
                                 ->disk('public')
                                 ->directory('face-references'),
                         ]),
@@ -209,6 +215,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ->imageResizeTargetWidth('640')
                                 ->imageResizeTargetHeight('640')
                                 ->imageEditorMode(2)
+                                ->extraFilePondOptions([
+                                    'imageTransformOutputQuality' => 80,
+                                ])
                                 ->disk('public')
                                 ->directory('absensi-selfie'),
                         ]),
