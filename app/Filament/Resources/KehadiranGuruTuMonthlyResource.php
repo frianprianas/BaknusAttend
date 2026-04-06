@@ -97,29 +97,50 @@ class KehadiranGuruTuMonthlyResource extends Resource
                             $service = new \App\Services\AttendanceService();
                             $activeDays = $service->getEffectiveWorkingDays($month, $year);
                             
-                            $hadirCount = KehadiranGuruTu::where(function($q) use ($record) {
+                            $hadirRecords = KehadiranGuruTu::where(function($q) use ($record) {
                                     $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
                                 })
                                 ->whereMonth('waktu_tap', $month)
                                 ->whereYear('waktu_tap', $year)
                                 ->where('keterangan', 'like', '%Masuk%')
-                                ->count();
+                                ->get();
                             
-                            $persen = $activeDays > 0 ? round(($hadirCount / $activeDays) * 100) : 0;
-                            $colorClass = $persen >= 80 ? 'bg-success-100 text-success-700 font-bold' : ($persen >= 50 ? 'bg-warning-100 text-warning-700 font-bold' : 'bg-danger-100 text-danger-700 font-bold');
+                            $hadirSekolah = $hadirRecords->where('is_dinas_luar', false)->count();
+                            $hadirDL      = $hadirRecords->where('is_dinas_luar', true)->count();
+                            $totalHadir   = $hadirSekolah + $hadirDL;
+
+                            $izins = \App\Models\IzinGuruTu::where(function($q) use ($record) {
+                                    $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
+                                })
+                                ->whereMonth('tanggal', $month)
+                                ->whereYear('tanggal', $year)
+                                ->whereIn('status', ['Diajukan', 'Disetujui'])
+                                ->get();
+                            
+                            $sakitCount = $izins->where('tipe', 'Sakit')->count();
+                            $izinCount  = $izins->whereNotIn('tipe', ['Sakit'])->count();
+                            
+                            $persen = $activeDays > 0 ? round(($totalHadir / $activeDays) * 100) : 0;
+                            $colorText = $persen >= 80 ? 'text-success-700' : ($persen >= 50 ? 'text-warning-700' : 'text-danger-700');
+                            $colorBar  = $persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500');
                             
                             return "
-                                <div class='flex flex-col gap-1'>
-                                    <div class='flex items-center gap-1.5'>
-                                        <span class='text-[10px] text-gray-500 uppercase'>Aktif bulan ini: <b class='text-gray-700'>{$activeDays} hr</b></span>
-                                        <span class='text-[10px] font-bold text-gray-400'>|</span>
-                                        <span class='text-[10px] text-success-600 uppercase'>Hadir: <b class='text-success-800'>{$hadirCount}x</b></span>
+                                <div class='flex flex-col gap-1.5 min-w-[220px]'>
+                                    <div class='flex items-center gap-1.5 flex-wrap'>
+                                        <span class='text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-bold'>✅ SEKOLAH: {$hadirSekolah}</span>
+                                        <span class='text-[9px] bg-amber-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold'>🚗 DINAS LUAR: {$hadirDL}</span>
+                                        <span class='text-[10px] text-gray-500 uppercase ml-auto'>Aktif: <b>{$activeDays}</b></span>
                                     </div>
-                                    <div class='flex items-center gap-2'>
-                                        <div class='w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
-                                            <div class='h-full " . ($persen >= 80 ? 'bg-success-500' : ($persen >= 50 ? 'bg-warning-500' : 'bg-danger-500')) . "' style='width: {$persen}%'></div>
+                                    <div class='flex items-center gap-1.5'>
+                                        <span class='text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold'>🏥 SAKIT: {$sakitCount}</span>
+                                        <span class='text-[9px] bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 font-bold'>📑 IZIN: {$izinCount}</span>
+                                        
+                                        <div class='flex-1 flex flex-col items-end ml-2'>
+                                            <div class='w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200'>
+                                                <div class='h-full {$colorBar}' style='width: {$persen}%'></div>
+                                            </div>
+                                            <span class='text-[10px] font-bold {$colorText}'>{$persen}% HADIR</span>
                                         </div>
-                                        <span class='text-xs {$colorClass} px-1.5 py-0.5 rounded'>{$persen}%</span>
                                     </div>
                                 </div>
                             ";

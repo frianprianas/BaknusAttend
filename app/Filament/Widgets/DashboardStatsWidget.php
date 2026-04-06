@@ -153,12 +153,15 @@ class DashboardStatsWidget extends BaseWidget
         $totalGuruTU = $totalGuru + $totalTU;
 
         // Hitung Kehadiran HARI INI
-        $hadirGuruTUHariIni = KehadiranGuruTu::whereDate('waktu_tap', $today)->where('status', 'Hadir')->count();
+        $hadirNormalGuruTU = KehadiranGuruTu::whereDate('waktu_tap', $today)->where('status', 'Hadir')->where('is_dinas_luar', false)->count();
+        $hadirDLGuruTU     = KehadiranGuruTu::whereDate('waktu_tap', $today)->where('status', 'Dinas Luar')->orWhere('is_dinas_luar', true)->whereDate('waktu_tap', $today)->count();
+        $totalHadirGuruTU  = KehadiranGuruTu::whereDate('waktu_tap', $today)->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])->count();
+
         $hadirSiswaHariIni  = KehadiranSiswa::whereDate('waktu_tap', $today)->where('status', 'Hadir')->count();
         $terlambatSiswa     = KehadiranSiswa::whereDate('waktu_tap', $today)->where('status', 'Terlambat')->count();
 
         $pctSiswa  = $totalSiswa  > 0 ? round(($hadirSiswaHariIni  / $totalSiswa)  * 100) : 0;
-        $pctGuruTU = $totalGuruTU > 0 ? round(($hadirGuruTUHariIni / $totalGuruTU) * 100) : 0;
+        $pctGuruTU = $totalGuruTU > 0 ? round(($totalHadirGuruTU / $totalGuruTU) * 100) : 0;
 
         $izinPending = IzinGuruTu::whereDate('tanggal', $today)->where('status', 'Diajukan')->count();
 
@@ -175,8 +178,8 @@ class DashboardStatsWidget extends BaseWidget
                 ->description("{$pctSiswa}% hadir · {$terlambatSiswa} terlambat")
                 ->color($pctSiswa >= 80 ? 'success' : 'warning'),
 
-            Stat::make('Hadir Guru & TU – Hari Ini', $hadirGuruTUHariIni . ' / ' . $totalGuruTU)
-                ->description("{$pctGuruTU}% hadir hari ini")
+            Stat::make('Hadir Guru & TU – Hari Ini', $totalHadirGuruTU . ' / ' . $totalGuruTU)
+                ->description("Sekolah: {$hadirNormalGuruTU} · Dinas Luar: {$hadirDLGuruTU}")
                 ->color($pctGuruTU >= 80 ? 'success' : 'warning'),
 
             Stat::make('Izin / Sakit Pending', $izinPending)
