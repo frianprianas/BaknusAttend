@@ -148,25 +148,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->extraAttributes([
                             'x-init' => "
                                 (async() => {
-                                    try {
-                                        // 1. Cloudflare Trace
-                                        let res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-                                        let text = await res.text();
-                                        \$state = text.split('\\n').find(l => l.startsWith('ip=')).split('=')[1];
-                                    } catch (e) {
+                                    const urls = [
+                                        'https://api.ipify.org?format=json',
+                                        'https://ipapi.co/json/',
+                                        'https://api.myip.com'
+                                    ];
+                                    for (let url of urls) {
                                         try {
-                                            // 2. Ipapi.co
-                                            let res = await fetch('https://ipapi.co/json/');
+                                            let res = await fetch(url, { mode: 'cors' });
                                             let data = await res.json();
-                                            \$state = data.ip;
-                                        } catch (e) {
-                                            try {
-                                                // 3. Ipify
-                                                let res = await fetch('https://api.ipify.org?format=json');
-                                                let data = await res.json();
-                                                \$state = data.ip;
-                                            } catch (e) {}
-                                        }
+                                            if(data.ip) { \$state = data.ip; break; }
+                                        } catch (e) {}
                                     }
                                 })();
                             ",
@@ -235,25 +227,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->extraAttributes([
                         'x-init' => "
                             (async() => {
-                                try {
-                                    // 1. Cloudflare
-                                    let res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-                                    let text = await res.text();
-                                    \$state = text.split('\\n').find(l => l.startsWith('ip=')).split('=')[1];
-                                } catch (e) {
+                                const urls = [
+                                    'https://api.ipify.org?format=json',
+                                    'https://ipapi.co/json/',
+                                    'https://api.myip.com'
+                                ];
+                                for (let url of urls) {
                                     try {
-                                        // 2. Ipapi
-                                        let res = await fetch('https://ipapi.co/json/');
+                                        let res = await fetch(url, { mode: 'cors' });
                                         let data = await res.json();
-                                        \$state = data.ip;
-                                    } catch (e) {
-                                        try {
-                                            // 3. Ipify
-                                            let res = await fetch('https://api.ipify.org?format=json');
-                                            let data = await res.json();
-                                            \$state = data.ip;
-                                        } catch (e) {}
-                                    }
+                                        if(data.ip) { \$state = data.ip; break; }
+                                    } catch (e) {}
                                 }
                             })();
                         ",

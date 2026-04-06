@@ -112,29 +112,26 @@ class SchoolSettingResource extends Resource
                                         async function getPublicIp() {
                                             const el = document.getElementById('client-ip-debug');
                                             
-                                            // 1. Coba Cloudflare Trace (Paling Tangguh)
-                                            try {
-                                                let res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-                                                let text = await res.text();
-                                                let ip = text.split('\n').find(line => line.startsWith('ip=')).split('=')[1];
-                                                if(ip) { el.innerText = ip + ' (via Cloudflare)'; return; }
-                                            } catch (e) {}
+                                            const urls = [
+                                                'https://api.ipify.org?format=json',
+                                                'https://ipapi.co/json/',
+                                                'https://api.myip.com'
+                                            ];
 
-                                            // 2. Coba Ipapi.co
-                                            try {
-                                                let res = await fetch('https://ipapi.co/json/');
-                                                let data = await res.json();
-                                                if(data.ip) { el.innerText = data.ip + ' (via Ipapi)'; return; }
-                                            } catch (e) {}
+                                            for (let url of urls) {
+                                                try {
+                                                    let res = await fetch(url, { mode: 'cors' });
+                                                    let data = await res.json();
+                                                    if(data.ip) {
+                                                        el.innerText = data.ip + ' (via ' + new URL(url).hostname + ')';
+                                                        return;
+                                                    }
+                                                } catch (e) {
+                                                    console.log('Failed to fetch from ' + url, e);
+                                                }
+                                            }
 
-                                            // 3. Coba Ipify (JSON)
-                                            try {
-                                                let res = await fetch('https://api.ipify.org?format=json');
-                                                let data = await res.json();
-                                                if(data.ip) { el.innerText = data.ip + ' (via Ipify)'; return; }
-                                            } catch (e) {}
-
-                                            el.innerText = 'Gagal mendeteksi IP (Cek Jaringan)';
+                                            el.innerText = 'Gagal Deteksi: Semua Layanan Diblokir Jaringan Sekolah';
                                             el.classList.replace('text-success', 'text-danger');
                                         }
                                         getPublicIp();
