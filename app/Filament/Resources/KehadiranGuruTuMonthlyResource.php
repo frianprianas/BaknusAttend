@@ -97,17 +97,29 @@ class KehadiranGuruTuMonthlyResource extends Resource
                             $service = new \App\Services\AttendanceService();
                             $activeDays = $service->getEffectiveWorkingDays($month, $year);
                             
-                            $hadirRecords = KehadiranGuruTu::where(function($q) use ($record) {
+                            // Ambil SEMUA records (Masuk & Pulang) agar bisa dideteksi jika salah satunya DL
+                            $allMonthRecords = KehadiranGuruTu::where(function($q) use ($record) {
                                     $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
                                 })
                                 ->whereMonth('waktu_tap', $month)
                                 ->whereYear('waktu_tap', $year)
-                                ->where('keterangan', 'like', '%Masuk%')
-                                ->get();
+                                ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
+                                ->get()
+                                ->groupBy(fn($item) => Carbon::parse($item->waktu_tap)->format('Y-m-d'));
                             
-                            $hadirSekolah = $hadirRecords->where('is_dinas_luar', false)->count();
-                            $hadirDL      = $hadirRecords->where('is_dinas_luar', true)->count();
-                            $totalHadir   = $hadirSekolah + $hadirDL;
+                            $hadirSekolah = 0;
+                            $hadirDL      = 0;
+
+                            foreach ($allMonthRecords as $date => $dayRecords) {
+                                // Jika ada salah satu saja di hari itu yang DL, maka hitung sebagai DL
+                                if ($dayRecords->contains('is_dinas_luar', true) || $dayRecords->contains('status', 'Dinas Luar')) {
+                                    $hadirDL++;
+                                } else {
+                                    $hadirSekolah++;
+                                }
+                            }
+                            
+                            $totalHadir = $hadirSekolah + $hadirDL;
 
                             $izins = \App\Models\IzinGuruTu::where(function($q) use ($record) {
                                     $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
