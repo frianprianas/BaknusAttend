@@ -147,20 +147,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     Hidden::make('client_public_ip')
                         ->extraAttributes([
                             'x-init' => "
-                                (async() => {
-                                    const urls = [
-                                        'https://api.ipify.org?format=json',
-                                        'https://ipapi.co/json/',
-                                        'https://api.myip.com'
-                                    ];
-                                    for (let url of urls) {
-                                        try {
-                                            let res = await fetch(url, { mode: 'cors' });
-                                            let data = await res.json();
-                                            if(data.ip) { \$state = data.ip; break; }
-                                        } catch (e) {}
-                                    }
-                                })();
+                                window.setClientIp = (data) => { \$state = data.ip; };
+                                const script = document.createElement('script');
+                                script.src = 'https://api.ipify.org?format=jsonp&callback=window.setClientIp';
+                                document.body.appendChild(script);
                             ",
                         ]),
                 ])
@@ -226,20 +216,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                  Hidden::make('client_public_ip')
                     ->extraAttributes([
                         'x-init' => "
-                            (async() => {
-                                const urls = [
-                                    'https://api.ipify.org?format=json',
-                                    'https://ipapi.co/json/',
-                                    'https://api.myip.com'
-                                ];
-                                for (let url of urls) {
-                                    try {
-                                        let res = await fetch(url, { mode: 'cors' });
-                                        let data = await res.json();
-                                        if(data.ip) { \$state = data.ip; break; }
-                                    } catch (e) {}
-                                }
-                            })();
+                            window.setClientIp = (data) => { \$state = data.ip; };
+                            const script = document.createElement('script');
+                            script.src = 'https://api.ipify.org?format=jsonp&callback=window.setClientIp';
+                            document.body.appendChild(script);
                         ",
                     ]),
              ])

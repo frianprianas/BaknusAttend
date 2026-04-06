@@ -109,32 +109,22 @@ class SchoolSettingResource extends Resource
                                             'https://checkip.amazonaws.com'
                                         ];
 
-                                        async function getPublicIp() {
+                                        function handleIp(data) {
                                             const el = document.getElementById('client-ip-debug');
-                                            
-                                            const urls = [
-                                                'https://api.ipify.org?format=json',
-                                                'https://ipapi.co/json/',
-                                                'https://api.myip.com'
-                                            ];
-
-                                            for (let url of urls) {
-                                                try {
-                                                    let res = await fetch(url, { mode: 'cors' });
-                                                    let data = await res.json();
-                                                    if(data.ip) {
-                                                        el.innerText = data.ip + ' (via ' + new URL(url).hostname + ')';
-                                                        return;
-                                                    }
-                                                } catch (e) {
-                                                    console.log('Failed to fetch from ' + url, e);
-                                                }
-                                            }
-
-                                            el.innerText = 'Gagal Deteksi: Semua Layanan Diblokir Jaringan Sekolah';
-                                            el.classList.replace('text-success', 'text-danger');
+                                            el.innerText = data.ip + ' (via JSONP)';
                                         }
-                                        getPublicIp();
+
+                                        const script = document.createElement('script');
+                                        script.src = 'https://api.ipify.org?format=jsonp&callback=handleIp';
+                                        document.body.appendChild(script);
+
+                                        setTimeout(() => {
+                                            const el = document.getElementById('client-ip-debug');
+                                            if (el.innerText === 'Mendeteksi...') {
+                                                el.innerText = 'Gagal Deteksi (JSONP Diblokir)';
+                                                el.classList.replace('text-success', 'text-danger');
+                                            }
+                                        }, 5000);
                                     </script>
                                 ");
                             })
