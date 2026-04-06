@@ -256,19 +256,19 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         // --- VALIDASI IP PUBLIK (Anti Fake GPS via koneksi luar sekolah) ---
         if ($setting->is_ip_validation_active) {
-            $allowedIps = array_filter([
+            $allowedIps = array_filter(array_map('trim', [
                 $setting->allowed_ip_1,
                 $setting->allowed_ip_2,
                 $setting->allowed_ip_3,
                 $setting->allowed_ip_4,
-            ]);
+            ]));
 
             if (!empty($allowedIps)) {
                 // Gunakan IP yang dikirim dari browser (via API external) jika ada
-                $clientIp = $formData['client_public_ip'] ?? null;
+                $clientIp = trim($formData['client_public_ip'] ?? '');
 
                 // Jika browser gagal ambil IP eksternal, fallback ke deteksi server
-                if (!$clientIp || empty($clientIp)) {
+                if (empty($clientIp)) {
                     $clientIp = request()->ip();
                     if ($cf = request()->header('CF-Connecting-IP')) $clientIp = $cf;
                     elseif ($real = request()->header('X-Real-IP')) $clientIp = $real;
@@ -278,7 +278,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 if (!in_array($clientIp, $allowedIps)) {
                     Notification::make()
                         ->title('Akses Ditolak: Bukan Jaringan Sekolah')
-                        ->body('Hanya bisa presensi hari WiFi sekolah. IP Anda terdeteksi: ' . $clientIp)
+                        ->body("IP Anda terdeteksi: <b>$clientIp</b>. Daftar IP sekolah yang diizinkan: " . implode(', ', $allowedIps))
                         ->danger()
                         ->persistent()
                         ->send();
