@@ -149,15 +149,24 @@ class PresensiMandiriWidget extends Widget implements HasForms
                             'x-init' => "
                                 (async() => {
                                     try {
-                                        let res = await fetch('https://api.ipify.org?format=json');
-                                        let data = await res.json();
-                                        \$state = data.ip;
+                                        // 1. Cloudflare Trace
+                                        let res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+                                        let text = await res.text();
+                                        \$state = text.split('\\n').find(l => l.startsWith('ip=')).split('=')[1];
                                     } catch (e) {
                                         try {
-                                            let res = await fetch('https://checkip.amazonaws.com');
-                                            let ip = await res.text();
-                                            \$state = ip.trim();
-                                        } catch (e) {}
+                                            // 2. Ipapi.co
+                                            let res = await fetch('https://ipapi.co/json/');
+                                            let data = await res.json();
+                                            \$state = data.ip;
+                                        } catch (e) {
+                                            try {
+                                                // 3. Ipify
+                                                let res = await fetch('https://api.ipify.org?format=json');
+                                                let data = await res.json();
+                                                \$state = data.ip;
+                                            } catch (e) {}
+                                        }
                                     }
                                 })();
                             ",
@@ -227,15 +236,24 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         'x-init' => "
                             (async() => {
                                 try {
-                                    let res = await fetch('https://api.ipify.org?format=json');
-                                    let data = await res.json();
-                                    \$state = data.ip;
+                                    // 1. Cloudflare
+                                    let res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+                                    let text = await res.text();
+                                    \$state = text.split('\\n').find(l => l.startsWith('ip=')).split('=')[1];
                                 } catch (e) {
                                     try {
-                                        let res = await fetch('https://checkip.amazonaws.com');
-                                        let ip = await res.text();
-                                        \$state = ip.trim();
-                                    } catch (e) {}
+                                        // 2. Ipapi
+                                        let res = await fetch('https://ipapi.co/json/');
+                                        let data = await res.json();
+                                        \$state = data.ip;
+                                    } catch (e) {
+                                        try {
+                                            // 3. Ipify
+                                            let res = await fetch('https://api.ipify.org?format=json');
+                                            let data = await res.json();
+                                            \$state = data.ip;
+                                        } catch (e) {}
+                                    }
                                 }
                             })();
                         ",

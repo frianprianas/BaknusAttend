@@ -111,23 +111,30 @@ class SchoolSettingResource extends Resource
 
                                         async function getPublicIp() {
                                             const el = document.getElementById('client-ip-debug');
+                                            
+                                            // 1. Coba Cloudflare Trace (Paling Tangguh)
                                             try {
-                                                // Coba Ipify (JSON)
+                                                let res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+                                                let text = await res.text();
+                                                let ip = text.split('\n').find(line => line.startsWith('ip=')).split('=')[1];
+                                                if(ip) { el.innerText = ip + ' (via Cloudflare)'; return; }
+                                            } catch (e) {}
+
+                                            // 2. Coba Ipapi.co
+                                            try {
+                                                let res = await fetch('https://ipapi.co/json/');
+                                                let data = await res.json();
+                                                if(data.ip) { el.innerText = data.ip + ' (via Ipapi)'; return; }
+                                            } catch (e) {}
+
+                                            // 3. Coba Ipify (JSON)
+                                            try {
                                                 let res = await fetch('https://api.ipify.org?format=json');
                                                 let data = await res.json();
-                                                el.innerText = data.ip;
-                                                return;
+                                                if(data.ip) { el.innerText = data.ip + ' (via Ipify)'; return; }
                                             } catch (e) {}
 
-                                            try {
-                                                // Coba Amazon (Plain Text)
-                                                let res = await fetch('https://checkip.amazonaws.com');
-                                                let ip = await res.text();
-                                                el.innerText = ip.trim();
-                                                return;
-                                            } catch (e) {}
-
-                                            el.innerText = 'Gagal mendeteksi IP Publik (Cek Firewall Sekolah)';
+                                            el.innerText = 'Gagal mendeteksi IP (Cek Jaringan)';
                                             el.classList.replace('text-success', 'text-danger');
                                         }
                                         getPublicIp();
