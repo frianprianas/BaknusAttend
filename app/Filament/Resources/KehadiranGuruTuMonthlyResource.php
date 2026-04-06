@@ -139,9 +139,12 @@ class KehadiranGuruTuMonthlyResource extends Resource
                             return "
                                 <div class='flex flex-col gap-1.5 min-w-[220px]'>
                                     <div class='flex items-center gap-1.5 flex-wrap'>
-                                        <span class='text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-bold'>✅ SEKOLAH: {$hadirSekolah}</span>
-                                        <span class='text-[9px] bg-amber-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold'>🚗 DINAS LUAR: {$hadirDL}</span>
+                                        <span class='text-[9px] bg-green-600 text-white px-2 py-0.5 rounded shadow-sm font-bold'>⭐ TOTAL HADIR: {$totalHadir}</span>
                                         <span class='text-[10px] text-gray-500 uppercase ml-auto'>Aktif: <b>{$activeDays}</b></span>
+                                    </div>
+                                    <div class='flex items-center gap-1.5 flex-wrap'>
+                                        <span class='text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 font-bold'>🏠 SEKOLAH: {$hadirSekolah}</span>
+                                        <span class='text-[9px] bg-amber-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold'>🚗 DINAS LUAR: {$hadirDL}</span>
                                     </div>
                                     <div class='flex items-center gap-1.5'>
                                         <span class='text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold'>🏥 SAKIT: {$sakitCount}</span>

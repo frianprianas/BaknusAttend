@@ -104,13 +104,12 @@ class DashboardStatsWidget extends BaseWidget
                             $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
                         })
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-                        ->whereIn('status', ['Hadir', 'Terlambat'])
-                        ->select(DB::raw('DATE(waktu_tap) as date'), 'is_dinas_luar')
+                        ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
                         ->get()
-                        ->groupBy('date');
+                        ->groupBy(fn($item) => Carbon::parse($item->waktu_tap)->format('Y-m-d'));
 
-                    foreach ($presences as $date => $records) {
-                        if ($records->contains('is_dinas_luar', true)) {
+                    foreach ($presences as $date => $dayRecords) {
+                        if ($dayRecords->contains('is_dinas_luar', true) || $dayRecords->contains('status', 'Dinas Luar')) {
                             $totalHadirDL++;
                         } else {
                             $totalHadirSekolah++;
@@ -129,13 +128,13 @@ class DashboardStatsWidget extends BaseWidget
                 }
 
                 return [
-                    Stat::make('Kehadiran: ' . $monthLabel, ($totalHadirSekolah + $totalHadirDL) . ' Hari')
-                        ->description("Di Sekolah: {$totalHadirSekolah} · Dinas Luar: {$totalHadirDL}")
+                    Stat::make('Total Hadir', ($totalHadirSekolah + $totalHadirDL) . ' Hari')
+                        ->description("Sekolah: {$totalHadirSekolah} · Dinas Luar: {$totalHadirDL}")
                         ->descriptionIcon('heroicon-m-briefcase')
                         ->color('success')
                         ->icon('heroicon-o-calendar-days'),
 
-                    Stat::make('Izin & Sakit Bulan Ini', ($totalSakit + $totalIzin) . ' Hari')
+                    Stat::make('Izin & Sakit / ' . $monthLabel, ($totalSakit + $totalIzin) . ' Hari')
                         ->description("Sakit: {$totalSakit} · Izin: {$totalIzin}")
                         ->descriptionIcon('heroicon-m-document-text')
                         ->color(($totalSakit + $totalIzin) > 0 ? 'warning' : 'gray')
