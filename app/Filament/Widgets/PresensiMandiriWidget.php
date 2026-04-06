@@ -144,6 +144,15 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->hidden($tipeAbsens === 'Selesai'),
                     Hidden::make('lat'),
                     Hidden::make('long'),
+                    Hidden::make('client_public_ip')
+                        ->extraAttributes([
+                            'x-init' => "
+                                fetch('https://api.ipify.org?format=json')
+                                    .then(response => response.json())
+                                    .then(data => \$state = data.ip)
+                                    .catch(() => {})
+                            ",
+                        ]),
                 ])
                 ->statePath('data');
         }
@@ -201,11 +210,20 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ]),
                 ])
                 ->submitAction(view('filament.widgets.presensi-submit-button', ['label' => $labelTombol])),
-
-                Hidden::make('lat'),
-                Hidden::make('long'),
-            ])
-            ->statePath('data');
+ 
+                 Hidden::make('lat'),
+                 Hidden::make('long'),
+                 Hidden::make('client_public_ip')
+                    ->extraAttributes([
+                        'x-init' => "
+                            fetch('https://api.ipify.org?format=json')
+                                .then(response => response.json())
+                                .then(data => \$state = data.ip)
+                                .catch(() => {})
+                        ",
+                    ]),
+             ])
+             ->statePath('data');
     }
 
     public function resetSelfie()
@@ -245,20 +263,21 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ]);
 
             if (!empty($allowedIps)) {
-                $clientIp = request()->ip();
+                // Gunakan IP yang dikirim dari browser (via API external) jika ada
+                $clientIp = $formData['client_public_ip'] ?? null;
 
-                if ($cf = request()->header('CF-Connecting-IP')) {
-                    $clientIp = $cf;
-                } elseif ($real = request()->header('X-Real-IP')) {
-                    $clientIp = $real;
-                } elseif ($forward = request()->header('X-Forwarded-For')) {
-                    $clientIp = trim(explode(',', $forward)[0]);
+                // Jika browser gagal ambil IP eksternal, fallback ke deteksi server
+                if (!$clientIp || empty($clientIp)) {
+                    $clientIp = request()->ip();
+                    if ($cf = request()->header('CF-Connecting-IP')) $clientIp = $cf;
+                    elseif ($real = request()->header('X-Real-IP')) $clientIp = $real;
+                    elseif ($forward = request()->header('X-Forwarded-For')) $clientIp = trim(explode(',', $forward)[0]);
                 }
 
                 if (!in_array($clientIp, $allowedIps)) {
                     Notification::make()
                         ->title('Akses Ditolak: Bukan Jaringan Sekolah')
-                        ->body('Anda harus menggunakan WiFi sekolah untuk melakukan presensi. IP Anda: ' . $clientIp)
+                        ->body('Hanya bisa presensi hari WiFi sekolah. IP Anda terdeteksi: ' . $clientIp)
                         ->danger()
                         ->persistent()
                         ->send();
