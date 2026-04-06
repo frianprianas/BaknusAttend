@@ -17,6 +17,8 @@ class KehadiranSiswa extends Model
         'lat',
         'long',
         'photo',
+        'is_dinas_luar',
+        'lokasi_dinas_luar',
     ];
 
     public function student()

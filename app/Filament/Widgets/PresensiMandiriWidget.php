@@ -127,6 +127,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->content($tipeAbsens === 'Selesai'
                             ? "✅ Anda sudah menyelesaikan absensi hari ini (Masuk & Pulang). Terima kasih!"
                             : "Silakan ambil foto selfie untuk verifikasi kehadiran Anda."),
+                    Forms\Components\Toggle::make('is_dinas_luar')
+                        ->label('Dinas Luar')
+                        ->onIcon('heroicon-m-briefcase')
+                        ->offIcon('heroicon-m-home')
+                        ->inline(false)
+                        ->live(),
+                    Forms\Components\TextInput::make('lokasi_dinas_luar')
+                        ->label('Tempat / Keterangan Dinas Luar')
+                        ->placeholder('Misal: Rapat di Dinas Pendidikan')
+                        ->required()
+                        ->visible(fn ($get) => $get('is_dinas_luar')),
                     FileUpload::make('photo_selfie')
                         ->label('📷 Ambil Foto Selfie')
                         ->image()
@@ -169,6 +180,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
         // -------------------------------------------------------
         return $form
             ->schema([
+                Forms\Components\Toggle::make('is_dinas_luar')
+                    ->label('Dinas Luar')
+                    ->onIcon('heroicon-m-briefcase')
+                    ->offIcon('heroicon-m-home')
+                    ->inline(false)
+                    ->live(),
+                Forms\Components\TextInput::make('lokasi_dinas_luar')
+                    ->label('Tempat / Keterangan Dinas Luar')
+                    ->placeholder('Misal: Rapat di Dinas Pendidikan')
+                    ->required()
+                    ->visible(fn ($get) => $get('is_dinas_luar')),
                 Wizard::make([
                     Step::make('Langkah 1: Daftarkan Wajah Master')
                         ->description('Ambil foto wajah jelas untuk patokan sistem BaknusAI.')
@@ -272,7 +294,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         }
 
         // --- VALIDASI IP PUBLIK (Anti Fake GPS via koneksi luar sekolah) ---
-        if ($setting->is_ip_validation_active) {
+        if ($setting->is_ip_validation_active && empty($formData['is_dinas_luar'])) {
             $allowedIps = array_filter(array_map('trim', [
                 $setting->allowed_ip_1,
                 $setting->allowed_ip_2,
@@ -296,8 +318,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
                 if (!in_array($clientIp, $allowedIps)) {
                     Notification::make()
-                        ->title('Akses Ditolak: Bukan Jaringan Sekolah')
-                        ->body("IP Anda terdeteksi: <b>$clientIp</b>. Daftar IP sekolah yang diizinkan: " . implode(', ', $allowedIps))
+                        ->title('Akses Ditolak')
+                        ->body("Silahkan Pakai Wifi Sekolah Untuk Menggunakan Aplikasi BaknusAttend")
                         ->danger()
                         ->persistent()
                         ->send();
@@ -307,20 +329,22 @@ class PresensiMandiriWidget extends Widget implements HasForms
         }
         // --- AKHIR VALIDASI IP ---
 
-        $distance = $this->haversineGreatCircleDistance(
-            $formData['lat'], 
-            $formData['long'], 
-            $setting->lat, 
-            $setting->long
-        );
+        // --- VALIDASI RADIUS GPS (Hanya Jika BUKAN Dinas Luar) ---
+        if (empty($formData['is_dinas_luar'])) {
+            $distance = $this->haversineGreatCircleDistance(
+                $formData['lat'], 
+                $formData['long'], 
+                $setting->lat, 
+                $setting->long
+            );
 
-        if ($distance > $setting->radius) {
-            Notification::make()
-                ->title('Gagal: Di luar Radius!')
-                ->body('Jarak Anda ' . round($distance) . 'm dari sekolah. Maksimum ' . $setting->radius . 'm.')
-                ->danger()
-                ->send();
-            return;
+            if ($distance > $setting->radius) {
+                Notification::make()
+                    ->title('Maaf Anda diluar jangkauan Absen!')
+                    ->body('Pastikan Anda berada di lingkungan sekolah.')
+                    ->danger()->send();
+                return;
+            }
         }
 
         // --- SISTEM ANTI-SPAM (RATE LIMITER) UNTUK AWS ---
@@ -433,8 +457,11 @@ class PresensiMandiriWidget extends Widget implements HasForms
             // Fallback: Jika GD Library bermasalah, foto akan tetap tersimpan tanpa watermark.
         }
 
-        $status = 'Hadir';
+        $status = empty($formData['is_dinas_luar']) ? 'Hadir' : 'Dinas Luar';
         $keterangan = "{$tipeAbsens} - Presensi Mandiri (Dashboard)";
+        if (!empty($formData['is_dinas_luar'])) {
+            $keterangan .= " [Dinas Luar: " . $formData['lokasi_dinas_luar'] . "]";
+        }
 
         if ($user->role === 'Siswa') {
             $nis = $user->nipy ?? $user->email;
@@ -457,6 +484,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'long' => $formData['long'],
                 'photo' => $photoFinal,
                 'keterangan' => $keterangan,
+                'is_dinas_luar' => $formData['is_dinas_luar'] ?? false,
+                'lokasi_dinas_luar' => $formData['lokasi_dinas_luar'] ?? null,
             ]);
         } else {
             // Guru / TU
@@ -469,6 +498,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'long' => $formData['long'],
                 'photo' => $photoFinal,
                 'keterangan' => $keterangan,
+                'is_dinas_luar' => $formData['is_dinas_luar'] ?? false,
+                'lokasi_dinas_luar' => $formData['lokasi_dinas_luar'] ?? null,
             ]);
         }
 
