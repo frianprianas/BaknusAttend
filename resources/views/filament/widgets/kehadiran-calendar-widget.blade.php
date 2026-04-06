@@ -59,6 +59,7 @@
             .dot-full  { background: #6366f1; box-shadow: 0 2px 6px rgba(99,102,241,.4); }
             .dot-in    { background: #38bdf8; box-shadow: 0 2px 6px rgba(56,189,248,.4); }
             .dot-orange { background: #f59e0b; box-shadow: 0 2px 6px rgba(245,158,11,.4); }
+            .dot-red   { background: #ef4444; box-shadow: 0 2px 6px rgba(239,68,68,.4); }
             .dot-none  { background: #e2e8f0; }
             .dark .dot-none { background: #334155; }
 
@@ -107,6 +108,12 @@
                 box-shadow: 0 4px 16px rgba(245,158,11,.35);
             }
             .cal-cell-orange:hover { box-shadow: 0 8px 24px rgba(245,158,11,.50); }
+
+            .cal-cell-red {
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+                box-shadow: 0 4px 16px rgba(239,68,68,.35);
+            }
+            .cal-cell-red:hover { box-shadow: 0 8px 24px rgba(239,68,68,.50); }
 
             .cal-day-num-colored { font-size: .9rem; font-weight: 900; color: #fff; letter-spacing: -.01em; }
             .cal-day-num-plain   { font-size: .9rem; font-weight: 700; color: #94a3b8; letter-spacing: -.01em; }
@@ -162,6 +169,7 @@
                 <div class="legend-item"><div class="legend-dot dot-full"></div> Hadir Lengkap</div>
                 <div class="legend-item"><div class="legend-dot dot-in"></div> Masuk Saja</div>
                 <div class="legend-item"><div class="legend-dot dot-orange"></div> Dinas Luar</div>
+                <div class="legend-item"><div class="legend-dot dot-red"></div> Izin / Sakit</div>
                 <div class="legend-item"><div class="legend-dot dot-none"></div> Tanpa Data</div>
             </div>
 
@@ -182,14 +190,15 @@
                     @php
                         $dataDay = $presenceData[$day] ?? null;
                         $status = $dataDay['status'] ?? 'none';
-                        $jam_masuk = $dataDay['jam_masuk'] ?? '-';
-                        $jam_pulang = $dataDay['jam_pulang'] ?? '-';
+                        $tipeAbsens = $dataDay['jam_masuk'] ?? '-';
+                        $keteranganDl = $dataDay['jam_pulang'] ?? '-';
+                        $isIzin = $dataDay['is_izin'] ?? false;
 
-                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : ($status === 'orange' ? 'cal-cell-orange' : 'cal-cell-none'));
-                        $numClass  = in_array($status, ['dark','light','orange']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
+                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : ($status === 'orange' ? 'cal-cell-orange' : ($status === 'red' ? 'cal-cell-red' : 'cal-cell-none')));
+                        $numClass  = in_array($status, ['dark','light','orange','red']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
                     @endphp
                     <div class="cal-cell {{ $cellClass }}" 
-                         @if(in_array($status, ['dark','light','orange']))
+                         @if(in_array($status, ['dark','light','orange','red']))
                          x-data="{ open: false }" 
                          @click="open = !open" 
                          @click.outside="open = false" 
@@ -197,7 +206,7 @@
                          @endif
                     >
                         <span class="{{ $numClass }}">{{ $day }}</span>
-                        @if(in_array($status, ['dark','light','orange']))
+                        @if(in_array($status, ['dark','light','orange','red']))
                             <div class="cal-pip"></div>
 
                             {{-- Gelembung Pop-up Detail Jam --}}
@@ -205,8 +214,13 @@
                                  x-transition.opacity.scale.origin.bottom
                                  class="absolute bottom-full mb-2 w-max px-3 py-2 bg-indigo-900 border border-indigo-500 rounded-xl shadow-lg z-50 text-center flex flex-col"
                                  style="display: none; min-width: 90px;">
-                                <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Masuk: <b style="color:#fff;">{{ $jam_masuk }}</b></p>
-                                <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Pulang: <b style="color:#fff;">{{ $jam_pulang }}</b></p>
+                                @if($isIzin)
+                                    <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Status: <b style="color:#fb7185;">{{ $tipeAbsens }}</b></p>
+                                    <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Alasan: <b style="color:#fff;">{{ $keteranganDl }}</b></p>
+                                @else
+                                    <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Masuk: <b style="color:#fff;">{{ $tipeAbsens }}</b></p>
+                                    <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Pulang: <b style="color:#fff;">{{ $keteranganDl }}</b></p>
+                                @endif
                                 {{-- Panah Gelembung ke bawah --}}
                                 <div style="position: absolute; bottom:-5px; left:50%; transform:translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #312e81;"></div>
                             </div>

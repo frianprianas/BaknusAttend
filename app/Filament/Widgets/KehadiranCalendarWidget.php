@@ -52,28 +52,51 @@ class KehadiranCalendarWidget extends Widget
         $this->daysInMonth = $startOfMonth->daysInMonth;
         $this->firstDayOfMonth = $startOfMonth->dayOfWeek; // 0 (Sun) - 6 (Sat)
 
-        // Ambil data hari yang ada absensi secara detail agar jam masuk dan pulang terbaca
+        // 1. Ambil data presensi (Masuk/Pulang/Dinas Luar)
         $presences = KehadiranGuruTu::where(function($q) use ($user) {
                 if ($user->nipy) $q->orWhere('nipy', $user->nipy);
                 if ($user->email) $q->orWhere('nipy', $user->email);
             })
             ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
-            ->orderBy('waktu_tap', 'asc') // Urutkan dari pagi ke sore
+            ->orderBy('waktu_tap', 'asc')
+            ->get();
+
+        // 2. Ambil data Izin / Sakit
+        $izins = \App\Models\IzinGuruTu::where(function($q) use ($user) {
+                if ($user->nipy) $q->orWhere('nipy', $user->nipy);
+                if ($user->email) $q->orWhere('nipy', $user->email);
+            })
+            ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+            ->whereIn('status', ['Diajukan', 'Disetujui'])
             ->get();
 
         $this->presenceData = [];
+
+        // Masukkan data Izin dulu (Bisa ditimpa oleh presensi jika nekat absen saat izin)
+        foreach ($izins as $i) {
+            $day = (int) Carbon::parse($i->tanggal)->format('j');
+            $this->presenceData[$day] = [
+                'status' => 'red',
+                'jam_masuk' => $i->tipe,
+                'jam_pulang' => $i->alasan,
+                'is_izin' => true,
+            ];
+        }
+
+        // Masukkan data Presensi
         foreach ($presences as $p) {
             $day = (int) Carbon::parse($p->waktu_tap)->format('j');
             $time = Carbon::parse($p->waktu_tap)->format('H:i');
             $isDL = (bool) ($p->is_dinas_luar ?? false);
             
-            if (!isset($this->presenceData[$day])) {
-                // Presensi pertama kali di hari itu (Masuk)
+            if (!isset($this->presenceData[$day]) || ($this->presenceData[$day]['is_izin'] ?? false)) {
+                // Presensi pertama kali di hari itu (Masuk) atau menimpa status Izin
                 $this->presenceData[$day] = [
                     'status' => $isDL ? 'orange' : 'light',
                     'jam_masuk' => $time,
                     'jam_pulang' => '-',
                     'is_dinas_luar' => $isDL,
+                    'is_izin' => false,
                 ];
             } else {
                 // Presensi kedua dan seterusnya di hari yang sama (Pulang)
