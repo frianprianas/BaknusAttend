@@ -128,7 +128,7 @@
             .fi-absen-wrapper * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 
             .fi-absen-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .fi-fo-field-wrp-label { display: none !important; }
+            /* .fi-fo-field-wrp-label { display: none !important; } -- Dinonaktifkan agar label Dinas Luar muncul */
 
             /* ---- Sembunyikan teks bawaan namun tetap clickable ---- */
             .fi-fo-file-upload-dropzone-label { display: none !important; }
