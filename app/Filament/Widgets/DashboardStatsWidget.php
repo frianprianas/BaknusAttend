@@ -55,10 +55,9 @@ class DashboardStatsWidget extends BaseWidget
         // KONDISI 1: Statistik Login Guru / TU / Siswa (Pribadi)
         // ----------------------------------------------------
         if ($user->role !== 'Admin') {
-            $totalHadirBulanIni = 0;
-            $totalIzinSakitBulanIni = 0;
-            
             if ($user->role === 'Siswa') {
+                $totalHadirBulanIni = 0;
+                $totalIzinSakitBulanIni = 0;
                 // Gunakan NIS dari nipy, jika nipy kosong gunakan email asisten (safety)
                 $nis = !empty($user->nipy) ? $user->nipy : (!empty($user->email) ? $user->email : 'NONE');
                 $student = Student::where('nis', $nis)->first();
@@ -78,41 +77,71 @@ class DashboardStatsWidget extends BaseWidget
                         ->get()
                         ->count();
                 }
+
+                return [
+                    Stat::make('Total Kehadiran', $totalHadirBulanIni . ' Hari')
+                        ->description('Bulan: ' . $monthLabel)
+                        ->descriptionIcon('heroicon-m-calendar-days')
+                        ->color('success')
+                        ->icon('heroicon-o-calendar-days'),
+
+                    Stat::make('Total Izin / Sakit', $totalIzinSakitBulanIni . ' Hari')
+                        ->description('Bulan: ' . $monthLabel)
+                        ->descriptionIcon('heroicon-m-document-text')
+                        ->color($totalIzinSakitBulanIni > 0 ? 'warning' : 'gray')
+                        ->icon('heroicon-o-document-text'),
+                ];
             } else {
                 // Guru / TU
-                $nipy = $user->nipy ?? $user->email; // Gunakan NIPY jika ada, jika tidak gunakan Email
+                $nipy = $user->nipy ?? $user->email;
+                $totalHadirSekolah = 0;
+                $totalHadirDL = 0;
+                $totalSakit = 0;
+                $totalIzin = 0;
+
                 if (!empty($nipy)) {
-                    $totalHadirBulanIni = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
+                    $presences = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
                             $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
                         })
                         ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
                         ->whereIn('status', ['Hadir', 'Terlambat'])
-                        ->select(DB::raw('DATE(waktu_tap) as date'))
-                        ->distinct()
+                        ->select(DB::raw('DATE(waktu_tap) as date'), 'is_dinas_luar')
                         ->get()
-                        ->count();
-                    $totalIzinSakitBulanIni = IzinGuruTu::where(function($q) use ($user, $nipy) {
+                        ->groupBy('date');
+
+                    foreach ($presences as $date => $records) {
+                        if ($records->contains('is_dinas_luar', true)) {
+                            $totalHadirDL++;
+                        } else {
+                            $totalHadirSekolah++;
+                        }
+                    }
+
+                    $izins = IzinGuruTu::where(function($q) use ($user, $nipy) {
                             $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
                         })
                         ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
                         ->whereIn('status', ['Diajukan', 'Disetujui'])
-                        ->count();
+                        ->get();
+                    
+                    $totalSakit = $izins->where('tipe', 'Sakit')->count();
+                    $totalIzin  = $izins->whereNotIn('tipe', ['Sakit'])->count();
                 }
+
+                return [
+                    Stat::make('Kehadiran: ' . $monthLabel, ($totalHadirSekolah + $totalHadirDL) . ' Hari')
+                        ->description("Di Sekolah: {$totalHadirSekolah} · Dinas Luar: {$totalHadirDL}")
+                        ->descriptionIcon('heroicon-m-briefcase')
+                        ->color('success')
+                        ->icon('heroicon-o-calendar-days'),
+
+                    Stat::make('Izin & Sakit Bulan Ini', ($totalSakit + $totalIzin) . ' Hari')
+                        ->description("Sakit: {$totalSakit} · Izin: {$totalIzin}")
+                        ->descriptionIcon('heroicon-m-document-text')
+                        ->color(($totalSakit + $totalIzin) > 0 ? 'warning' : 'gray')
+                        ->icon('heroicon-o-document-text'),
+                ];
             }
-
-            return [
-                Stat::make('Total Kehadiran', $totalHadirBulanIni . ' Hari')
-                    ->description('Bulan: ' . $monthLabel)
-                    ->descriptionIcon('heroicon-m-calendar-days')
-                    ->color('success')
-                    ->icon('heroicon-o-calendar-days'),
-
-                Stat::make('Total Izin / Sakit', $totalIzinSakitBulanIni . ' Hari')
-                    ->description('Bulan: ' . $monthLabel)
-                    ->descriptionIcon('heroicon-m-document-text')
-                    ->color($totalIzinSakitBulanIni > 0 ? 'warning' : 'gray')
-                    ->icon('heroicon-o-document-text'),
-            ];
         }
 
         // ----------------------------------------------------
