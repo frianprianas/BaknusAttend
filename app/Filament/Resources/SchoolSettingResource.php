@@ -92,14 +92,28 @@ class SchoolSettingResource extends Resource
                                 elseif ($real = request()->header('X-Real-IP')) $clientIp = $real;
                                 elseif ($forward = request()->header('X-Forwarded-For')) $clientIp = trim(explode(',', $forward)[0]);
 
-                                $info = "IP Terdeteksi: <b class='text-danger'>$clientIp</b><br/>";
+                                $info = "IP Terdeteksi Server: <b class='text-danger'>$clientIp</b><br/>";
+                                $info .= "IP Terdeteksi Client (Gunakan IP ini): <b id='client-ip-debug' class='text-success'>Mendeteksi...</b><br/>";
+                                
                                 $info .= "<small>Detail Header (Debug):<br/>";
                                 foreach($ips as $key => $val) {
                                     if($val) $info .= "- $key: $val<br/>";
                                 }
                                 $info .= "</small>";
 
-                                return new \Illuminate\Support\HtmlString("Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah.<br/>" . $info);
+                                return new \Illuminate\Support\HtmlString("
+                                    Jika aktif, absensi hanya bisa dilakukan dari jaringan internet sekolah.<br/>" . $info . "
+                                    <script>
+                                        fetch('https://api.ipify.org?format=json')
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                document.getElementById('client-ip-debug').innerText = data.ip;
+                                            })
+                                            .catch(() => {
+                                                document.getElementById('client-ip-debug').innerText = 'Gagal mendeteksi IP Publik';
+                                            });
+                                    </script>
+                                ");
                             })
                             ->default(false)
                             ->live(),
