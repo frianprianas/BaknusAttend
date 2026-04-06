@@ -406,44 +406,23 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // A. Fungsi Paksa Kamera Selfie (di-apply ke HTML)
+        // Fungsi Paksa Kamera Selfie (di-apply ke HTML)
         const forceSelfieMode = () => {
             document.querySelectorAll('input[type="file"]').forEach(input => {
                 if (input.getAttribute('capture') !== 'user') {
                     input.setAttribute('capture', 'user');
                     // Tambahkan format spesifik agar browser tahu ini untuk kamera
-                    input.setAttribute('accept', 'image/jpeg, image/png');
+                    input.setAttribute('accept', 'image/jpeg, image/png;capture=user');
                 }
             });
         };
 
-        // B. Munculkan Pesan Pengingat (Alert) Saat Klik Kamera
-        const alertSelfie = (e) => {
-            let el = e.target.closest('.filepond--root') || 
-                     e.target.closest('.filepond--label-action') || 
-                     e.target.closest('input[type="file"]');
-            
-            // Jika yang diklik adalah area kamera dan belum pernah memunculkan alert baru-baru ini
-            if (el && !el.dataset.hasAlerted) {
-                // Tandai agar tidak spam alert berkali-kali jika dklik dobel
-                el.dataset.hasAlerted = "true";
-                
-                // Cukup munculkan alert bawaan browser, JANGAN mencegah event aslinya (agar file picker tetap terbuka)
-                alert("📣 PENGINGAT:\nPastikan untuk menggunakan KAMERA DEPAN (Selfie) saat memotret.");
-                
-                // Reset setelah 10 detik agar bisa muncul lagi jika perlu
-                setTimeout(() => { delete el.dataset.hasAlerted; }, 10000);
-            }
-        };
-
-        // Pasang Mata-mata DOM (Observer) untuk memaksa atribut HTML
+        // Pasang Mata-mata DOM (Observer) untuk memaksa atribut HTML FilePond
         const observer = new MutationObserver(forceSelfieMode);
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // Pasang Interseptor Klik untuk Alert
-        document.addEventListener('click', alertSelfie, true);
-
-        // Eksekusi awal
+        // Backup eksekusi berkala
+        setInterval(forceSelfieMode, 2000);
         forceSelfieMode();
     });
 </script>
