@@ -147,9 +147,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     Hidden::make('client_public_ip')
                         ->extraAttributes([
                             'x-init' => "
-                                window.setClientIp = (data) => { \$state = data.ip; };
+                                const cbName = 'cb_' + Math.floor(Math.random() * 1000000);
+                                window[cbName] = (data) => {
+                                    \$wire.set('data.client_public_ip', data.ip);
+                                    delete window[cbName];
+                                };
                                 const script = document.createElement('script');
-                                script.src = 'https://api.ipify.org?format=jsonp&callback=window.setClientIp';
+                                script.src = 'https://api.ipify.org?format=jsonp&callback=' + cbName;
                                 document.body.appendChild(script);
                             ",
                         ]),
@@ -216,9 +220,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
                  Hidden::make('client_public_ip')
                     ->extraAttributes([
                         'x-init' => "
-                            window.setClientIp = (data) => { \$state = data.ip; };
+                            const cbName = 'cb_' + Math.floor(Math.random() * 1000000);
+                            window[cbName] = (data) => {
+                                \$wire.set('data.client_public_ip', data.ip);
+                                delete window[cbName];
+                            };
                             const script = document.createElement('script');
-                            script.src = 'https://api.ipify.org?format=jsonp&callback=window.setClientIp';
+                            script.src = 'https://api.ipify.org?format=jsonp&callback=' + cbName;
                             document.body.appendChild(script);
                         ",
                     ]),
