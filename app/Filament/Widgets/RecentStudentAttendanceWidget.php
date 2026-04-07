@@ -76,7 +76,8 @@ class RecentStudentAttendanceWidget extends BaseWidget
                     ->disk('public')
                     ->size(35)
                     ->getStateUsing(function ($record) {
-                        if ($record->photo === 'rfid_placeholder') {
+                        $isRfid = str_contains(strtolower($record->keterangan ?? ''), 'rfid');
+                        if ($record->photo === 'rfid_placeholder' || ($isRfid && empty($record->photo))) {
                             return null; // Gunakan defaultImageUrl
                         }
                         return $record->photo;

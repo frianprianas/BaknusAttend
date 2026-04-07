@@ -17,10 +17,13 @@
     @if($data)
         @php
             $jam = \Illuminate\Support\Carbon::parse($data->waktu_tap)->format('H:i');
-            if ($data->photo === 'rfid_placeholder') {
+            $isRfid = str_contains(strtolower($data->keterangan ?? ''), 'rfid');
+            
+            if ($data->photo === 'rfid_placeholder' || ($isRfid && empty($data->photo))) {
                 $photoUrl = asset('images/rfid_placeholder.png');
             } else {
-                $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+                // Jatuh ke default gambar yang pasti ada jika file user-placeholder.png belum ada
+                $photoUrl = $data->photo ? asset('storage/' . $data->photo) : asset('images/logo_BG.png');
             }
         @endphp
         
