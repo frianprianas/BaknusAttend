@@ -97,16 +97,30 @@ class PresenceController extends Controller
         $currentTime = Carbon::now();
         $nipy = $user->nipy ?? $user->email;
 
-        // ✅ Cek duplikat: cover semua sumber (RFID dan Web/Scan Wajah)
-        $alreadyAbsen = KehadiranGuruTu::where('nipy', $nipy)
-            ->whereDate('waktu_tap', $currentTime)
+        // ✅ Identifikasi user: cari pakai NIPY dan EMAIL sekaligus
+        //    (agar tidak terlewat jika ada user yang NIPY-nya kosong)
+        $baseQuery = KehadiranGuruTu::where(function ($q) use ($user, $nipy) {
+            $q->where('nipy', $nipy)
+              ->orWhere('nipy', $user->email);
+        })->whereDate('waktu_tap', $currentTime);
+
+        // Layer 1: Jika sudah ada 2 data atau lebih (Masuk + Pulang sudah lengkap)
+        if ($baseQuery->count() >= 2) {
+            return response()->json([
+                'status'  => 'ERROR',
+                'message' => 'Absen Hari Ini Sudah Lengkap!',
+            ]);
+        }
+
+        // Layer 2: Cek mode spesifik (case-insensitive, cover RFID & Web)
+        $alreadyThisMode = (clone $baseQuery)
             ->whereRaw('LOWER(keterangan) LIKE ?', [strtolower($mode) . '%'])
             ->exists();
 
-        if ($alreadyAbsen) {
+        if ($alreadyThisMode) {
             return response()->json([
                 'status'  => 'ERROR',
-                'message' => "Anda Sudah $mode!",
+                'message' => "Anda Sudah Absen $mode Hari Ini!",
             ]);
         }
 
