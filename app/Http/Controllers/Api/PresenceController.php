@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
+use App\Models\IzinGuruTu;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
@@ -108,6 +109,14 @@ class PresenceController extends Controller
     {
         $currentTime = Carbon::now();
         $nipy = $user->nipy ?? $user->email;
+
+        // ✅ Layer -1: Cek Status Izin / Sakit
+        if (IzinGuruTu::hasActiveIzinToday($nipy, $user->email)) {
+            return response()->json([
+                'status'  => 'ERROR',
+                'message' => 'Anda Sedang Izin/Sakit!',
+            ]);
+        }
 
         // ✅ Identifikasi user: cari pakai NIPY dan EMAIL sekaligus
         //    (agar tidak terlewat jika ada user yang NIPY-nya kosong)
