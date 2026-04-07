@@ -43,9 +43,21 @@ class PresenceController extends Controller
     {
         $currentTime = Carbon::now();
         
-        // ✅ Cek duplikat: cover semua sumber (RFID dan Web/Scan Wajah)
-        // Format RFID: "MASUK - Tap RFID Mesin"
-        // Format Web:  "Masuk - Presensi Mandiri (Dashboard)"
+        // ✅ Layer 0: Urutan wajib — tidak bisa PULANG sebelum ada MASUK
+        if ($mode === 'PULANG') {
+            $hasMasuk = KehadiranSiswa::where('nis', $student->nis)
+                ->whereDate('waktu_tap', $currentTime)
+                ->whereRaw('LOWER(keterangan) LIKE ?', ['masuk%'])
+                ->exists();
+            if (!$hasMasuk) {
+                return response()->json([
+                    'status'  => 'ERROR',
+                    'message' => 'Belum Absen MASUK Hari Ini!',
+                ]);
+            }
+        }
+
+        // ✅ Layer 1: Cek duplikat mode yang sama (case-insensitive)
         $alreadyAbsen = KehadiranSiswa::where('nis', $student->nis)
             ->whereDate('waktu_tap', $currentTime)
             ->whereRaw('LOWER(keterangan) LIKE ?', [strtolower($mode) . '%'])
@@ -112,7 +124,20 @@ class PresenceController extends Controller
             ]);
         }
 
-        // Layer 2: Cek mode spesifik (case-insensitive, cover RFID & Web)
+        // ✅ Layer 0: Urutan wajib — tidak bisa PULANG sebelum MASUK
+        if ($mode === 'PULANG') {
+            $hasMasuk = (clone $baseQuery)
+                ->whereRaw('LOWER(keterangan) LIKE ?', ['masuk%'])
+                ->exists();
+            if (!$hasMasuk) {
+                return response()->json([
+                    'status'  => 'ERROR',
+                    'message' => 'Belum Absen MASUK Hari Ini!',
+                ]);
+            }
+        }
+
+        // ✅ Layer 2: Cek mode spesifik (case-insensitive, cover RFID & Web)
         $alreadyThisMode = (clone $baseQuery)
             ->whereRaw('LOWER(keterangan) LIKE ?', [strtolower($mode) . '%'])
             ->exists();
