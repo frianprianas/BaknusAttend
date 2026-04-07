@@ -26,7 +26,7 @@ class SyncAttendanceToBaknusDrive implements ShouldQueue
 
             $response = Http::withHeaders([
                 'X-Attend-API-Key' => $apiKey
-            ])->asForm()->post($driveUrl, $this->data);
+            ])->timeout(5)->connectTimeout(3)->asForm()->post($driveUrl, $this->data);
 
             if ($response->failed()) {
                 Log::error('BaknusDrive Sync failed: ' . $response->body());
