@@ -579,13 +579,17 @@ class PresensiMandiriWidget extends Widget implements HasForms
         if (file_exists($logoPath)) {
             $logo = @imagecreatefrompng($logoPath);
             if ($logo) {
+                // Aktifkan transparansi untuk logo PNG
+                imagealphablending($logo, true);
+                imagesavealpha($logo, true);
+
                 $logoWidth = imagesx($logo);
                 $logoHeight = imagesy($logo);
                 $newLogoHeight = 50; // sesuaikan tinggi logo dengan tinggi banner
-                $newLogoWidth = ($logoWidth / $logoHeight) * $newLogoHeight;
+                $newLogoWidth = (int) round(($logoWidth / $logoHeight) * $newLogoHeight);
                 
-                $logoX = $width - $newLogoWidth - 15; // 15px margin kanan
-                $logoY = $bannerY + (($bannerHeight - $newLogoHeight) / 2); // vertical center di dalam banner
+                $logoX = (int) round($width - $newLogoWidth - 15); // 15px margin kanan
+                $logoY = (int) round($bannerY + (($bannerHeight - $newLogoHeight) / 2)); // vertical center di dalam banner
                 
                 imagecopyresampled($img, $logo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $logoWidth, $logoHeight);
                 imagedestroy($logo);
