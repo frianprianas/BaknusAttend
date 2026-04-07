@@ -14,19 +14,20 @@ class PresenceController extends Controller
 {
     public function store(Request $request)
     {
+        // Arduino mengirim "rfid_uid" dan "status" (MASUK atau PULANG)
         $rfid = str_replace(' ', '', strtoupper($request->rfid_uid));
-        $statusTap = strtoupper($request->status); // MASUK atau PULANG
+        $mode = strtoupper($request->status); // Tombol Fisik: MASUK / PULANG
 
         // Cari di tabel Students
         $student = Student::where('rfid', $rfid)->first();
         if ($student) {
-            return $this->handleStudentPresence($student, $rfid, $statusTap);
+            return $this->handleStudentPresence($student, $rfid, $mode);
         }
 
         // Cari di tabel Users (Guru/TU)
         $user = User::where('rfid', $rfid)->first();
         if ($user) {
-            return $this->handleUserPresence($user, $rfid, $statusTap);
+            return $this->handleUserPresence($user, $rfid, $mode);
         }
 
         return response()->json([
@@ -35,92 +36,88 @@ class PresenceController extends Controller
         ]);
     }
 
-    private function handleStudentPresence($student, $rfid, $statusTap)
+    private function handleStudentPresence($student, $rfid, $mode)
     {
         $currentTime = Carbon::now();
-
-        // Cek batas 2 tap per hari
-        $countToday = KehadiranSiswa::where('nis', $student->nis)
+        
+        // Cek apakah mode ini (Masuk/Pulang) sudah dilakukan hari ini
+        // Kita cek di kolom 'keterangan' atau 'status' yang ada kata kuncinya
+        $alreadyAbsen = KehadiranSiswa::where('nis', $student->nis)
             ->whereDate('waktu_tap', $currentTime)
-            ->count();
+            ->where('keterangan', 'LIKE', $mode . '%')
+            ->exists();
 
-        if ($countToday >= 2) {
+        if ($alreadyAbsen) {
             return response()->json([
-                'status'  => 'WARNING',
-                'message' => 'Absensi sudah lengkap (Masuk & Pulang) hari ini!',
-                'data'    => ['nama' => $student->name],
+                'status'  => 'ERROR',
+                'message' => "Sudah Absen $mode!",
             ]);
         }
 
-        // Auto-detect Masuk atau Pulang
-        $tipeTap = $countToday === 0 ? 'Masuk' : 'Pulang';
-        $status  = 'Hadir';
-
-        if ($tipeTap === 'Masuk' && $currentTime->format('H:i') > '07:05') {
-            $status = 'Terlambat';
+        // Tentukan status (Hadir/Terlambat) hanya untuk mode MASUK
+        $statusRecord = 'Hadir';
+        if ($mode === 'MASUK' && $currentTime->format('H:i') > '07:15') {
+            $statusRecord = 'Terlambat';
         }
 
         $kehadiran = KehadiranSiswa::create([
             'nis'        => $student->nis,
             'rfid_uid'   => $rfid,
             'waktu_tap'  => $currentTime,
-            'status'     => $status,
-            'keterangan' => $tipeTap . ' - Tap RFID',
+            'status'     => $statusRecord,
+            'keterangan' => $mode . ' - Tap RFID Mesin', // Kita simpan mode di sini
         ]);
 
         return response()->json([
             'status'  => 'SUCCESS',
-            'message' => 'Absensi ' . $tipeTap . ' Berhasil!',
+            'message' => "Absen $mode Berhasil!",
             'data'    => [
-                'nipy'         => $student->nis,
-                'nama'         => $student->name,
-                'tipe'         => $tipeTap,
-                'id_kehadiran' => (string) $kehadiran->id,
-                'server_time'  => $currentTime->format('Y-m-d H:i:s'),
+                'nis'              => (string)$student->nis, // Pastikan jadi String
+                'nama'             => (string)$student->name,
+                'kelas'            => (string)($student->classRoom ? $student->classRoom->kelas : '-'),
+                'status_kehadiran' => $mode,
+                'server_time'      => $currentTime->format('Y-m-d H:i:s'),
+                'id_kehadiran'     => (string)$kehadiran->id,
             ]
         ]);
     }
 
-    private function handleUserPresence($user, $rfid, $statusTap)
+    private function handleUserPresence($user, $rfid, $mode)
     {
         $currentTime = Carbon::now();
         $nipy = $user->nipy ?? $user->email;
 
-        // Cek batas 2 tap per hari
-        $countToday = KehadiranGuruTu::where(function ($q) use ($nipy, $user) {
-                $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
-            })
+        // Cek apakah mode ini sudah dilakukan
+        $alreadyAbsen = KehadiranGuruTu::where('nipy', $nipy)
             ->whereDate('waktu_tap', $currentTime)
-            ->count();
+            ->where('status', 'LIKE', $mode . '%') // Guru biasanya simpan di status
+            ->exists();
 
-        if ($countToday >= 2) {
+        if ($alreadyAbsen) {
             return response()->json([
-                'status'  => 'WARNING',
-                'message' => 'Absensi sudah lengkap (Masuk & Pulang) hari ini!',
-                'data'    => ['nama' => $user->name],
+                'status'  => 'ERROR',
+                'message' => "Sudah Absen $mode!",
             ]);
         }
-
-        // Auto-detect Masuk atau Pulang
-        $tipeTap = $countToday === 0 ? 'Masuk' : 'Pulang';
 
         $kehadiran = KehadiranGuruTu::create([
             'nipy'       => $nipy,
             'rfid_uid'   => $rfid,
             'waktu_tap'  => $currentTime,
-            'status'     => 'Hadir',
-            'keterangan' => $tipeTap . ' - Tap RFID',
+            'status'     => $mode === 'MASUK' ? 'Hadir' : 'Hadir', // Atau samakan
+            'keterangan' => $mode . ' - Tap RFID Mesin',
         ]);
 
         return response()->json([
             'status'  => 'SUCCESS',
-            'message' => 'Absensi ' . $tipeTap . ' Berhasil!',
+            'message' => "Absen $mode Berhasil!",
             'data'    => [
-                'nipy'         => $nipy,
-                'nama'         => $user->name,
-                'tipe'         => $tipeTap,
-                'id_kehadiran' => (string) $kehadiran->id,
-                'server_time'  => $currentTime->format('Y-m-d H:i:s'),
+                'nis'              => (string)$nipy,
+                'nama'             => (string)$user->name,
+                'kelas'            => 'GURU/TU',
+                'status_kehadiran' => $mode,
+                'server_time'      => $currentTime->format('Y-m-d H:i:s'),
+                'id_kehadiran'     => (string)$kehadiran->id,
             ]
         ]);
     }
@@ -128,65 +125,7 @@ class PresenceController extends Controller
     public function getDateTime()
     {
         $now = Carbon::now();
-        
-        $days = [
-            'Sunday' => 'Minggu',
-            'Monday' => 'Senin',
-            'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu',
-            'Thursday' => 'Kamis',
-            'Friday' => 'Jumat',
-            'Saturday' => 'Sabtu'
-        ];
-
-        return response()->json([
-            'date' => $now->format('Y-m-d'),
-            'time' => $now->format('H:i:s'),
-            'day' => $days[$now->format('l')]
-        ]);
-    }
-
-    /**
-     * Mengambil foto wajah (face_reference) dari database untuk disinkronkan ke aplikasi eksternal
-     */
-    public function getUserImage(Request $request)
-    {
-        $search = $request->query('search'); // Bisa email atau rfid
-        
-        if (!$search) {
-            return response()->json(['status' => 'ERROR', 'message' => 'Parameter search (email/rfid) diperlukan'], 400);
-        }
-
-        $user = User::where('email', $search)
-            ->orWhere('rfid', $search)
-            ->first();
-
-        if (!$user) {
-            return response()->json(['status' => 'ERROR', 'message' => 'User tidak ditemukan'], 404);
-        }
-
-        if (!$user->face_reference) {
-            return response()->json(['status' => 'ERROR', 'message' => 'User belum mendaftarkan foto wajah'], 404);
-        }
-
-        $path = storage_path('app/public/' . $user->face_reference);
-
-        if (!file_exists($path)) {
-            return response()->json(['status' => 'ERROR', 'message' => 'File foto tidak ditemukan di server'], 404);
-        }
-
-        $imageData = base64_encode(file_get_contents($path));
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-
-        return response()->json([
-            'status' => 'SUCCESS',
-            'data' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'filename' => basename($user->face_reference),
-                'byte_size' => filesize($path),
-                'base64' => 'data:image/' . $extension . ';base64,' . $imageData
-            ]
-        ]);
+        $days = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
+        return response()->json(['date' => $now->format('Y-m-d'), 'time' => $now->format('H:i:s'), 'day' => $days[$now->format('l')]]);
     }
 }
