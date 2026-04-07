@@ -9,7 +9,8 @@ use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use PhpMqtt\Client\MqttClient;
+use Illuminate\Support\Facades\Log; 
+use PhpMqtt\Client\MqttClient;      
 use PhpMqtt\Client\ConnectionSettings;
 
 class PresenceController extends Controller
@@ -71,8 +72,10 @@ class PresenceController extends Controller
             'photo'      => 'rfid_placeholder', // Penanda foto dari mesin RFID
         ]);
 
-        // ✅ KIRIM TRIGGER KE MQTT (Pemicu Kamera)
-        $this->dispatchMqttTrigger($student->nis, $student->name, 'siswa', $kehadiran->id);
+        // ✅ KIRIM TRIGGER KE MQTT (Pemicu Kamera) - Jalur Latar Belakang (Anti-Lemot)
+        dispatch(function () use ($student, $kehadiran) {
+            $this->dispatchMqttTrigger($student->nis, $student->name, 'siswa', $kehadiran->id);
+        })->afterResponse();
 
         return response()->json([
             'status'  => 'SUCCESS',
@@ -93,16 +96,16 @@ class PresenceController extends Controller
         $currentTime = Carbon::now();
         $nipy = $user->nipy ?? $user->email;
 
-        // Cek apakah mode ini sudah dilakukan
+        // ✅ PERBAIKAN: Harus cek kolom 'keterangan' (sesuai cara kita simpan data rfid)
         $alreadyAbsen = KehadiranGuruTu::where('nipy', $nipy)
             ->whereDate('waktu_tap', $currentTime)
-            ->where('status', 'LIKE', $mode . '%') // Guru biasanya simpan di status
+            ->where('keterangan', 'LIKE', $mode . '%') 
             ->exists();
 
         if ($alreadyAbsen) {
             return response()->json([
                 'status'  => 'ERROR',
-                'message' => "Sudah Absen $mode!",
+                'message' => "Anda Sudah $mode!",
             ]);
         }
 
@@ -115,8 +118,10 @@ class PresenceController extends Controller
             'photo'      => 'rfid_placeholder', // Penanda foto dari mesin RFID
         ]);
 
-        // ✅ KIRIM TRIGGER KE MQTT (Pemicu Kamera)
-        $this->dispatchMqttTrigger($nipy, $user->name, 'guru', $kehadiran->id);
+        // ✅ KIRIM TRIGGER KE MQTT (Pemicu Kamera) - Jalur Latar Belakang (Anti-Lemot)
+        dispatch(function () use ($nipy, $user, $kehadiran) {
+            $this->dispatchMqttTrigger($nipy, $user->name, 'guru', $kehadiran->id);
+        })->afterResponse();
 
         return response()->json([
             'status'  => 'SUCCESS',
