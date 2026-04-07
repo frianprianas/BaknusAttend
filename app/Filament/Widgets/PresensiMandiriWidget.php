@@ -148,6 +148,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ])
                         ->required($tipeAbsens !== 'Selesai')
                         ->maxSize(8192)
+                        ->imageResizeTargetWidth('640')
+                        ->imageResizeTargetHeight('640')
+                        ->imageResizeMode('cover')
+                        ->imageCropAspectRatio('1:1')
                         ->disk('public')
                         ->directory('absensi-selfie')
                         ->hidden($tipeAbsens === 'Selesai'),
@@ -201,6 +205,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ])
                                 ->required()
                                 ->maxSize(8192)
+                                ->imageResizeTargetWidth('640')
+                                ->imageResizeTargetHeight('640')
+                                ->imageResizeMode('cover')
+                                ->imageCropAspectRatio('1:1')
                                 ->disk('public')
                                 ->directory('face-references'),
                         ]),
@@ -222,6 +230,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                 ])
                                 ->required()
                                 ->maxSize(8192)
+                                ->imageResizeTargetWidth('640')
+                                ->imageResizeTargetHeight('640')
+                                ->imageResizeMode('cover')
+                                ->imageCropAspectRatio('1:1')
                                 ->disk('public')
                                 ->directory('absensi-selfie'),
                         ]),
