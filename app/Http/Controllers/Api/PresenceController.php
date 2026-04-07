@@ -65,7 +65,8 @@ class PresenceController extends Controller
             'rfid_uid'   => $rfid,
             'waktu_tap'  => $currentTime,
             'status'     => $statusRecord,
-            'keterangan' => $mode . ' - Tap RFID Mesin', // Kita simpan mode di sini
+            'keterangan' => $mode . ' - Tap RFID Mesin',
+            'photo'      => 'rfid_placeholder', // Penanda foto dari mesin RFID
         ]);
 
         return response()->json([
@@ -104,8 +105,9 @@ class PresenceController extends Controller
             'nipy'       => $nipy,
             'rfid_uid'   => $rfid,
             'waktu_tap'  => $currentTime,
-            'status'     => $mode === 'MASUK' ? 'Hadir' : 'Hadir', // Atau samakan
+            'status'     => 'Hadir',
             'keterangan' => $mode . ' - Tap RFID Mesin',
+            'photo'      => 'rfid_placeholder', // Penanda foto dari mesin RFID
         ]);
 
         return response()->json([

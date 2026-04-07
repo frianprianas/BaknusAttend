@@ -67,6 +67,13 @@ class GuruTuAttendanceWidget extends BaseWidget
                     ->circular()
                     ->disk('public')
                     ->size(35)
+                    ->getStateUsing(function ($record) {
+                        if ($record->photo === 'rfid_placeholder') {
+                            return null; // Gunakan defaultImageUrl
+                        }
+                        return $record->photo;
+                    })
+                    ->defaultImageUrl(asset('images/rfid_placeholder.png'))
                     ->visibility(fn () => true),
 
                 Tables\Columns\TextColumn::make('user_name')
