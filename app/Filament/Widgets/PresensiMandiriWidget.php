@@ -447,7 +447,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         try {
             $this->addWatermarkToImage($photoFinal, clone $currentTime, $formData['lat'], $formData['long']);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error("Gagal membuat watermark: " . $e->getMessage(), [
+                'path' => $photoFinal,
+                'lat'  => $formData['lat'] ?? null,
+                'long' => $formData['long'] ?? null,
+            ]);
             // Fallback: Jika GD Library bermasalah, foto akan tetap tersimpan tanpa watermark.
         }
 
@@ -526,18 +531,42 @@ class PresensiMandiriWidget extends Widget implements HasForms
         return $angle * $earthRadius;
     }
 
-    private function addWatermarkToImage(string $path, Carbon $time, $lat, $long)
+    private function addWatermarkToImage($path, Carbon $time, $lat, $long)
     {
-        $fullPath = storage_path('app/public/' . $path);
-        if (!file_exists($fullPath)) return;
+        // Pastikan path berbentuk string
+        if (is_array($path)) {
+            $path = array_values($path)[0] ?? null;
+        }
+
+        if (!$path) {
+            Log::warning("Watermark gagal: Path kosong");
+            return;
+        }
+
+        // Handle path temp dari Livewire (biasanya storage/app/livewire-tmp)
+        $fullPath = str_starts_with($path, 'livewire-tmp') 
+            ? storage_path('app/' . $path)
+            : storage_path('app/public/' . $path);
+
+        if (!file_exists($fullPath)) {
+            Log::warning("Watermark gagal: File tidak ditemukan " . $fullPath);
+            return;
+        }
 
         $mime = mime_content_type($fullPath);
         $img = null;
         if ($mime == 'image/jpeg') $img = @imagecreatefromjpeg($fullPath);
         elseif ($mime == 'image/png') $img = @imagecreatefrompng($fullPath);
         elseif ($mime == 'image/webp') $img = @imagecreatefromwebp($fullPath);
+        elseif (str_contains(strtolower($mime), 'heic') || str_contains(strtolower($mime), 'octet-stream')) {
+             Log::warning("Watermark dilewati: Format HEIC/Octet-stream belum disupport GD");
+             return;
+        }
 
-        if (!$img) return;
+        if (!$img) {
+            Log::warning("Watermark gagal: Tidak bisa membuat image resource dari " . $mime);
+            return;
+        }
 
         $width = imagesx($img);
         $height = imagesy($img);
