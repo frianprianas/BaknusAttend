@@ -406,20 +406,39 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Fungsi Paksa Kamera Selfie (di-apply ke HTML)
+        // A. Fungsi Paksa Kamera Selfie (berusaha memaksa HTML)
         const forceSelfieMode = () => {
             document.querySelectorAll('input[type="file"]').forEach(input => {
                 if (input.getAttribute('capture') !== 'user') {
                     input.setAttribute('capture', 'user');
-                    // Tambahkan format spesifik agar browser tahu ini untuk kamera
                     input.setAttribute('accept', 'image/jpeg, image/png;capture=user');
                 }
             });
         };
 
-        // Pasang Mata-mata DOM (Observer) untuk memaksa atribut HTML FilePond
+        // B. Fungsi Pesan Peringatan (Jalan di Layar Sentuh / Mouse)
+        const alertSelfie = (e) => {
+            let el = e.target.closest('.filepond--root') || 
+                     e.target.closest('.filepond--label-action') || 
+                     e.target.closest('input[type="file"]');
+            
+            // Tampilkan alert jika belum muncul baru-baru ini
+            if (el && !el.dataset.hasAlerted) {
+                el.dataset.hasAlerted = "true";
+                
+                alert("📣 BUKA KAMERA DEPAN?\n\nJika yang terbukan adalah kamera belakang, mohon ketuk tombol putar/switch ke KAMERA DEPAN (Selfie) ya!");
+                
+                // Beri jeda 10 detik agar tidak spam
+                setTimeout(() => { delete el.dataset.hasAlerted; }, 10000);
+            }
+        };
+
+        // Pantau Perubahan Layar (Observer)
         const observer = new MutationObserver(forceSelfieMode);
         observer.observe(document.body, { childList: true, subtree: true });
+
+        // MENDETEKSI SENTUHAN (pointerdown) BUKAN HANYA KLIK
+        document.addEventListener('pointerdown', alertSelfie, true);
 
         // Backup eksekusi berkala
         setInterval(forceSelfieMode, 2000);
