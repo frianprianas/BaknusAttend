@@ -17,7 +17,11 @@
     @if($data)
         @php
             $jam = \Illuminate\Support\Carbon::parse($data->waktu_tap)->format('H:i');
-            $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+            if ($data->photo === 'rfid_placeholder') {
+                $photoUrl = asset('images/rfid_placeholder.png');
+            } else {
+                $photoUrl = $data->photo ? asset('storage/' . $data->photo) : url('/images/user-placeholder.png');
+            }
         @endphp
         
         <div x-data="{ open: false }" class="flex-shrink-0">
