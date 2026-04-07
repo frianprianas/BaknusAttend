@@ -139,6 +139,21 @@ class AdminPanelProvider extends PanelProvider
                         </div>`;
                         document.body.appendChild(banner);
                     }
+
+                    // Task: Limit Notification Badge to 9+
+                    setInterval(() => {
+                        document.querySelectorAll(".fi-topbar-item-badge span, .fi-badge").forEach(el => {
+                            let text = el.innerText.trim();
+                            if(!text.includes("+") && !isNaN(text)) {
+                                let num = parseInt(text);
+                                if (num > 9) {
+                                    el.innerText = "9+";
+                                    // Make sure layout isnt broken by old large numbers
+                                    el.style.fontSize = "0.75rem";
+                                }
+                            }
+                        });
+                    }, 1000);
                 </script>'
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

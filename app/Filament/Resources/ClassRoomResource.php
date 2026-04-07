@@ -19,7 +19,7 @@ class ClassRoomResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user() && in_array(auth()->user()->role, ['Admin', 'TU']);
+        return auth()->user() && auth()->user()->role === 'Admin';
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
