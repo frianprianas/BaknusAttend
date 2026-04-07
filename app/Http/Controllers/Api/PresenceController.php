@@ -43,11 +43,12 @@ class PresenceController extends Controller
     {
         $currentTime = Carbon::now();
         
-        // Cek apakah mode ini (Masuk/Pulang) sudah dilakukan hari ini
-        // Kita cek di kolom 'keterangan' atau 'status' yang ada kata kuncinya
+        // ✅ Cek duplikat: cover semua sumber (RFID dan Web/Scan Wajah)
+        // Format RFID: "MASUK - Tap RFID Mesin"
+        // Format Web:  "Masuk - Presensi Mandiri (Dashboard)"
         $alreadyAbsen = KehadiranSiswa::where('nis', $student->nis)
             ->whereDate('waktu_tap', $currentTime)
-            ->where('keterangan', 'LIKE', $mode . '%')
+            ->whereRaw('LOWER(keterangan) LIKE ?', [strtolower($mode) . '%'])
             ->exists();
 
         if ($alreadyAbsen) {
@@ -96,10 +97,10 @@ class PresenceController extends Controller
         $currentTime = Carbon::now();
         $nipy = $user->nipy ?? $user->email;
 
-        // ✅ PERBAIKAN: Harus cek kolom 'keterangan' (sesuai cara kita simpan data rfid)
+        // ✅ Cek duplikat: cover semua sumber (RFID dan Web/Scan Wajah)
         $alreadyAbsen = KehadiranGuruTu::where('nipy', $nipy)
             ->whereDate('waktu_tap', $currentTime)
-            ->where('keterangan', 'LIKE', $mode . '%') 
+            ->whereRaw('LOWER(keterangan) LIKE ?', [strtolower($mode) . '%'])
             ->exists();
 
         if ($alreadyAbsen) {
