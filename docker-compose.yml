@@ -80,6 +80,18 @@ services:
                 - ping
             retries: 3
             timeout: 5s
+    mosquitto:
+        image: 'eclipse-mosquitto:latest'
+        ports:
+            - '${FORWARD_MQTT_PORT:-1883}:1883'
+            - '${FORWARD_MQTT_WS_PORT:-9001}:9001'
+        volumes:
+            - './mosquitto/config:/mosquitto/config'
+            - 'sail-mosquitto-data:/mosquitto/data'
+            - 'sail-mosquitto-log:/mosquitto/log'
+        networks:
+            - sail
+        restart: unless-stopped
 networks:
     sail:
         driver: bridge
@@ -87,4 +99,8 @@ volumes:
     sail-mysql:
         driver: local
     sail-redis:
+        driver: local
+    sail-mosquitto-data:
+        driver: local
+    sail-mosquitto-log:
         driver: local

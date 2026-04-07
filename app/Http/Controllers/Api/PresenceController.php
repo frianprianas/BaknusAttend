@@ -9,6 +9,8 @@ use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use PhpMqtt\Client\MqttClient;
+use PhpMqtt\Client\ConnectionSettings;
 
 class PresenceController extends Controller
 {
@@ -69,6 +71,9 @@ class PresenceController extends Controller
             'photo'      => 'rfid_placeholder', // Penanda foto dari mesin RFID
         ]);
 
+        // ✅ KIRIM TRIGGER KE MQTT (Pemicu Kamera)
+        $this->dispatchMqttTrigger($student->nis, $student->name, 'siswa', $kehadiran->id);
+
         return response()->json([
             'status'  => 'SUCCESS',
             'message' => "Absen $mode Berhasil!",
@@ -110,6 +115,9 @@ class PresenceController extends Controller
             'photo'      => 'rfid_placeholder', // Penanda foto dari mesin RFID
         ]);
 
+        // ✅ KIRIM TRIGGER KE MQTT (Pemicu Kamera)
+        $this->dispatchMqttTrigger($nipy, $user->name, 'guru', $kehadiran->id);
+
         return response()->json([
             'status'  => 'SUCCESS',
             'message' => "Absen $mode Berhasil!",
@@ -129,5 +137,31 @@ class PresenceController extends Controller
         $now = Carbon::now();
         $days = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
         return response()->json(['date' => $now->format('Y-m-d'), 'time' => $now->format('H:i:s'), 'day' => $days[$now->format('l')]]);
+    }
+
+    /**
+     * 🔥 Fungsi untuk mengirim perintah capture ke MQTT
+     */
+    private function dispatchMqttTrigger($id, $name, $type, $attendanceId)
+    {
+        try {
+            $mqtt = new MqttClient(env('MQTT_HOST', 'mosquitto'), 1883, 'baknus_trigger');
+            $mqtt->connect();
+            
+            $payload = json_encode([
+                'id_kehadiran' => (string)$attendanceId,
+                'nis'          => (string)$id,
+                'nama'         => (string)$name,
+                'tipe'         => (string)$type,
+                'action'       => 'capture',
+                'timestamp'    => now()->toDateTimeString()
+            ]);
+
+            // Kirim ke topic sekolah Mas
+            $mqtt->publish('baknusattend/trigger/camera', $payload, 0);
+            $mqtt->disconnect();
+        } catch (\Exception $e) {
+            \Log::error("MQTT Trigger Failed: " . $e->getMessage());
+        }
     }
 }
