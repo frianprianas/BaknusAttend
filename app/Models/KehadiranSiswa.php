@@ -43,7 +43,7 @@ class KehadiranSiswa extends Model
                     'keterangan' => $kehadiran->keterangan ?? $kehadiran->status ?? 'Hadir',
                 ];
 
-                \App\Jobs\SyncAttendanceToBaknusDrive::dispatch($data);
+                \App\Jobs\SyncAttendanceToBaknusDrive::dispatchAfterResponse($data);
             } catch (\Exception $e) {
                 \Log::error('BaknusDrive Queue Error (Siswa): ' . $e->getMessage());
             }

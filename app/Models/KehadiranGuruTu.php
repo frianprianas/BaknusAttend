@@ -43,7 +43,7 @@ class KehadiranGuruTu extends Model
                     'keterangan' => $kehadiran->keterangan ?? 'Hadir',
                 ];
 
-                \App\Jobs\SyncAttendanceToBaknusDrive::dispatch($data);
+                \App\Jobs\SyncAttendanceToBaknusDrive::dispatchAfterResponse($data);
             } catch (\Exception $e) {
                 \Log::error('BaknusDrive Queue Error (Guru): ' . $e->getMessage());
             }
