@@ -48,6 +48,8 @@ class SyncData extends Page
                 FileUpload::make('csvFile')
                     ->label('Upload File CSV (Nama & Kelas)')
                     ->acceptedFileTypes(['text/csv', 'application/csv', 'text/plain'])
+                    ->disk('public')
+                    ->directory('temp-sync')
                     ->required()
                     ->live(),
             ]);
@@ -55,95 +57,114 @@ class SyncData extends Page
 
     public function startSync()
     {
-        $this->validate([
-            'csvFile' => 'required',
-        ]);
+        try {
+            $this->validate([
+                'csvFile' => 'required',
+            ]);
 
-        // csvFile is an array in Filament v3 if not configured otherwise, but let's assume it's the path
-        // Actually FileUpload returns a string (the path) or an array if multiple
-        $path = is_array($this->csvFile) ? reset($this->csvFile) : $this->csvFile;
-        
-        if (!Storage::disk('public')->exists($path)) {
-            Notification::make()->title('File tidak ditemukan')->danger()->send();
-            return;
+            $path = is_array($this->csvFile) ? reset($this->csvFile) : $this->csvFile;
+            
+            if (!Storage::disk('public')->exists($path)) {
+                Notification::make()->title('File tidak ditemukan di disk')->danger()->send();
+                return;
+            }
+
+            $this->tempPath = Storage::disk('public')->path($path);
+
+            if (!is_readable($this->tempPath)) {
+                Notification::make()->title('File tidak dapat dibaca (Izin PHP)')->danger()->send();
+                return;
+            }
+
+            $this->isSyncing = true;
+            $this->logs = [];
+            $this->currentIndex = 0;
+            $this->report = [
+                'total' => 0,
+                'success' => 0,
+                'failed' => 0,
+                'time' => 0,
+            ];
+
+            // Detect delimiter and total lines
+            $file = fopen($this->tempPath, 'r');
+            if (!$file) throw new \Exception("Gagal membuka file.");
+
+            $header = fgetcsv($file, 1000, ",");
+            if (!$header || count($header) < 2) {
+                rewind($file);
+                $header = fgetcsv($file, 1000, ";");
+                $this->delimiter = ";";
+            } else {
+                $this->delimiter = ",";
+            }
+            
+            $lines = 0;
+            while (fgetcsv($file, 1000, $this->delimiter)) {
+                $lines++;
+            }
+            fclose($file);
+
+            $this->totalLines = $lines;
+            $this->report['total'] = $lines;
+            $this->addLog("Memulai singkronisasi... Delimiter: " . ($this->delimiter == ',' ? 'Koma' : 'Titik Koma'));
+            
+            $this->dispatch('start-processing');
+
+        } catch (\Exception $e) {
+            $this->isSyncing = false;
+            Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }
-
-        $this->tempPath = Storage::disk('public')->path($path);
-
-        $this->isSyncing = true;
-        $this->logs = [];
-        $this->currentIndex = 0;
-        $this->report = [
-            'total' => 0,
-            'success' => 0,
-            'failed' => 0,
-            'time' => 0,
-        ];
-
-        // Read total lines and detect delimiter
-        $file = fopen($this->tempPath, 'r');
-        $header = fgetcsv($file, 1000, ",");
-        if (count($header) < 2) {
-            rewind($file);
-            $header = fgetcsv($file, 1000, ";");
-            $this->delimiter = ";";
-        } else {
-            $this->delimiter = ",";
-        }
-        
-        $lines = 0;
-        while (fgetcsv($file, 1000, $this->delimiter)) {
-            $lines++;
-        }
-        fclose($file);
-
-        $this->totalLines = $lines;
-        $this->report['total'] = $lines;
-        $this->addLog("Memulai singkronisasi... Total " . $lines . " data ditemukan.");
-        
-        // Start processing the first chunk
-        $this->dispatch('start-processing');
     }
 
     public function processNext()
     {
-        if (!$this->isSyncing) return;
+        if (!$this->isSyncing || !$this->tempPath) return;
 
         $file = fopen($this->tempPath, 'r');
+        if (!$file) {
+            $this->addLog("Error: Gagal membuka file untuk diproses.");
+            $this->isSyncing = false;
+            return;
+        }
         
-        // Skip to current index + header
+        // Skip header + current index
         for ($i = 0; $i <= $this->currentIndex; $i++) {
             fgetcsv($file, 1000, $this->delimiter);
         }
 
-        $chunkSize = 5; // Process 5 at a time for "terminal" feel
+        $chunkSize = 5;
         $processed = 0;
 
         while ($processed < $chunkSize && ($data = fgetcsv($file, 1000, $this->delimiter)) !== FALSE) {
             $this->currentIndex++;
             $processed++;
 
-            $name = trim($data[0] ?? null);
-            $className = trim($data[1] ?? null);
+            $name = trim($data[0] ?? '');
+            $className = trim($data[1] ?? '');
 
-            if (!$name || !$className) {
-                $this->addLog("Baris {$this->currentIndex}: Lewati (Data tidak lengkap)");
+            if (empty($name) || empty($className)) {
+                $this->addLog("Baris {$this->currentIndex}: Lewati (Kosong)");
                 $this->report['failed']++;
                 continue;
             }
 
             try {
-                $classRoom = ClassRoom::firstOrCreate(['kelas' => $className]);
+                // Find or create classroom
+                $classRoom = ClassRoom::firstOrCreate(
+                    ['kelas' => $className]
+                );
 
+                // Update or create student
                 Student::updateOrCreate(
                     ['name' => $name],
                     ['class_room_id' => $classRoom->id]
                 );
 
-                $this->addLog("Singkron: $name -> $className");
+                $this->addLog("[$this->currentIndex/$this->totalLines] Success: $name ($className)");
                 $this->report['success']++;
             } catch (\Exception $e) {
-                $this->addLog("Error pada $name: " . $e->getMessage());
+                $this->addLog("[$this->currentIndex] Error $name: " . substr($e->getMessage(), 0, 50));
                 $this->report['failed']++;
             }
         }
@@ -152,7 +173,11 @@ class SyncData extends Page
 
         if ($this->currentIndex >= $this->totalLines) {
             $this->isSyncing = false;
-            $this->addLog("Singkronisasi Selesai!");
+            $this->addLog(">>> SINGKRONISASI SELESAI <<<");
+            
+            // Clean up file if needed
+            // Storage::disk('public')->delete(is_array($this->csvFile) ? reset($this->csvFile) : $this->csvFile);
+            
             Notification::make()->title('Singkronisasi Selesai')->success()->send();
         } else {
             $this->dispatch('process-next');
