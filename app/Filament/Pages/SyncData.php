@@ -4,15 +4,18 @@ namespace App\Filament\Pages;
 
 use App\Models\ClassRoom;
 use App\Models\Student;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class SyncData extends Page
+class SyncData extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
     protected static ?string $navigationLabel = 'Singkron Data';
     protected static ?string $title = 'Singkron Data Siswa';
@@ -21,7 +24,8 @@ class SyncData extends Page
 
     protected static string $view = 'filament.pages.sync-data';
 
-    public $csvFile;
+    public ?array $data = [];
+    
     public $isSyncing = false;
     public $logs = [];
     public $currentIndex = 0;
@@ -35,6 +39,11 @@ class SyncData extends Page
         'failed' => 0,
         'time' => 0,
     ];
+
+    public function mount(): void
+    {
+        $this->form->fill();
+    }
 
     public static function canAccess(): bool
     {
@@ -50,19 +59,21 @@ class SyncData extends Page
                     ->acceptedFileTypes(['text/csv', 'application/csv', 'text/plain'])
                     ->disk('public')
                     ->directory('temp-sync')
-                    ->required()
-                    ->live(),
-            ]);
+                    ->required(),
+            ])
+            ->statePath('data');
     }
 
     public function startSync()
     {
         try {
-            $this->validate([
-                'csvFile' => 'required',
-            ]);
-
-            $path = is_array($this->csvFile) ? reset($this->csvFile) : $this->csvFile;
+            $state = $this->form->getState();
+            $path = $state['csvFile'] ?? null;
+            
+            if (!$path) {
+                Notification::make()->title('Silakan pilih file terlebih dahulu')->warning()->send();
+                return;
+            }
             
             if (!Storage::disk('public')->exists($path)) {
                 Notification::make()->title('File tidak ditemukan di disk')->danger()->send();
