@@ -74,7 +74,10 @@ class SyncDeep extends Page implements HasForms, HasTable
         return $table
             ->query(
                 Student::query()
-                    ->whereNull('class_room_id')
+                    ->whereHas('classRoom', function (Builder $query) {
+                        $query->where('kelas', 'LIKE', '%belum ditentukan%');
+                    })
+                    ->orWhereNull('class_room_id')
                     ->orWhere('class_room_id', 0)
                     ->orWhereDoesntHave('classRoom')
             )
@@ -84,6 +87,11 @@ class SyncDeep extends Page implements HasForms, HasTable
                     ->searchable()
                     ->sortable()
                     ->description(fn (Student $record): string => $record->nis ?? 'NIS Kosong'),
+                TextColumn::make('classRoom.kelas')
+                    ->label('Kelas Saat Ini')
+                    ->badge()
+                    ->color('danger')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Tgl Kadaluwarsa/Daftar')
                     ->dateTime()
