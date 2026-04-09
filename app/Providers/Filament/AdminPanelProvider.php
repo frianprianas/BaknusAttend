@@ -165,6 +165,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Pages\VideoTimelapse::class,
                 \App\Filament\Pages\TimelapseSettings::class,
                 \App\Filament\Pages\SyncData::class,
+                \App\Filament\Pages\SyncDeep::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([

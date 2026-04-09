@@ -9,20 +9,26 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Builder;
 
-class SyncData extends Page implements HasForms
+class SyncDeep extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
-    protected static ?string $navigationLabel = 'Singkron Data';
-    protected static ?string $title = 'Singkron Data Siswa';
+    protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
+    protected static ?string $navigationLabel = 'Singkron Mendalam';
+    protected static ?string $title = 'Singkronisasi Mendalam';
     protected static ?string $navigationGroup = 'Singkron Data';
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 101;
 
-    protected static string $view = 'filament.pages.sync-data';
+    protected static string $view = 'filament.pages.sync-deep';
 
     public ?array $data = [];
     
@@ -37,7 +43,6 @@ class SyncData extends Page implements HasForms
         'total' => 0,
         'success' => 0,
         'failed' => 0,
-        'time' => 0,
     ];
 
     public function mount(): void
@@ -55,13 +60,40 @@ class SyncData extends Page implements HasForms
         return $form
             ->schema([
                 FileUpload::make('csvFile')
-                    ->label('Upload File CSV (Nama & Kelas)')
+                    ->label('Upload File CSV Acuan (Nama & Kelas)')
                     ->acceptedFileTypes(['text/csv', 'application/csv', 'text/plain'])
                     ->disk('public')
                     ->directory('temp-sync')
                     ->required(),
             ])
             ->statePath('data');
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(
+                Student::query()
+                    ->whereNull('class_room_id')
+                    ->orWhere('class_room_id', 0)
+                    ->orWhereDoesntHave('classRoom')
+            )
+            ->columns([
+                TextColumn::make('name')
+                    ->label('Nama Siswa')
+                    ->searchable()
+                    ->sortable()
+                    ->description(fn (Student $record): string => $record->nis ?? 'NIS Kosong'),
+                TextColumn::make('created_at')
+                    ->label('Tgl Kadaluwarsa/Daftar')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->heading('Siswa Tanpa Kelas Valid')
+            ->description('Daftar siswa yang ada di database namun tidak terikat dengan kelas manapun.')
+            ->emptyStateHeading('Semua siswa memiliki kelas')
+            ->emptyStateDescription('Tidak ditemukan anomali data siswa tanpa kelas.')
+            ->emptyStateIcon('heroicon-o-check-circle');
     }
 
     public function startSync()
@@ -94,7 +126,6 @@ class SyncData extends Page implements HasForms
                 'total' => 0,
                 'success' => 0,
                 'failed' => 0,
-                'time' => 0,
             ];
 
             // Detect delimiter and total lines
@@ -118,9 +149,9 @@ class SyncData extends Page implements HasForms
 
             $this->totalLines = $lines;
             $this->report['total'] = $lines;
-            $this->addLog("Memulai singkronisasi... Delimiter: " . ($this->delimiter == ',' ? 'Koma' : 'Titik Koma'));
+            $this->addLog("Memulai singkronisasi mendalam... Delimiter: " . ($this->delimiter == ',' ? 'Koma' : 'Titik Koma'));
             
-            $this->dispatch('start-processing');
+            $this->dispatch('start-deep-processing');
 
         } catch (\Exception $e) {
             $this->isSyncing = false;
@@ -139,7 +170,6 @@ class SyncData extends Page implements HasForms
             return;
         }
         
-        // Skip header + current index
         for ($i = 0; $i <= $this->currentIndex; $i++) {
             fgetcsv($file, 1000, $this->delimiter);
         }
@@ -166,13 +196,14 @@ class SyncData extends Page implements HasForms
                     ['kelas' => $className]
                 );
 
-                // Update or create student
+                // Deep sync logic: cari siswa dengan nama yang sama, lalu update kelasnya.
+                // Jika tidak ketemu dengan nama eksis, kita buat baru
                 Student::updateOrCreate(
                     ['name' => $name],
                     ['class_room_id' => $classRoom->id]
                 );
 
-                $this->addLog("[$this->currentIndex/$this->totalLines] Success: $name ($className)");
+                $this->addLog("[$this->currentIndex/$this->totalLines] Deep Sync: $name -> $className");
                 $this->report['success']++;
             } catch (\Exception $e) {
                 $this->addLog("[$this->currentIndex] Error $name: " . substr($e->getMessage(), 0, 50));
@@ -184,14 +215,12 @@ class SyncData extends Page implements HasForms
 
         if ($this->currentIndex >= $this->totalLines) {
             $this->isSyncing = false;
-            $this->addLog(">>> SINGKRONISASI SELESAI <<<");
+            $this->addLog(">>> SINGKRONISASI MENDALAM SELESAI <<<");
             
-            // Clean up file if needed
-            // Storage::disk('public')->delete(is_array($this->csvFile) ? reset($this->csvFile) : $this->csvFile);
-            
-            Notification::make()->title('Singkronisasi Selesai')->success()->send();
+            Notification::make()->title('Singkronisasi Mendalam Selesai')->success()->send();
+            $this->dispatch('refresh-table'); // Refresh table after sync
         } else {
-            $this->dispatch('process-next');
+            $this->dispatch('process-deep-next');
         }
     }
 
