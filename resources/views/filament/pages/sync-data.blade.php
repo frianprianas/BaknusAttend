@@ -143,17 +143,17 @@
         </div>
     </div>
 
-    @script
     <script>
-        $wire.on('start-processing', () => {
-            $wire.processNext();
-        });
+        document.addEventListener('livewire:initialized', () => {
+            @this.on('start-processing', () => {
+                @this.processNext();
+            });
 
-        $wire.on('process-next', () => {
-            setTimeout(() => {
-                $wire.processNext();
-            }, 50); // Kecepatan terminal
+            @this.on('process-next', () => {
+                setTimeout(() => {
+                    @this.processNext();
+                }, 50);
+            });
         });
     </script>
-    @endscript
 </x-filament-panels::page>
