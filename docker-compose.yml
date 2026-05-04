@@ -92,6 +92,89 @@ services:
         networks:
             - sail
         restart: unless-stopped
+    compreface-postgres-db:
+        image: exadel/compreface-postgres-db:1.2.0
+        restart: unless-stopped
+        container_name: "compreface-postgres-db"
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=compreface
+        volumes:
+            - compreface-postgres-data:/var/lib/postgresql/data
+        networks:
+            - sail
+
+    compreface-admin:
+        restart: unless-stopped
+        image: exadel/compreface-admin:1.2.0
+        container_name: "compreface-admin"
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/compreface
+            - SPRING_PROFILES_ACTIVE=dev
+            - MAX_FILE_SIZE=5MB
+            - MAX_REQUEST_SIZE=5242880B
+        depends_on:
+            - compreface-postgres-db
+            - compreface-api
+        networks:
+            - sail
+
+    compreface-api:
+        restart: unless-stopped
+        image: exadel/compreface-api:1.2.0
+        container_name: "compreface-api"
+        depends_on:
+            - compreface-postgres-db
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/compreface
+            - SPRING_PROFILES_ACTIVE=dev
+            - SAVE_IMAGES_TO_DB=true
+            - MAX_FILE_SIZE=5MB
+            - MAX_REQUEST_SIZE=5242880B
+            - CONNECTION_TIMEOUT=10000
+            - READ_TIMEOUT=60000
+        networks:
+            - sail
+
+    compreface-ui:
+        restart: unless-stopped
+        image: exadel/compreface-fe:1.2.0
+        container_name: "compreface-ui"
+        ports:
+            - "8000:80"
+        depends_on:
+            - compreface-api
+            - compreface-admin
+        environment:
+            - CLIENT_MAX_BODY_SIZE=5242880B
+            - PROXY_READ_TIMEOUT=60000ms
+            - PROXY_CONNECT_TIMEOUT=10000ms
+        networks:
+            - sail
+
+    compreface-core:
+        restart: unless-stopped
+        image: exadel/compreface-core:1.2.0
+        container_name: "compreface-core"
+        environment:
+            - ML_PORT=3000
+            - IMG_LENGTH_LIMIT=5242880
+            - UWSGI_PROCESSES=2
+            - UWSGI_THREADS=1
+        healthcheck:
+            test: curl --fail http://localhost:3000/healthcheck || exit 1
+            interval: 10s
+            retries: 0
+            start_period: 0s
+            timeout: 1s
+        networks:
+            - sail
+
 networks:
     sail:
         driver: bridge
@@ -103,4 +186,6 @@ volumes:
     sail-mosquitto-data:
         driver: local
     sail-mosquitto-log:
+        driver: local
+    compreface-postgres-data:
         driver: local

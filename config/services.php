@@ -46,4 +46,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'ap-southeast-1'),
     ],
 
+    'compreface' => [
+        'key' => env('COMPREFACE_KEY'),
+        'endpoint' => env('COMPREFACE_ENDPOINT', 'http://compreface-api:8000'),
+    ],
+
 ];

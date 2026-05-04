@@ -7,7 +7,7 @@ use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
 use App\Models\SchoolSetting;
 use App\Models\Student;
-use App\Services\AwsFaceService;
+use App\Services\CompreFaceService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
@@ -360,7 +360,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         RateLimiter::hit($rateLimitKey, 300); // 300 detik = 5 menit lockout
 
         // --- FACE RECOGNITION LOGIC ---
-        $faceService = new AwsFaceService();
+        $faceService = new CompreFaceService();
         
         $model = $user;
         if ($user->role === 'Siswa') {
