@@ -14,8 +14,8 @@ class CompreFaceService
 
     public function __construct()
     {
-        // Default to compreface-api (docker service name) and port 8000
-        $this->endpoint = rtrim(config('services.compreface.endpoint', env('COMPREFACE_ENDPOINT', 'http://compreface-api:8000')), '/');
+        // Default to compreface-api (docker service name) and port 8080
+        $this->endpoint = rtrim(config('services.compreface.endpoint', env('COMPREFACE_ENDPOINT', 'http://compreface-api:8080')), '/');
         $this->apiKey   = config('services.compreface.key', env('COMPREFACE_KEY', ''));
     }
 

@@ -48,7 +48,7 @@ return [
 
     'compreface' => [
         'key' => env('COMPREFACE_KEY'),
-        'endpoint' => env('COMPREFACE_ENDPOINT', 'http://compreface-api:8000'),
+        'endpoint' => env('COMPREFACE_ENDPOINT', 'http://compreface-api:8080'),
     ],
 
 ];
