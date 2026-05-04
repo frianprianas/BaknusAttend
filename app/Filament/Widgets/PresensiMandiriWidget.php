@@ -160,14 +160,25 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     Hidden::make('client_public_ip')
                         ->extraAttributes([
                             'x-init' => "
-                                const cbName = 'cb_' + Math.floor(Math.random() * 1000000);
-                                window[cbName] = (data) => {
-                                    \$wire.set('data.client_public_ip', data.ip);
-                                    delete window[cbName];
-                                };
-                                const script = document.createElement('script');
-                                script.src = 'https://api.ipify.org?format=jsonp&callback=' + cbName;
-                                document.body.appendChild(script);
+                                (async () => {
+                                    const providers = [
+                                        'https://api.ipify.org?format=json',
+                                        'https://ipapi.co/json/',
+                                        'https://api.seeip.org/jsonip'
+                                    ];
+                                    for (const url of providers) {
+                                        try {
+                                            const response = await fetch(url);
+                                            const data = await response.json();
+                                            if (data.ip || data.ip_address) {
+                                                \$wire.set('data.client_public_ip', data.ip || data.ip_address);
+                                                break;
+                                            }
+                                        } catch (e) {
+                                            console.warn('Gagal ambil IP dari ' + url);
+                                        }
+                                    }
+                                })();
                             ",
                         ]),
                 ])
@@ -243,16 +254,27 @@ class PresensiMandiriWidget extends Widget implements HasForms
                  Hidden::make('lat'),
                  Hidden::make('long'),
                  Hidden::make('client_public_ip')
-                    ->extraAttributes([
+                     ->extraAttributes([
                         'x-init' => "
-                            const cbName = 'cb_' + Math.floor(Math.random() * 1000000);
-                            window[cbName] = (data) => {
-                                \$wire.set('data.client_public_ip', data.ip);
-                                delete window[cbName];
-                            };
-                            const script = document.createElement('script');
-                            script.src = 'https://api.ipify.org?format=jsonp&callback=' + cbName;
-                            document.body.appendChild(script);
+                            (async () => {
+                                const providers = [
+                                    'https://api.ipify.org?format=json',
+                                    'https://ipapi.co/json/',
+                                    'https://api.seeip.org/jsonip'
+                                ];
+                                for (const url of providers) {
+                                    try {
+                                        const response = await fetch(url);
+                                        const data = await response.json();
+                                        if (data.ip || data.ip_address) {
+                                            \$wire.set('data.client_public_ip', data.ip || data.ip_address);
+                                            break;
+                                        }
+                                    } catch (e) {
+                                        console.warn('Gagal ambil IP dari ' + url);
+                                    }
+                                }
+                            })();
                         ",
                     ]),
              ])
