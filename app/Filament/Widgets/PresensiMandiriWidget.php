@@ -313,7 +313,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 if (!in_array($clientIp, $allowedIps)) {
                     Notification::make()
                         ->title('Akses Ditolak')
-                        ->body("Silahkan Pakai Wifi Sekolah Untuk Menggunakan Aplikasi BaknusAttend")
+                        ->body("Silahkan Pakai Wifi Sekolah. IP Anda saat ini: " . ($clientIp ?: 'Tidak terdeteksi'))
                         ->danger()
                         ->persistent()
                         ->send();
