@@ -114,8 +114,8 @@ services:
             - POSTGRES_PASSWORD=postgres
             - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/compreface
             - SPRING_PROFILES_ACTIVE=dev
-            - MAX_FILE_SIZE=5MB
-            - MAX_REQUEST_SIZE=5242880B
+            - MAX_FILE_SIZE=10M
+            - MAX_REQUEST_SIZE=10M
         depends_on:
             - compreface-postgres-db
             - compreface-api
@@ -134,8 +134,8 @@ services:
             - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/compreface
             - SPRING_PROFILES_ACTIVE=dev
             - SAVE_IMAGES_TO_DB=true
-            - MAX_FILE_SIZE=5MB
-            - MAX_REQUEST_SIZE=5242880B
+            - MAX_FILE_SIZE=10M
+            - MAX_REQUEST_SIZE=10M
             - CONNECTION_TIMEOUT=10000
             - READ_TIMEOUT=60000
         networks:
@@ -151,7 +151,7 @@ services:
             - compreface-api
             - compreface-admin
         environment:
-            - CLIENT_MAX_BODY_SIZE=5242880B
+            - CLIENT_MAX_BODY_SIZE=10M
             - PROXY_READ_TIMEOUT=60000ms
             - PROXY_CONNECT_TIMEOUT=10000ms
         networks:
