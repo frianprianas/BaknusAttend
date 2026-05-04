@@ -155,20 +155,26 @@ class CompreFaceService
 
             if (!$response->successful()) {
                 $errorMsg = "Gagal memproses verifikasi AI (Error " . $response->status() . ").";
+                $body = $response->json();
+                
                 Log::error("CompreFace compare API Error: " . $response->body());
                 
+                // Cek jika error karena wajah tidak ditemukan
+                if ($response->status() === 400 && isset($body['message']) && str_contains(strtolower($body['message']), 'no face')) {
+                    $errorMsg = "Wajah tidak terdeteksi. Pastikan wajah menghadap kamera dan pencahayaan cukup.";
+                }
                 // Jika API Key tidak valid atau belum di set
-                if ($response->status() === 401 || $response->status() === 403) {
+                elseif ($response->status() === 401 || $response->status() === 403) {
                     $errorMsg = "API Key CompreFace tidak valid. Hubungi administrator.";
                 }
                 
                 return ['success' => false, 'error' => $errorMsg];
             }
 
-            $result = $response->json();
-            $matches = $result['result'] ?? [];
+            $resultData = $response->json();
+            $matches = $resultData['result'] ?? [];
 
-            if (count($matches) === 0) {
+            if (count($matches) === 0 || !isset($matches[0]['face_matches']) || count($matches[0]['face_matches']) === 0) {
                 return [
                     'success'      => true,
                     'is_identical' => false,
@@ -178,7 +184,7 @@ class CompreFaceService
             }
 
             // CompreFace returns similarity between 0 and 1
-            $similarity = (float) $matches[0]['similarity'];
+            $similarity = (float) $matches[0]['face_matches'][0]['similarity'];
             $similarityPercent = round($similarity * 100, 1);
 
             if ($similarity >= self::SIMILARITY_THRESHOLD) {
