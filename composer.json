@@ -10,7 +10,9 @@
         "filament/filament": "^3.2",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "predis/predis": "^2.0"
+        "predis/predis": "^2.0",
+        "aws/aws-sdk-php": "^3.0",
+        "laravel-notification-channels/webpush": "^10.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
