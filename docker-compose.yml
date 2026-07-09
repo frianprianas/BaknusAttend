@@ -21,6 +21,9 @@ services:
             - '.:/var/www/html'
         networks:
             - sail
+        dns:
+            - 8.8.8.8
+            - 8.8.4.4
         depends_on:
             - mysql
             - redis

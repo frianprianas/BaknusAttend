@@ -51,6 +51,11 @@ class DashboardStatsWidget extends BaseWidget
         $endOfMonth = Carbon::create($y, $m, 1)->endOfMonth();
         $monthLabel = $startOfMonth->translatedFormat('F Y');
 
+        $sem1Start = Carbon::create($y, 1, 1)->startOfDay();
+        $sem1End = Carbon::create($y, 6, 30)->endOfDay();
+        $sem2Start = Carbon::create($y, 7, 1)->startOfDay();
+        $sem2End = Carbon::create($y, 12, 31)->endOfDay();
+
         // ----------------------------------------------------
         // KONDISI 1: Statistik Login Guru / TU / Siswa (Pribadi)
         // ----------------------------------------------------
@@ -58,6 +63,9 @@ class DashboardStatsWidget extends BaseWidget
             if ($user->role === 'Siswa') {
                 $totalHadirBulanIni = 0;
                 $totalIzinSakitBulanIni = 0;
+                $siswaSem1 = 0;
+                $siswaSem2 = 0;
+                
                 // Gunakan NIS dari nipy, jika nipy kosong gunakan email asisten (safety)
                 $nis = !empty($user->nipy) ? $user->nipy : (!empty($user->email) ? $user->email : 'NONE');
                 $student = Student::where('nis', $nis)->first();
@@ -76,6 +84,22 @@ class DashboardStatsWidget extends BaseWidget
                         ->distinct()
                         ->get()
                         ->count();
+                    
+                    $siswaSem1 = KehadiranSiswa::where('nis', $student->nis)
+                        ->whereBetween('waktu_tap', [$sem1Start, $sem1End])
+                        ->whereIn('status', ['Hadir', 'Terlambat'])
+                        ->select(DB::raw('DATE(waktu_tap) as date'))
+                        ->distinct()
+                        ->get()
+                        ->count();
+
+                    $siswaSem2 = KehadiranSiswa::where('nis', $student->nis)
+                        ->whereBetween('waktu_tap', [$sem2Start, $sem2End])
+                        ->whereIn('status', ['Hadir', 'Terlambat'])
+                        ->select(DB::raw('DATE(waktu_tap) as date'))
+                        ->distinct()
+                        ->get()
+                        ->count();
                 }
 
                 return [
@@ -90,6 +114,16 @@ class DashboardStatsWidget extends BaseWidget
                         ->descriptionIcon('heroicon-m-document-text')
                         ->color($totalIzinSakitBulanIni > 0 ? 'warning' : 'gray')
                         ->icon('heroicon-o-document-text'),
+
+                    Stat::make("Total Masuk {$y} (Jan-Jun)", $siswaSem1 . ' Hari')
+                        ->description("Semester 1 Tahun {$y}")
+                        ->color('success')
+                        ->icon('heroicon-o-calendar-days'),
+
+                    Stat::make("Total Masuk {$y} (Jul-Des)", $siswaSem2 . ' Hari')
+                        ->description("Semester 2 Tahun {$y}")
+                        ->color('success')
+                        ->icon('heroicon-o-calendar-days'),
                 ];
             } else {
                 // Guru / TU
@@ -98,6 +132,8 @@ class DashboardStatsWidget extends BaseWidget
                 $totalHadirDL = 0;
                 $totalSakit = 0;
                 $totalIzin = 0;
+                $guruSem1 = 0;
+                $guruSem2 = 0;
 
                 if (!empty($nipy)) {
                     $presences = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
@@ -125,6 +161,24 @@ class DashboardStatsWidget extends BaseWidget
                     
                     $totalSakit = $izins->where('tipe', 'Sakit')->count();
                     $totalIzin  = $izins->whereNotIn('tipe', ['Sakit'])->count();
+
+                    $presencesSem1 = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
+                            $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
+                        })
+                        ->whereBetween('waktu_tap', [$sem1Start, $sem1End])
+                        ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
+                        ->get()
+                        ->groupBy(fn($item) => Carbon::parse($item->waktu_tap)->format('Y-m-d'));
+                    $guruSem1 = $presencesSem1->count();
+
+                    $presencesSem2 = KehadiranGuruTu::where(function($q) use ($user, $nipy) {
+                            $q->where('nipy', $nipy)->orWhere('nipy', $user->email);
+                        })
+                        ->whereBetween('waktu_tap', [$sem2Start, $sem2End])
+                        ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
+                        ->get()
+                        ->groupBy(fn($item) => Carbon::parse($item->waktu_tap)->format('Y-m-d'));
+                    $guruSem2 = $presencesSem2->count();
                 }
 
                 return [
@@ -139,6 +193,16 @@ class DashboardStatsWidget extends BaseWidget
                         ->descriptionIcon('heroicon-m-document-text')
                         ->color(($totalSakit + $totalIzin) > 0 ? 'warning' : 'gray')
                         ->icon('heroicon-o-document-text'),
+
+                    Stat::make("Total Masuk {$y} (Jan-Jun)", $guruSem1 . ' Hari')
+                        ->description("Semester 1 Tahun {$y}")
+                        ->color('success')
+                        ->icon('heroicon-o-calendar-days'),
+
+                    Stat::make("Total Masuk {$y} (Jul-Des)", $guruSem2 . ' Hari')
+                        ->description("Semester 2 Tahun {$y}")
+                        ->color('success')
+                        ->icon('heroicon-o-calendar-days'),
                 ];
             }
         }
@@ -163,6 +227,30 @@ class DashboardStatsWidget extends BaseWidget
         $pctGuruTU = $totalGuruTU > 0 ? round(($totalHadirGuruTU / $totalGuruTU) * 100) : 0;
 
         $izinPending = IzinGuruTu::whereDate('tanggal', $today)->where('status', 'Diajukan')->count();
+
+        $adminSiswaSem1 = DB::table('kehadiran_siswas')
+            ->whereBetween('waktu_tap', [$sem1Start, $sem1End])
+            ->whereIn('status', ['Hadir', 'Terlambat'])
+            ->selectRaw('COUNT(DISTINCT DATE(waktu_tap), nis) as count')
+            ->value('count') ?? 0;
+
+        $adminSiswaSem2 = DB::table('kehadiran_siswas')
+            ->whereBetween('waktu_tap', [$sem2Start, $sem2End])
+            ->whereIn('status', ['Hadir', 'Terlambat'])
+            ->selectRaw('COUNT(DISTINCT DATE(waktu_tap), nis) as count')
+            ->value('count') ?? 0;
+
+        $adminGuruSem1 = DB::table('kehadiran_guru_tus')
+            ->whereBetween('waktu_tap', [$sem1Start, $sem1End])
+            ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
+            ->selectRaw('COUNT(DISTINCT DATE(waktu_tap), nipy) as count')
+            ->value('count') ?? 0;
+
+        $adminGuruSem2 = DB::table('kehadiran_guru_tus')
+            ->whereBetween('waktu_tap', [$sem2Start, $sem2End])
+            ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
+            ->selectRaw('COUNT(DISTINCT DATE(waktu_tap), nipy) as count')
+            ->value('count') ?? 0;
 
         return [
             Stat::make('Total Siswa', number_format($totalSiswa))
@@ -191,6 +279,26 @@ class DashboardStatsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-calendar')
                 ->color('info')
                 ->icon('heroicon-o-calendar-days'),
+
+            Stat::make("Total Masuk Siswa {$y} (Jan-Jun)", number_format($adminSiswaSem1))
+                ->description('Total presensi masuk siswa')
+                ->color('success')
+                ->icon('heroicon-o-academic-cap'),
+
+            Stat::make("Total Masuk Siswa {$y} (Jul-Des)", number_format($adminSiswaSem2))
+                ->description('Total presensi masuk siswa')
+                ->color('success')
+                ->icon('heroicon-o-academic-cap'),
+
+            Stat::make("Total Masuk Guru & TU {$y} (Jan-Jun)", number_format($adminGuruSem1))
+                ->description('Total presensi masuk Guru & TU')
+                ->color('success')
+                ->icon('heroicon-o-briefcase'),
+
+            Stat::make("Total Masuk Guru & TU {$y} (Jul-Des)", number_format($adminGuruSem2))
+                ->description('Total presensi masuk Guru & TU')
+                ->color('success')
+                ->icon('heroicon-o-briefcase'),
         ];
     }
 }
