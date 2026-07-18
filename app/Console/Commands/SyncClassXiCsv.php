@@ -79,12 +79,18 @@ class SyncClassXiCsv extends Command
 
             // Clean & normalize ProgramStudi name from ClassRoom name
             // XII PPLG 1 -> PPLG, XI AKT -> AKT, XI Animasi -> Animasi, XI DKV -> DKV
+            // Ganti RPL jadi PPLG jika ada
+            $kelasName = preg_replace('/\bRPL\b/i', 'PPLG', $kelasName);
+            
             $prodiName = $kelasName;
             // Remove grade prefix "XI" / "X" / "XII" and spaces
             $prodiName = preg_replace('/^(X|XI|XII)\s+/i', '', $prodiName);
             // Remove trailing numbers (like " 1", " 2", etc.)
             $prodiName = preg_replace('/\s+\d+$/', '', $prodiName);
             $prodiName = trim($prodiName);
+            if (strcasecmp($prodiName, 'RPL') === 0) {
+                $prodiName = 'PPLG';
+            }
 
             // 1. ProgramStudi (First or Create)
             $prodi = ProgramStudi::where('program_studi', $prodiName)->first();
@@ -106,7 +112,8 @@ class SyncClassXiCsv extends Command
             // 3. User (Update or Create)
             $user = User::where('email', $email)->first();
             if (!$user) {
-                $userPass = $password ? Hash::make($password) : Hash::make(\Illuminate\Support\Str::random(16));
+                // Ignore password column, generate a secure random password for new users
+                $userPass = Hash::make(\Illuminate\Support\Str::random(16));
                 $user = User::create([
                     'email' => $email,
                     'name' => $name,
@@ -115,14 +122,11 @@ class SyncClassXiCsv extends Command
                 ]);
                 $userCount++;
             } else {
-                // If it already exists, update name and role (and password if provided in CSV)
+                // If it already exists, update name and role (keep existing password untouched)
                 $updateData = [
                     'name' => $name,
                     'role' => 'Siswa',
                 ];
-                if ($password) {
-                    $updateData['password'] = Hash::make($password);
-                }
                 $user->update($updateData);
             }
 
