@@ -25,6 +25,46 @@ class SchoolSettingResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $ipValidationRule = [
+            function () {
+                return function (string $attribute, $value, \Closure $fail) {
+                    $val = trim($value);
+                    if (empty($val)) return;
+
+                    // Wildcard matching format (IPv4 or IPv6 contains * and valid characters)
+                    if (str_contains($val, '*')) {
+                        if (preg_match('/^[0-9a-fA-F.:*]+$/', $val)) {
+                            return;
+                        }
+                    }
+
+                    // Subnet CIDR matching format (contains /)
+                    if (str_contains($val, '/')) {
+                        $parts = explode('/', $val);
+                        if (count($parts) === 2) {
+                            $ip = $parts[0];
+                            $bits = $parts[1];
+                            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                                $isIpv6 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+                                if (ctype_digit($bits)) {
+                                    $bits = (int) $bits;
+                                    if ($isIpv6 && $bits >= 0 && $bits <= 128) return;
+                                    if (!$isIpv6 && $bits >= 0 && $bits <= 32) return;
+                                }
+                            }
+                        }
+                    }
+
+                    // Single IP format
+                    if (filter_var($val, FILTER_VALIDATE_IP)) {
+                        return;
+                    }
+
+                    $fail('Format IP tidak valid. Gunakan format IP tunggal (192.168.1.1), wildcard (192.168.1.*), atau subnet CIDR (192.168.1.0/24).');
+                };
+            }
+        ];
+
         return $form
             ->schema([
                 Forms\Components\Section::make('Titik Lokasi Absensi')
@@ -136,32 +176,32 @@ class SchoolSettingResource extends Resource
                                     ->label('IP Publik Sekolah #1')
                                     ->placeholder('Contoh: 114.125.10.20')
                                     ->helperText('IP utama (wajib diisi jika fitur aktif)')
-                                    ->ip()
+                                    ->rules($ipValidationRule)
                                     ->requiredIf('is_ip_validation_active', true),
                                 Forms\Components\TextInput::make('allowed_ip_2')
                                     ->label('IP Publik Sekolah #2')
                                     ->placeholder('Opsional — ISP cadangan')
-                                    ->ip()
+                                    ->rules($ipValidationRule)
                                     ->nullable(),
                                 Forms\Components\TextInput::make('allowed_ip_3')
                                     ->label('IP Publik Sekolah #3')
                                     ->placeholder('Opsional — ISP cadangan 2')
-                                    ->ip()
+                                    ->rules($ipValidationRule)
                                     ->nullable(),
                                 Forms\Components\TextInput::make('allowed_ip_4')
                                     ->label('IP Publik Sekolah #4')
                                     ->placeholder('Opsional — ISP cadangan 3')
-                                    ->ip()
+                                    ->rules($ipValidationRule)
                                     ->nullable(),
                                 Forms\Components\TextInput::make('allowed_ip_5')
                                     ->label('IP Publik Sekolah #5')
                                     ->placeholder('Opsional — ISP cadangan 4')
-                                    ->ip()
+                                    ->rules($ipValidationRule)
                                     ->nullable(),
                                 Forms\Components\TextInput::make('allowed_ip_6')
                                     ->label('IP Publik Sekolah #6')
                                     ->placeholder('Opsional — ISP cadangan 5')
-                                    ->ip()
+                                    ->rules($ipValidationRule)
                                     ->nullable(),
                             ]),
                     ])
