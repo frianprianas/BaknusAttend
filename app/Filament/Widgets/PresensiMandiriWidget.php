@@ -313,6 +313,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 }
 
                 if (!$ipMatched) {
+                    \Illuminate\Support\Facades\Log::warning("IP Absensi Gagal - User ID: " . $user->id . " (" . $user->name . "). IP Terdeteksi: " . ($clientIp ?: 'Tidak Terdeteksi') . ". IP yang Diizinkan: " . implode(', ', $allowedIps));
                     Notification::make()
                         ->title('Akses Ditolak')
                         ->body("Silahkan Pakai Wifi Sekolah. IP Anda saat ini: " . ($clientIp ?: 'Tidak terdeteksi'))
