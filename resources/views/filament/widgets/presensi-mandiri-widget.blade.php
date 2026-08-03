@@ -5,10 +5,11 @@
         window.mesinAbsenFormalFixV15 = function() {
             return {
                 statusText: 'Mengecek GPS...', statusClass: 'gps-idle', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
-                lat: null, long: null,
+                lat: null, long: null, clientIp: null,
                 init() {
                     this.getGPS();
                     this.loadFaceApi();
+                    this.getClientIp();
                     setInterval(() => { if(!this.gpsLocked) this.getGPS(false); }, 45000);
                     
                     // Listen event absen sukses dari server
@@ -38,6 +39,31 @@
                         } catch(e) { console.error("Face model load err", e); }
                     };
                     document.head.appendChild(s);
+                },
+                async getClientIp() {
+                    const providers = [
+                        'https://api.ipify.org?format=json',
+                        'https://api4.ipify.org?format=json',
+                        'https://ipv4.seeip.org/jsonip',
+                        'https://ipapi.co/json/',
+                        'https://api.seeip.org/jsonip'
+                    ];
+                    for (const url of providers) {
+                        try {
+                            const controller = new AbortController();
+                            const id = setTimeout(() => controller.abort(), 4000);
+                            const response = await fetch(url, { signal: controller.signal });
+                            clearTimeout(id);
+                            const data = await response.json();
+                            const ip = data.ip || data.ip_address;
+                            if (ip) {
+                                this.clientIp = ip.trim();
+                                break;
+                            }
+                        } catch (e) {
+                            console.warn('Gagal ambil IP dari ' + url);
+                        }
+                    }
                 },
                 getGPS(showStatus = true) {
                     if (!navigator.geolocation) { this.statusText = 'Perangkat tidak mendukung GPS'; this.statusClass = 'gps-error'; return; }
@@ -81,6 +107,16 @@
                     if (this.gpsLocked) {
                         this.$wire.set('data.lat', this.lat);
                         this.$wire.set('data.long', this.long);
+                    }
+
+                    // Jika IP belum terdeteksi, coba ambil kembali sesaat sebelum submit
+                    if (!this.clientIp) {
+                        this.busyText = 'Mengecek alamat IP...';
+                        await this.getClientIp();
+                    }
+
+                    if (this.clientIp) {
+                        this.$wire.set('data.client_public_ip', this.clientIp);
                     }
 
                     const img = document.querySelector('.filepond--item canvas') || document.querySelector('.filepond--image-preview img');

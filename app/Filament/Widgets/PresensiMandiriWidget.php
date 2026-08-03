@@ -157,30 +157,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->hidden($tipeAbsens === 'Selesai'),
                     Hidden::make('lat'),
                     Hidden::make('long'),
-                    Hidden::make('client_public_ip')
-                        ->extraAttributes([
-                            'x-init' => "
-                                (async () => {
-                                    const providers = [
-                                        'https://api.ipify.org?format=json',
-                                        'https://ipapi.co/json/',
-                                        'https://api.seeip.org/jsonip'
-                                    ];
-                                    for (const url of providers) {
-                                        try {
-                                            const response = await fetch(url);
-                                            const data = await response.json();
-                                            if (data.ip || data.ip_address) {
-                                                \$wire.set('data.client_public_ip', data.ip || data.ip_address);
-                                                break;
-                                            }
-                                        } catch (e) {
-                                            console.warn('Gagal ambil IP dari ' + url);
-                                        }
-                                    }
-                                })();
-                            ",
-                        ]),
+                    Hidden::make('client_public_ip'),
                 ])
                 ->statePath('data');
         }
@@ -253,30 +230,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
  
                  Hidden::make('lat'),
                  Hidden::make('long'),
-                 Hidden::make('client_public_ip')
-                     ->extraAttributes([
-                        'x-init' => "
-                            (async () => {
-                                const providers = [
-                                    'https://api.ipify.org?format=json',
-                                    'https://ipapi.co/json/',
-                                    'https://api.seeip.org/jsonip'
-                                ];
-                                for (const url of providers) {
-                                    try {
-                                        const response = await fetch(url);
-                                        const data = await response.json();
-                                        if (data.ip || data.ip_address) {
-                                            \$wire.set('data.client_public_ip', data.ip || data.ip_address);
-                                            break;
-                                        }
-                                    } catch (e) {
-                                        console.warn('Gagal ambil IP dari ' + url);
-                                    }
-                                }
-                            })();
-                        ",
-                    ]),
+                 Hidden::make('client_public_ip'),
              ])
              ->statePath('data');
     }
@@ -324,15 +278,41 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 // Gunakan IP yang dikirim dari browser (via API external) jika ada
                 $clientIp = trim($formData['client_public_ip'] ?? '');
 
-                // Jika browser gagal ambil IP eksternal, fallback ke deteksi server
+                // Jika browser gagal ambil IP eksternal, fallback ke deteksi server dengan filter reverse proxy
                 if (empty($clientIp)) {
-                    $clientIp = request()->ip();
-                    if ($cf = request()->header('CF-Connecting-IP')) $clientIp = $cf;
-                    elseif ($real = request()->header('X-Real-IP')) $clientIp = $real;
-                    elseif ($forward = request()->header('X-Forwarded-For')) $clientIp = trim(explode(',', $forward)[0]);
+                    if ($cf = request()->header('CF-Connecting-IP')) {
+                        $clientIp = trim($cf);
+                    } elseif ($real = request()->header('X-Real-IP')) {
+                        $clientIp = trim($real);
+                    } elseif ($forward = request()->header('X-Forwarded-For')) {
+                        $ips = array_map('trim', explode(',', $forward));
+                        // Cari IP publik pertama dari list X-Forwarded-For (abaikan IP privat local/docker)
+                        foreach ($ips as $ip) {
+                            if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                                $clientIp = $ip;
+                                break;
+                            }
+                        }
+                        if (empty($clientIp)) {
+                            $clientIp = $ips[0];
+                        }
+                    }
+
+                    if (empty($clientIp)) {
+                        $clientIp = request()->ip();
+                    }
                 }
 
-                if (!in_array($clientIp, $allowedIps)) {
+                // Lakukan validasi kecocokan IP (Mendukung Wildcard dan CIDR range)
+                $ipMatched = false;
+                foreach ($allowedIps as $allowedIpPattern) {
+                    if ($this->ipMatches($clientIp, $allowedIpPattern)) {
+                        $ipMatched = true;
+                        break;
+                    }
+                }
+
+                if (!$ipMatched) {
                     Notification::make()
                         ->title('Akses Ditolak')
                         ->body("Silahkan Pakai Wifi Sekolah. IP Anda saat ini: " . ($clientIp ?: 'Tidak terdeteksi'))
@@ -653,5 +633,66 @@ class PresensiMandiriWidget extends Widget implements HasForms
         elseif ($mime == 'image/webp') imagewebp($img, $fullPath, 90);
 
         imagedestroy($img);
+    }
+
+    /**
+     * Mengecek apakah IP klien cocok dengan pola IP yang diizinkan (mendukung Wildcard * dan CIDR)
+     */
+    private function ipMatches(string $clientIp, string $allowedIpPattern): bool
+    {
+        $clientIp = trim($clientIp);
+        $allowedIpPattern = trim($allowedIpPattern);
+
+        if ($clientIp === $allowedIpPattern) {
+            return true;
+        }
+
+        // Wildcard matching (misal 112.78.99.* atau 2001:448a:4049:*)
+        if (str_contains($allowedIpPattern, '*')) {
+            $regex = str_replace(['.', '*'], ['\.', '.*'], $allowedIpPattern);
+            return (bool) preg_match('/^' . $regex . '$/', $clientIp);
+        }
+
+        // CIDR subnet matching (misal 112.78.99.0/24 atau 2001:db8::/64)
+        if (str_contains($allowedIpPattern, '/')) {
+            return $this->ipInNetwork($clientIp, $allowedIpPattern);
+        }
+
+        return false;
+    }
+
+    /**
+     * Memeriksa apakah IP berada dalam subnet CIDR (mendukung IPv4 & IPv6)
+     */
+    private function ipInNetwork(string $ip, string $range): bool
+    {
+        list($subnet, $bits) = explode('/', $range);
+        $bits = (int) $bits;
+
+        $ipBin = inet_pton($ip);
+        $subnetBin = inet_pton($subnet);
+
+        if ($ipBin === false || $subnetBin === false) {
+            return false;
+        }
+
+        if (strlen($ipBin) !== strlen($subnetBin)) {
+            return false;
+        }
+
+        $mask = '';
+        $bytes = strlen($ipBin);
+        for ($i = 0; $i < $bytes; $i++) {
+            $bitsInByte = min($bits - ($i * 8), 8);
+            if ($bitsInByte <= 0) {
+                $mask .= chr(0);
+            } elseif ($bitsInByte >= 8) {
+                $mask .= chr(255);
+            } else {
+                $mask .= chr(256 - (1 << (8 - $bitsInByte)));
+            }
+        }
+
+        return ($ipBin & $mask) === ($subnetBin & $mask);
     }
 }
