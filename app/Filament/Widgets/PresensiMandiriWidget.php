@@ -84,13 +84,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
         if (!$user) return 'Masuk';
         $today = Carbon::today();
         
-        // 1. Cek Akhir Pekan (Minggu & Sabtu)
+        // 1. Cek Akhir Pekan (Minggu)
         if ($today->isSunday()) {
             $this->namaLibur = 'Hari Minggu — Libur Akhir Pekan';
-            return 'Libur';
-        }
-        if ($today->isSaturday()) {
-            $this->namaLibur = 'Hari Sabtu — Libur Akhir Pekan';
             return 'Libur';
         }
 

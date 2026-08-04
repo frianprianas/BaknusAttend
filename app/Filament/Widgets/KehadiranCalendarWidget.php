@@ -87,7 +87,7 @@ class KehadiranCalendarWidget extends Widget
 
         $this->presenceData = [];
 
-        // A. Masukkan libur akhir pekan (Sabtu & Minggu)
+        // A. Masukkan libur akhir pekan (Minggu)
         for ($day = 1; $day <= $this->daysInMonth; $day++) {
             $date = Carbon::create($this->currentYear, $this->currentMonth, $day);
             if ($date->isSunday()) {
@@ -95,13 +95,6 @@ class KehadiranCalendarWidget extends Widget
                     'status' => 'red-holiday',
                     'jam_masuk' => 'Libur',
                     'jam_pulang' => 'Hari Minggu',
-                    'is_izin' => true,
-                ];
-            } elseif ($date->isSaturday()) {
-                $this->presenceData[$day] = [
-                    'status' => 'red-holiday',
-                    'jam_masuk' => 'Libur',
-                    'jam_pulang' => 'Hari Sabtu',
                     'is_izin' => true,
                 ];
             }
