@@ -1,4 +1,40 @@
 <x-filament-widgets::widget>
+    {{-- Live Clock Widget --}}
+    <div class="mb-4" x-data="{
+        dateText: '',
+        timeText: '',
+        init() {
+            const update = () => {
+                const now = new Date();
+                this.dateText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                this.timeText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            };
+            update();
+            setInterval(update, 1000);
+        }
+    }" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+        <div class="flex items-center justify-between px-6 py-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden dark:bg-gray-800/50 dark:border-gray-700/50">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-50 rounded-full blur-3xl opacity-50 dark:bg-indigo-900/20"></div>
+            <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-50 dark:bg-blue-900/20"></div>
+            
+            <div class="flex items-center gap-4 relative z-10">
+                <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest dark:text-gray-400" x-text="dateText"></span>
+                    <span class="text-2xl font-black text-gray-900 tracking-tight dark:text-white" style="font-feature-settings: 'tnum';" x-text="timeText"></span>
+                </div>
+            </div>
+            
+            <div class="hidden sm:flex relative z-10 items-center justify-center w-10 h-10 rounded-full bg-gray-50 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            </div>
+        </div>
+    </div>
+
     <x-filament::section>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
