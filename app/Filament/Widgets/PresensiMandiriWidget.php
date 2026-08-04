@@ -715,4 +715,36 @@ class PresensiMandiriWidget extends Widget implements HasForms
 
         return ($ipBin & $mask) === ($subnetBin & $mask);
     }
+
+    public function hapusAbsenPulang(): void
+    {
+        $user = auth()->user();
+        if (!$user) return;
+        $today = Carbon::today();
+
+        if (in_array($user->role, ['Guru', 'TU'])) {
+            $latest = KehadiranGuruTu::where(function($q) use ($user) {
+                $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+            })->whereDate('waktu_tap', $today)->latest('waktu_tap')->first();
+
+            if ($latest) {
+                // Hapus foto jika ada
+                if ($latest->photo && $latest->photo !== 'rfid_placeholder' && Storage::disk('public')->exists($latest->photo)) {
+                    Storage::disk('public')->delete($latest->photo);
+                }
+                
+                $latest->delete();
+                
+                $this->tipeAbsens = $this->determinePresensiType();
+                
+                Notification::make()
+                    ->title('Absen Pulang Dihapus')
+                    ->body('Presensi pulang Anda hari ini telah berhasil dihapus. Anda dapat melakukan absen pulang kembali nanti.')
+                    ->success()
+                    ->send();
+                
+                $this->dispatch('kehadiran-updated');
+            }
+        }
+    }
 }
