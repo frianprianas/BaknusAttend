@@ -1,6 +1,6 @@
 <x-filament-widgets::widget>
     {{-- Live Clock Widget --}}
-    <div class="mb-4" x-data="{
+    <div class="live-clock-card" x-data="{
         dateText: '',
         timeText: '',
         init() {
@@ -12,32 +12,126 @@
             update();
             setInterval(update, 1000);
         }
-    }" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-        <div class="flex items-center justify-between px-6 py-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden dark:bg-gray-800/50 dark:border-gray-700/50">
-            <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-50 rounded-full blur-3xl opacity-50 dark:bg-indigo-900/20"></div>
-            <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-50 dark:bg-blue-900/20"></div>
-            
-            <div class="flex items-center gap-4 relative z-10">
-                <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/30">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest dark:text-gray-400" x-text="dateText"></span>
-                    <span class="text-2xl font-black text-gray-900 tracking-tight dark:text-white" style="font-feature-settings: 'tnum';" x-text="timeText"></span>
-                </div>
+    }">
+        <div class="live-clock-bg-1"></div>
+        <div class="live-clock-bg-2"></div>
+        
+        <div class="live-clock-content">
+            <div class="live-clock-icon-wrap">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
             </div>
-            
-            <div class="hidden sm:flex relative z-10 items-center justify-center w-10 h-10 rounded-full bg-gray-50 border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <div class="live-clock-text">
+                <span class="live-clock-date" x-text="dateText"></span>
+                <span class="live-clock-time" x-text="timeText"></span>
             </div>
+        </div>
+        
+        <div class="live-clock-pulse-wrap">
+            <div class="live-clock-pulse"></div>
         </div>
     </div>
 
     <x-filament::section>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+            /* ---- Live Clock ---- */
+            .live-clock-card {
+                font-family: 'Plus Jakarta Sans', sans-serif !important;
+                display: flex; align-items: center; justify-content: space-between;
+                padding: 1rem 1.5rem;
+                background-color: #ffffff;
+                border-radius: 1rem;
+                border: 1px solid #f3f4f6;
+                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                position: relative;
+                overflow: hidden;
+                margin-bottom: 1rem;
+            }
+            .dark .live-clock-card {
+                background-color: rgba(31, 41, 55, 0.5); /* gray-800/50 */
+                border-color: rgba(55, 65, 81, 0.5); /* gray-700/50 */
+            }
+
+            .live-clock-bg-1 {
+                position: absolute; right: -2.5rem; top: -2.5rem;
+                width: 10rem; height: 10rem;
+                background-color: #eef2ff; /* indigo-50 */
+                border-radius: 9999px; filter: blur(24px); opacity: 0.5;
+            }
+            .dark .live-clock-bg-1 {
+                background-color: rgba(49, 46, 129, 0.2); /* indigo-900/20 */
+            }
+
+            .live-clock-bg-2 {
+                position: absolute; left: -2.5rem; bottom: -2.5rem;
+                width: 10rem; height: 10rem;
+                background-color: #eff6ff; /* blue-50 */
+                border-radius: 9999px; filter: blur(24px); opacity: 0.5;
+            }
+            .dark .live-clock-bg-2 {
+                background-color: rgba(30, 58, 138, 0.2); /* blue-900/20 */
+            }
+
+            .live-clock-content {
+                display: flex; align-items: center; gap: 1rem; position: relative; z-index: 10;
+            }
+
+            .live-clock-icon-wrap {
+                display: flex; align-items: center; justify-content: center;
+                width: 3rem; height: 3rem; border-radius: 0.75rem;
+                background: linear-gradient(to bottom right, #6366f1, #2563eb);
+                color: #ffffff;
+                box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3), 0 4px 6px -4px rgba(99, 102, 241, 0.3);
+            }
+
+            .live-clock-text {
+                display: flex; flex-direction: column;
+            }
+
+            .live-clock-date {
+                font-size: 0.75rem; line-height: 1rem; font-weight: 700;
+                color: #6b7280; /* gray-500 */
+                text-transform: uppercase; letter-spacing: 0.1em;
+            }
+            .dark .live-clock-date {
+                color: #9ca3af; /* gray-400 */
+            }
+
+            .live-clock-time {
+                font-size: 1.5rem; line-height: 2rem; font-weight: 900;
+                color: #111827; /* gray-900 */
+                letter-spacing: -0.025em;
+                font-feature-settings: 'tnum';
+            }
+            .dark .live-clock-time {
+                color: #ffffff;
+            }
+
+            .live-clock-pulse-wrap {
+                display: none; position: relative; z-index: 10;
+                align-items: center; justify-content: center;
+                width: 2.5rem; height: 2.5rem; border-radius: 9999px;
+                background-color: #f9fafb; border: 1px solid #f3f4f6;
+            }
+            @media (min-width: 640px) {
+                .live-clock-pulse-wrap { display: flex; }
+            }
+            .dark .live-clock-pulse-wrap {
+                background-color: #1f2937; border-color: #374151;
+            }
+
+            .live-clock-pulse {
+                width: 0.5rem; height: 0.5rem; border-radius: 9999px;
+                background-color: #10b981; /* emerald-500 */
+                animation: live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes live-pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: .5; }
+            }
 
             .cal-wrap * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 
