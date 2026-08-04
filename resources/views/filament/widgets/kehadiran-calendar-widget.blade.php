@@ -115,7 +115,19 @@
             }
             .cal-cell-red:hover { box-shadow: 0 8px 24px rgba(239,68,68,.50); }
 
+            .cal-cell-holiday {
+                background: linear-gradient(135deg, #fee2e2, #fecaca);
+                border: 1px solid #fca5a5;
+                box-shadow: 0 2px 8px rgba(239,68,68,.08);
+            }
+            .dark .cal-cell-holiday {
+                background: linear-gradient(135deg, rgba(127,29,29,.25), rgba(153,27,27,.15));
+                border-color: rgba(239,68,68,.25);
+            }
+
             .cal-day-num-colored { font-size: .9rem; font-weight: 900; color: #fff; letter-spacing: -.01em; }
+            .cal-day-num-holiday { font-size: .9rem; font-weight: 800; color: #dc2626; letter-spacing: -.01em; }
+            .dark .cal-day-num-holiday { color: #f87171; }
             .cal-day-num-plain   { font-size: .9rem; font-weight: 700; color: #94a3b8; letter-spacing: -.01em; }
             .dark .cal-day-num-plain { color: #475569; }
 
@@ -170,6 +182,7 @@
                 <div class="legend-item"><div class="legend-dot dot-in"></div> Masuk Saja</div>
                 <div class="legend-item"><div class="legend-dot dot-orange"></div> Dinas Luar</div>
                 <div class="legend-item"><div class="legend-dot dot-red"></div> Izin / Sakit</div>
+                <div class="legend-item"><div class="legend-dot dot-holiday" style="background: #f87171; box-shadow: 0 2px 6px rgba(239,68,68,0.2);"></div> Hari Libur / Akhir Pekan</div>
                 <div class="legend-item"><div class="legend-dot dot-none"></div> Tanpa Data</div>
             </div>
 
@@ -194,11 +207,11 @@
                         $keteranganDl = $dataDay['jam_pulang'] ?? '-';
                         $isIzin = $dataDay['is_izin'] ?? false;
 
-                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : ($status === 'orange' ? 'cal-cell-orange' : ($status === 'red' ? 'cal-cell-red' : 'cal-cell-none')));
-                        $numClass  = in_array($status, ['dark','light','orange','red']) ? 'cal-day-num-colored' : 'cal-day-num-plain';
+                        $cellClass = $status === 'dark' ? 'cal-cell-full' : ($status === 'light' ? 'cal-cell-in' : ($status === 'orange' ? 'cal-cell-orange' : ($status === 'red' ? 'cal-cell-red' : ($status === 'red-holiday' ? 'cal-cell-holiday' : 'cal-cell-none'))));
+                        $numClass  = in_array($status, ['dark','light','orange','red']) ? 'cal-day-num-colored' : ($status === 'red-holiday' ? 'cal-day-num-holiday' : 'cal-day-num-plain');
                     @endphp
                     <div class="cal-cell {{ $cellClass }}" 
-                         @if(in_array($status, ['dark','light','orange','red']))
+                         @if(in_array($status, ['dark','light','orange','red','red-holiday']))
                          x-data="{ open: false }" 
                          @click="open = !open" 
                          @click.outside="open = false" 
@@ -206,8 +219,8 @@
                          @endif
                     >
                         <span class="{{ $numClass }}">{{ $day }}</span>
-                        @if(in_array($status, ['dark','light','orange','red']))
-                            <div class="cal-pip"></div>
+                        @if(in_array($status, ['dark','light','orange','red','red-holiday']))
+                            <div class="cal-pip" style="{{ $status === 'red-holiday' ? 'background: #ef4444;' : '' }}"></div>
 
                             {{-- Gelembung Pop-up Detail Jam --}}
                             <div x-cloak x-show="open" 
@@ -215,8 +228,13 @@
                                  class="absolute bottom-full mb-2 w-max px-3 py-2 bg-indigo-900 border border-indigo-500 rounded-xl shadow-lg z-50 text-center flex flex-col"
                                  style="display: none; min-width: 90px;">
                                 @if($isIzin)
-                                    <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Status: <b style="color:#fb7185;">{{ $tipeAbsens }}</b></p>
-                                    <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Alasan: <b style="color:#fff;">{{ $keteranganDl }}</b></p>
+                                    @if($status === 'red-holiday')
+                                        <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Status: <b style="color:#fb7185;">{{ $tipeAbsens }}</b></p>
+                                        <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Ket: <b style="color:#fff;">{{ $keteranganDl }}</b></p>
+                                    @else
+                                        <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Status: <b style="color:#fb7185;">{{ $tipeAbsens }}</b></p>
+                                        <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Alasan: <b style="color:#fff;">{{ $keteranganDl }}</b></p>
+                                    @endif
                                 @else
                                     <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0 0 2px;">Masuk: <b style="color:#fff;">{{ $tipeAbsens }}</b></p>
                                     <p style="font-size: 0.65rem; font-weight:700; color:#cbd5e1; margin:0;">Pulang: <b style="color:#fff;">{{ $keteranganDl }}</b></p>

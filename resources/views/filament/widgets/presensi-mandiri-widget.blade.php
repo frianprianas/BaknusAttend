@@ -373,6 +373,12 @@
                         <p style="font-size:1.1rem;font-weight:800;color:#16a34a;margin:0 0 6px;">Tugas Hari Ini Selesai!</p>
                         <p style="font-size:.85rem;color:#4ade80;font-weight:500;">Presensi masuk dan pulang sudah tercatat.</p>
                     </div>
+                @elseif($tipeAbsens === 'Libur')
+                    <div class="absen-done" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5;">
+                        <div class="absen-done-icon" style="background: #fee2e2; border-color: #fca5a5; box-shadow: 0 2px 6px rgba(239,68,68,0.2);">🎉</div>
+                        <p style="font-size:1.1rem;font-weight:800;color:#dc2626;margin:0 0 6px;">Hari Ini Libur!</p>
+                        <p style="font-size:.85rem;color:#ef4444;font-weight:500;">{{ $namaLibur }}</p>
+                    </div>
                 @else
                     {{-- Busy Overlay --}}
                     <div x-show="isBusy" style="display:none;" class="absen-busy-overlay">

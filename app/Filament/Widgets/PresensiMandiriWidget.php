@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Holiday;
 use App\Models\IzinGuruTu;
 use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
@@ -40,6 +41,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
     public ?string $userEmail = null;
     public ?string $userClass = null;
     public ?string $userAvatar = null;
+    public ?string $namaLibur = null;
 
     public static function canView(): bool
     {
@@ -81,6 +83,23 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $user = auth()->user();
         if (!$user) return 'Masuk';
         $today = Carbon::today();
+        
+        // 1. Cek Akhir Pekan (Minggu & Sabtu)
+        if ($today->isSunday()) {
+            $this->namaLibur = 'Hari Minggu — Libur Akhir Pekan';
+            return 'Libur';
+        }
+        if ($today->isSaturday()) {
+            $this->namaLibur = 'Hari Sabtu — Libur Akhir Pekan';
+            return 'Libur';
+        }
+
+        // 2. Cek Hari Libur dari Database
+        $holiday = Holiday::whereDate('holiday_date', $today)->first();
+        if ($holiday) {
+            $this->namaLibur = 'Hari Libur: ' . $holiday->name;
+            return 'Libur';
+        }
         
         if ($user->role === 'Siswa') {
             $nis = $user->nipy ?? $user->email;
@@ -246,6 +265,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $tipeAbsens = $this->determinePresensiType();
         if ($tipeAbsens === 'Selesai') {
             Notification::make()->title('Selesai!')->body('Anda sudah melakukan Absen Masuk dan Pulang hari ini.')->warning()->send();
+            return;
+        }
+        if ($tipeAbsens === 'Libur') {
+            Notification::make()->title('Hari Libur')->body('Hari ini adalah ' . ($this->namaLibur ?? 'hari libur') . '. Absensi tidak aktif.')->warning()->send();
             return;
         }
 

@@ -16,6 +16,13 @@ class ManageKehadiranSiswas extends ManageRecords
         return [];
     }
 
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\KehadiranCalendarWidget::class,
+        ];
+    }
+
     public function getTitle(): string|Htmlable
     {
         $user = auth()->user();
