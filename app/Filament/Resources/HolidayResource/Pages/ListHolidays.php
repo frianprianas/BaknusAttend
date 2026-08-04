@@ -14,18 +14,34 @@ class ListHolidays extends ListRecords
     {
         return [
             Actions\Action::make('importNationalHolidays')
-                ->label('Impor Libur Nasional ' . now()->year)
+                ->label('Impor Libur Nasional')
                 ->icon('heroicon-o-arrow-path')
                 ->color('info')
+                ->form([
+                    \Filament\Forms\Components\Select::make('year')
+                        ->label('Pilih Tahun')
+                        ->options(function () {
+                            $currentYear = now()->year;
+                            return [
+                                $currentYear - 1 => (string)($currentYear - 1),
+                                $currentYear => (string)$currentYear,
+                                $currentYear + 1 => (string)($currentYear + 1),
+                            ];
+                        })
+                        ->default(now()->year)
+                        ->required(),
+                ])
                 ->requiresConfirmation()
-                ->action(function () {
+                ->action(function (array $data) {
                     try {
-                        $year = now()->year;
-                        // Pakai API referensi User yang terbukti work dan lengkap (thanks!)
-                        $response = \Illuminate\Support\Facades\Http::get("https://libur.deno.dev/api");
+                        $year = (int)$data['year'];
+                        $response = \Illuminate\Support\Facades\Http::get("https://api-hari-libur.vercel.app/api", [
+                            'year' => $year,
+                        ]);
                         
                         if ($response->successful()) {
-                            $holidays = $response->json();
+                            $res = $response->json();
+                            $holidays = $res['data'] ?? [];
                             
                             if (empty($holidays) || !is_array($holidays)) {
                                 throw new \Exception('Data dari API kosong atau tidak sesuai format.');
@@ -34,11 +50,11 @@ class ListHolidays extends ListRecords
                             $count = 0;
                             foreach ($holidays as $h) {
                                 $date = $h['date'] ?? null;
-                                $name = $h['name'] ?? 'Libur Nasional';
+                                $name = $h['description'] ?? 'Libur Nasional';
 
                                 if (!$date) continue;
                                 
-                                // Pastikan HANYA ambil data tahun berjalan
+                                // Pastikan HANYA ambil data tahun terpilih
                                 if (!str_starts_with($date, (string)$year)) continue;
 
                                 $exists = \App\Models\Holiday::where('holiday_date', $date)->exists();
