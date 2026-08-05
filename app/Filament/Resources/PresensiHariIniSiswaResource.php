@@ -49,7 +49,6 @@ class PresensiHariIniSiswaResource extends Resource
                 DB::raw('MAX(photo) as photo'),
             ])
             ->whereDate('waktu_tap', Carbon::today())
-            ->where('keterangan', 'like', '%Masuk%')
             ->groupBy('nis')
             ->orderBy('waktu_masuk', 'asc');
     }
@@ -96,7 +95,8 @@ class PresensiHariIniSiswaResource extends Resource
                         ->getStateUsing(function ($record) {
                             $masuk  = $record->waktu_masuk  ? Carbon::parse($record->waktu_masuk)->format('H:i')  : '-';
                             $pulang = $record->waktu_pulang ? Carbon::parse($record->waktu_pulang)->format('H:i') : '-';
-                            $sameBadge = ($masuk === $pulang) ? '' :
+                            $sameBadge = ($masuk === $pulang) ? 
+                                "<span class='text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-md border border-gray-200 dark:border-gray-700 ml-1'>Belum Pulang</span>" :
                                 "<span class='text-[10px] px-1.5 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-md border border-orange-200 dark:border-orange-700 font-bold ml-1'>Pulang: {$pulang}</span>";
                             return "
                                 <div class='flex flex-wrap items-center gap-1'>

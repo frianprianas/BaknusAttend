@@ -51,7 +51,6 @@ class PresensiHariIniGuruTuResource extends Resource
                 DB::raw('MAX(lokasi_dinas_luar) as lokasi_dinas_luar'),
             ])
             ->whereDate('waktu_tap', Carbon::today())
-            ->where('keterangan', 'like', '%Masuk%')
             ->groupBy('nipy')
             ->orderBy('waktu_masuk', 'asc');
     }
