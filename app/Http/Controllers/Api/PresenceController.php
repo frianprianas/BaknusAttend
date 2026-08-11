@@ -193,6 +193,67 @@ class PresenceController extends Controller
         return response()->json(['date' => $now->format('Y-m-d'), 'time' => $now->format('H:i:s'), 'day' => $days[$now->format('l')]]);
     }
 
+    public function getDashboardStats(Request $request)
+    {
+        $apiKey = $request->header('X-API-Key') ?? $request->query('api_key');
+        $expectedKey = env('DASHBOARD_API_KEY', 'baknus_secret_dashboard_key_2026');
+
+        if (empty($apiKey) || $apiKey !== $expectedKey) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $today = Carbon::today();
+
+        // 1. Guru attendance
+        $guruPresent = KehadiranGuruTu::whereDate('waktu_tap', $today)
+            ->whereHas('user', function ($q) {
+                $q->where('role', 'Guru');
+            })
+            ->distinct('nipy')
+            ->count('nipy');
+
+        $totalGuru = User::where('role', 'Guru')->count();
+
+        // 2. TU attendance
+        $tuPresent = KehadiranGuruTu::whereDate('waktu_tap', $today)
+            ->whereHas('user', function ($q) {
+                $q->where('role', 'TU');
+            })
+            ->distinct('nipy')
+            ->count('nipy');
+
+        $totalTU = User::where('role', 'TU')->count();
+
+        // 3. Siswa attendance
+        $siswaPresent = KehadiranSiswa::whereDate('waktu_tap', $today)
+            ->distinct('nis')
+            ->count('nis');
+
+        $totalSiswa = Student::count();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'tanggal' => $today->format('Y-m-d'),
+                'guru' => [
+                    'hadir' => $guruPresent,
+                    'total' => $totalGuru,
+                ],
+                'tu' => [
+                    'hadir' => $tuPresent,
+                    'total' => $totalTU,
+                ],
+                'siswa' => [
+                    'hadir' => $siswaPresent,
+                    'total' => $totalSiswa,
+                ]
+            ]
+        ]);
+    }
+
     /**
      * 🔥 Fungsi untuk mengirim perintah capture ke MQTT
      */
