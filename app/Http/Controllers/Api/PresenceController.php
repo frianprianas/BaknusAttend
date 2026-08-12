@@ -279,4 +279,121 @@ class PresenceController extends Controller
             \Log::error("MQTT Trigger Failed: " . $e->getMessage());
         }
     }
+
+    public function getUserStats(Request $request)
+    {
+        $apiKey = $request->header('X-API-Key') ?? $request->query('api_key');
+        $expectedKey = env('DASHBOARD_API_KEY', 'baknus_secret_dashboard_key_2026');
+
+        if (empty($apiKey) || $apiKey !== $expectedKey) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $email = $request->query('email');
+        if (empty($email)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email parameter is required'
+            ], 400);
+        }
+
+        // Find user by email
+        $user = User::where('email', strtolower($email))->first();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfMonth();
+
+        $totalKehadiran = 0;
+        $detailKehadiran = [];
+
+        if (strtolower($user->role) === 'siswa') {
+            // Find Student record using NIS extracted from email or directly
+            $nis = null;
+            if (preg_match('/^([0-9]+)@/', $user->email, $matches)) {
+                $nis = $matches[1];
+            } else {
+                $nis = explode('@', $user->email)[0];
+            }
+
+            $student = Student::where('nis', $nis)->first();
+            
+            if ($student) {
+                // Get all tap records for student in this month
+                $taps = KehadiranSiswa::where('nis', $student->nis)
+                    ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                    ->orderBy('waktu_tap', 'desc')
+                    ->get();
+
+                // Group by date to count unique presence days
+                $presentDays = [];
+                foreach ($taps as $tap) {
+                    $date = Carbon::parse($tap->waktu_tap)->format('Y-m-d');
+                    if (strtolower($tap->status) !== 'alpa') {
+                        $presentDays[$date] = true;
+                    }
+                    
+                    $detailKehadiran[] = [
+                        'waktu_tap' => $tap->waktu_tap,
+                        'status' => $tap->status,
+                        'keterangan' => $tap->keterangan,
+                        'lat' => $tap->lat,
+                        'long' => $tap->long,
+                        'is_dinas_luar' => $tap->is_dinas_luar,
+                        'lokasi_dinas_luar' => $tap->lokasi_dinas_luar,
+                    ];
+                }
+                $totalKehadiran = count($presentDays);
+            }
+        } else {
+            // Guru/TU
+            $nipy = $user->nipy ?? $user->email;
+
+            $taps = KehadiranGuruTu::where(function ($q) use ($user, $nipy) {
+                    $q->where('nipy', $nipy)
+                      ->orWhere('nipy', $user->email);
+                })
+                ->whereBetween('waktu_tap', [$startOfMonth, $endOfMonth])
+                ->orderBy('waktu_tap', 'desc')
+                ->get();
+
+            $presentDays = [];
+            foreach ($taps as $tap) {
+                $date = Carbon::parse($tap->waktu_tap)->format('Y-m-d');
+                if (strtolower($tap->status) !== 'alpa') {
+                    $presentDays[$date] = true;
+                }
+
+                $detailKehadiran[] = [
+                    'waktu_tap' => $tap->waktu_tap,
+                    'status' => $tap->status,
+                    'keterangan' => $tap->keterangan,
+                    'lat' => $tap->lat,
+                    'long' => $tap->long,
+                    'is_dinas_luar' => $tap->is_dinas_luar,
+                    'lokasi_dinas_luar' => $tap->lokasi_dinas_luar,
+                ];
+            }
+            $totalKehadiran = count($presentDays);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'email' => $user->email,
+                'name' => $user->name,
+                'role' => $user->role,
+                'total_kehadiran_bulan_ini' => $totalKehadiran,
+                'detail_kehadiran' => $detailKehadiran,
+            ]
+        ]);
+    }
 }

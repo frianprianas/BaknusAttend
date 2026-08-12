@@ -8,6 +8,7 @@ Route::post('/presensi', [PresenceController::class, 'store']);
 Route::get('/get-date', [PresenceController::class, 'getDateTime']);
 Route::get('/user/image', [PresenceController::class, 'getUserImage']);
 Route::get('/dashboard-stats', [PresenceController::class, 'getDashboardStats']);
+Route::get('/user-stats', [PresenceController::class, 'getUserStats']);
 
 // Endpoint untuk Tap Kartu RFID (Mesin RFID / MPS1)
 Route::get('/attendance/tap', [AttendanceController::class, 'tap']);
