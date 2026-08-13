@@ -75,7 +75,12 @@ class AppServiceProvider extends ServiceProvider
             if (!empty($model->nipy)) {
                 $user = \App\Models\User::where('nipy', $model->nipy)
                     ->orWhere('email', $model->nipy)
+                    ->orWhere('rfid', $model->nipy)
                     ->first();
+            }
+
+            if (!$user && !empty($model->rfid_uid)) {
+                $user = \App\Models\User::where('rfid', $model->rfid_uid)->first();
             }
 
             if (!$user && auth()->check()) {
@@ -90,7 +95,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             if (!$email) {
-                \Illuminate\Support\Facades\Log::warning("[BaknusAttend] Email presensi Guru/TU tidak terkirim: NIPY '{$model->nipy}' bukan alamat email valid.");
+                \Illuminate\Support\Facades\Log::warning("[BaknusAttend] Email presensi Guru/TU tidak terkirim: NIPY/RFID '{$model->nipy}' / '{$model->rfid_uid}' tidak mempunyai email valid.");
                 return;
             }
 

@@ -38,14 +38,19 @@ class MailService
             </div>
             ";
 
+            Log::info("[MailService] Preparing to send email notification to '{$email}' with subject: '{$subject}'");
+
             Mail::html($html, function ($message) use ($email, $subject) {
                 $message->to($email)
                         ->subject($subject);
             });
             
-            Log::info("Email notification sent to {$email} with subject: {$subject}");
-        } catch (\Exception $e) {
-            Log::error("Failed to send email notification to {$email}: " . $e->getMessage());
+            Log::info("[MailService] SUCCESS: Email notification delivered to '{$email}' with subject: '{$subject}'");
+        } catch (\Throwable $e) {
+            Log::error("[MailService] ERROR: Failed to send email notification to '{$email}': " . $e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 }
