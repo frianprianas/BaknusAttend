@@ -76,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
                 $user = \App\Models\User::where('nipy', $model->nipy)
                     ->orWhere('email', $model->nipy)
                     ->orWhere('rfid', $model->nipy)
+                    ->orWhere('email', 'like', $model->nipy . '@%')
                     ->first();
             }
 
@@ -83,8 +84,12 @@ class AppServiceProvider extends ServiceProvider
                 $user = \App\Models\User::where('rfid', $model->rfid_uid)->first();
             }
 
+            // Only use auth()->user() if auth user matches the record's nipy/email
             if (!$user && auth()->check()) {
-                $user = auth()->user();
+                $authUser = auth()->user();
+                if ($authUser->email === $model->nipy || $authUser->nipy === $model->nipy) {
+                    $user = $authUser;
+                }
             }
 
             $email = null;
