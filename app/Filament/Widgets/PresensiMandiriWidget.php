@@ -22,6 +22,7 @@ use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
+use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -42,6 +43,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
     public ?string $userClass = null;
     public ?string $userAvatar = null;
     public ?string $namaLibur = null;
+
+    #[On('kehadiran-updated')]
+    public function refreshWidget(): void
+    {
+        $this->tipeAbsens = $this->determinePresensiType();
+        $this->form->fill();
+    }
 
     public static function canView(): bool
     {

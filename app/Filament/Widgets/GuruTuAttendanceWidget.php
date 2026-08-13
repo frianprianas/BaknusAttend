@@ -157,7 +157,8 @@ class GuruTuAttendanceWidget extends BaseWidget
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                        ->after(fn ($livewire) => $livewire->dispatch('kehadiran-updated')),
                 ])->visible(fn () => auth()->user()?->role === 'Admin'),
             ])
             ->filters([
