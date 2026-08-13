@@ -112,7 +112,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
             $count = KehadiranSiswa::where('nis', $student->nis)->whereDate('waktu_tap', $today)->count();
         } else {
             $count = KehadiranGuruTu::where(function($q) use ($user) {
-                $q->where('nipy', $user->nipy)->orWhere('nipy', $user->email);
+                if (!empty($user->nipy)) {
+                    $q->where('nipy', $user->nipy);
+                }
+                if (!empty($user->email)) {
+                    $q->orWhere('nipy', $user->email);
+                }
             })->whereDate('waktu_tap', $today)->count();
         }
         

@@ -28,14 +28,27 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $sendStudentNotification = function ($model) {
-            $user = \App\Models\User::where('email', 'like', $model->nis . '@%')->first();
-            $email = $user ? $user->email : $model->nis . '@smk.baktinusantara666.sch.id';
+            $user = \App\Models\User::where('email', 'like', $model->nis . '@%')
+                ->orWhere('nipy', $model->nis)
+                ->first();
+                
+            $email = null;
+            if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                $email = $user->email;
+            } elseif (filter_var($model->nis, FILTER_VALIDATE_EMAIL)) {
+                $email = $model->nis;
+            } else {
+                $email = $model->nis . '@smk.baktinusantara666.sch.id';
+            }
+
             $name = $user ? $user->name : 'Siswa';
             $waktu = \Carbon\Carbon::parse($model->waktu_tap)->format('d-m-Y H:i:s');
             $nowTime = \Carbon\Carbon::now()->format('H:i:s');
 
             $keterangan = strtolower($model->keterangan ?? '');
-            $tipeLabel = str_contains($keterangan, 'pulang') ? 'Pulang' : 'Masuk';
+            $statusStr = strtolower($model->status ?? '');
+            $isPulang = str_contains($keterangan, 'pulang') || str_contains($statusStr, 'pulang');
+            $tipeLabel = $isPulang ? 'Pulang' : 'Masuk';
             $uniqueSubject = "[BaknusAttend] Presensi {$tipeLabel} ({$nowTime})";
 
             \App\Services\MailService::sendNotification(
@@ -58,14 +71,37 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\KehadiranSiswa::updated($sendStudentNotification);
 
         $sendGuruTuNotification = function ($model) {
-            $user = \App\Models\User::where('nipy', $model->nipy)->orWhere('email', $model->nipy)->first();
-            $email = $user ? $user->email : $model->nipy;
+            $user = null;
+            if (!empty($model->nipy)) {
+                $user = \App\Models\User::where('nipy', $model->nipy)
+                    ->orWhere('email', $model->nipy)
+                    ->first();
+            }
+
+            if (!$user && auth()->check()) {
+                $user = auth()->user();
+            }
+
+            $email = null;
+            if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                $email = $user->email;
+            } elseif (!empty($model->nipy) && filter_var($model->nipy, FILTER_VALIDATE_EMAIL)) {
+                $email = $model->nipy;
+            }
+
+            if (!$email) {
+                \Illuminate\Support\Facades\Log::warning("[BaknusAttend] Email presensi Guru/TU tidak terkirim: NIPY '{$model->nipy}' bukan alamat email valid.");
+                return;
+            }
+
             $name = $user ? $user->name : 'Guru/Staff';
             $waktu = \Carbon\Carbon::parse($model->waktu_tap)->format('d-m-Y H:i:s');
             $nowTime = \Carbon\Carbon::now()->format('H:i:s');
 
             $keterangan = strtolower($model->keterangan ?? '');
-            $tipeLabel = str_contains($keterangan, 'pulang') ? 'Pulang' : 'Masuk';
+            $statusStr = strtolower($model->status ?? '');
+            $isPulang = str_contains($keterangan, 'pulang') || str_contains($statusStr, 'pulang');
+            $tipeLabel = $isPulang ? 'Pulang' : 'Masuk';
             $uniqueSubject = "[BaknusAttend] Presensi {$tipeLabel} ({$nowTime})";
 
             \App\Services\MailService::sendNotification(
