@@ -28,21 +28,22 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $sendStudentNotification = function ($model) {
-            dispatch(function() use ($model) {
-                $user = \App\Models\User::where('email', 'like', $model->nis . '@%')
-                    ->orWhere('nipy', $model->nis)
-                    ->first();
-                    
-                $email = null;
-                if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
-                    $email = $user->email;
-                } elseif (filter_var($model->nis, FILTER_VALIDATE_EMAIL)) {
-                    $email = $model->nis;
-                } else {
-                    $email = $model->nis . '@smk.baktinusantara666.sch.id';
-                }
+            $user = \App\Models\User::where('email', 'like', $model->nis . '@%')
+                ->orWhere('nipy', $model->nis)
+                ->first();
+                
+            $email = null;
+            if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                $email = $user->email;
+            } elseif (filter_var($model->nis, FILTER_VALIDATE_EMAIL)) {
+                $email = $model->nis;
+            } else {
+                $email = $model->nis . '@smk.baktinusantara666.sch.id';
+            }
 
-                $name = $user ? $user->name : 'Siswa';
+            $name = $user ? $user->name : 'Siswa';
+
+            dispatch(function() use ($email, $name, $model) {
                 $waktu = \Carbon\Carbon::parse($model->waktu_tap)->format('d-m-Y H:i:s');
                 $nowTime = \Carbon\Carbon::now()->format('H:i:s');
 
@@ -73,36 +74,37 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\KehadiranSiswa::updated($sendStudentNotification);
 
         $sendGuruTuNotification = function ($model) {
-            dispatch(function() use ($model) {
-                $user = null;
-                if (!empty($model->nipy)) {
-                    $user = \App\Models\User::where('nipy', $model->nipy)
-                        ->orWhere('email', $model->nipy)
-                        ->orWhere('rfid', $model->nipy)
-                        ->first();
-                }
+            $user = null;
+            if (!empty($model->nipy)) {
+                $user = \App\Models\User::where('nipy', $model->nipy)
+                    ->orWhere('email', $model->nipy)
+                    ->orWhere('rfid', $model->nipy)
+                    ->first();
+            }
 
-                if (!$user && !empty($model->rfid_uid)) {
-                    $user = \App\Models\User::where('rfid', $model->rfid_uid)->first();
-                }
+            if (!$user && !empty($model->rfid_uid)) {
+                $user = \App\Models\User::where('rfid', $model->rfid_uid)->first();
+            }
 
-                if (!$user && auth()->check()) {
-                    $user = auth()->user();
-                }
+            if (!$user && auth()->check()) {
+                $user = auth()->user();
+            }
 
-                $email = null;
-                if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
-                    $email = $user->email;
-                } elseif (!empty($model->nipy) && filter_var($model->nipy, FILTER_VALIDATE_EMAIL)) {
-                    $email = $model->nipy;
-                }
+            $email = null;
+            if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                $email = $user->email;
+            } elseif (!empty($model->nipy) && filter_var($model->nipy, FILTER_VALIDATE_EMAIL)) {
+                $email = $model->nipy;
+            }
 
-                if (!$email) {
-                    \Illuminate\Support\Facades\Log::warning("[BaknusAttend] Email presensi Guru/TU tidak terkirim: NIPY/RFID '{$model->nipy}' / '{$model->rfid_uid}' tidak mempunyai email valid.");
-                    return;
-                }
+            if (!$email) {
+                \Illuminate\Support\Facades\Log::warning("[BaknusAttend] Email presensi Guru/TU tidak terkirim: NIPY/RFID '{$model->nipy}' / '{$model->rfid_uid}' tidak mempunyai email valid.");
+                return;
+            }
 
-                $name = $user ? $user->name : 'Guru/Staff';
+            $name = $user ? $user->name : 'Guru/Staff';
+
+            dispatch(function() use ($email, $name, $model) {
                 $waktu = \Carbon\Carbon::parse($model->waktu_tap)->format('d-m-Y H:i:s');
                 $nowTime = \Carbon\Carbon::now()->format('H:i:s');
 
