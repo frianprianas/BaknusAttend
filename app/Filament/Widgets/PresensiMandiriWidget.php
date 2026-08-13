@@ -47,8 +47,9 @@ class PresensiMandiriWidget extends Widget implements HasForms
     #[On('kehadiran-updated')]
     public function refreshWidget(): void
     {
-        $this->tipeAbsens = $this->determinePresensiType();
-        $this->form->fill();
+        // Force full component re-render (mount + form rebuild) agar
+        // photo_selfie hidden/required dibangun ulang sesuai tipeAbsens terbaru.
+        $this->dispatch('$refresh');
     }
 
     public static function canView(): bool
@@ -174,7 +175,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                             'capture' => 'user', 
                             'accept' => 'image/jpeg, image/png;capture=user'
                         ])
-                        ->required($tipeAbsens !== 'Selesai')
+                        ->required(fn () => $this->determinePresensiType() !== 'Selesai')
                         ->maxSize(8192)
                         ->imageResizeTargetWidth('640')
                         ->imageResizeTargetHeight('640')
@@ -182,7 +183,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                         ->imageCropAspectRatio('1:1')
                         ->disk('public')
                         ->directory('absensi-selfie')
-                        ->hidden($tipeAbsens === 'Selesai'),
+                        ->hidden(fn () => $this->determinePresensiType() === 'Selesai'),
                     Hidden::make('lat'),
                     Hidden::make('long'),
                     Hidden::make('client_public_ip'),
@@ -434,7 +435,16 @@ class PresensiMandiriWidget extends Widget implements HasForms
         // Verifikasi Selfie (Step 2)
         $photoSelfie = $formData['photo_selfie'] ?? null;
         if (!$photoSelfie) {
-            Notification::make()->title('Foto Selfie dibutuhkan')->danger()->send();
+            // Kemungkinan form masih dalam state "Selesai" saat presensi pulang dihapus.
+            // Reset form agar selfie upload terbuka kembali, lalu minta user foto ulang.
+            $this->tipeAbsens = $tipeAbsens;
+            $this->form->fill();
+            Notification::make()
+                ->title('Silakan ambil foto selfie')
+                ->body("Form presensi {$tipeAbsens} telah direset. Silakan ambil foto selfie Anda untuk melanjutkan.")
+                ->warning()
+                ->persistent()
+                ->send();
             return;
         }
 
