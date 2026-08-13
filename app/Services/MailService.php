@@ -21,6 +21,8 @@ class MailService
         try {
             $appName = env('APP_NAME', 'BaknusAttend');
             
+            $refCode = strtoupper(substr(md5(uniqid('', true)), 0, 6));
+            
             $html = "
             <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
                 <div style='background-color: #3b82f6; padding: 24px; color: white; text-align: center;'>
@@ -33,7 +35,7 @@ class MailService
                     </div>
                 </div>
                 <div style='background-color: #f9fafb; padding: 15px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;'>
-                    &copy; " . date('Y') . " SMK Bhakti Nusantara 666. All rights reserved.
+                    &copy; " . date('Y') . " SMK Bhakti Nusantara 666. All rights reserved. <span style='display: inline-block; margin-left: 8px; color: #9ca3af; font-family: monospace;'>#{$refCode}</span>
                 </div>
             </div>
             ";
