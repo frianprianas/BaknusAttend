@@ -378,10 +378,10 @@ class PresensiMandiriWidget extends Widget implements HasForms
         }
 
         // --- SISTEM ANTI-SPAM (RATE LIMITER) UNTUK AWS ---
-        // Batasi maksimal 3 KALI percobaan dalam 5 MENIT. 
+        // Batasi percobaan verifikasi wajah dalam 5 MENIT. 
         $rateLimitKey = 'face_verification_attempt_' . $user->id;
         
-        if (RateLimiter::tooManyAttempts($rateLimitKey, 3)) {
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 15)) {
             $seconds = RateLimiter::availableIn($rateLimitKey);
             Notification::make()
                 ->title('TERKUNCI SEMENTARA 🔒')

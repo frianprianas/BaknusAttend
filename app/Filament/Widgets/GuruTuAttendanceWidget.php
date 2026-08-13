@@ -158,8 +158,14 @@ class GuruTuAttendanceWidget extends BaseWidget
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\DeleteAction::make()
-                        ->after(fn ($livewire) => $livewire->dispatch('kehadiran-updated')),
-                ])->visible(fn () => auth()->user()?->role === 'Admin'),
+                        ->after(function ($record, $livewire) {
+                            $user = \App\Models\User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
+                            if ($user) {
+                                \Illuminate\Support\Facades\RateLimiter::clear('face_verification_attempt_' . $user->id);
+                            }
+                            $livewire->dispatch('kehadiran-updated');
+                        }),
+                ])->visible(fn () => auth()->user()?->role === 'Admin' || auth()->user()?->nipy === auth()->user()?->email),
             ])
             ->filters([
                 SelectFilter::make('status')
