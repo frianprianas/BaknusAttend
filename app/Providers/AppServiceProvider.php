@@ -72,11 +72,13 @@ class AppServiceProvider extends ServiceProvider
 
         $sendGuruTuNotification = function ($model) {
             $user = null;
-            if (!empty($model->nipy)) {
-                $user = \App\Models\User::where('nipy', $model->nipy)
-                    ->orWhere('email', $model->nipy)
-                    ->orWhere('rfid', $model->nipy)
-                    ->orWhere('email', 'like', $model->nipy . '@%')
+            $nipy = trim($model->nipy ?? '');
+
+            if (!empty($nipy)) {
+                $user = \App\Models\User::where('nipy', $nipy)
+                    ->orWhere('email', $nipy)
+                    ->orWhere('rfid', $nipy)
+                    ->orWhere('email', 'like', $nipy . '@%')
                     ->first();
             }
 
@@ -84,19 +86,15 @@ class AppServiceProvider extends ServiceProvider
                 $user = \App\Models\User::where('rfid', $model->rfid_uid)->first();
             }
 
-            // Only use auth()->user() if auth user matches the record's nipy/email
             if (!$user && auth()->check()) {
-                $authUser = auth()->user();
-                if ($authUser->email === $model->nipy || $authUser->nipy === $model->nipy) {
-                    $user = $authUser;
-                }
+                $user = auth()->user();
             }
 
             $email = null;
             if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
                 $email = $user->email;
-            } elseif (!empty($model->nipy) && filter_var($model->nipy, FILTER_VALIDATE_EMAIL)) {
-                $email = $model->nipy;
+            } elseif (!empty($nipy) && filter_var($nipy, FILTER_VALIDATE_EMAIL)) {
+                $email = $nipy;
             }
 
             if (!$email) {

@@ -534,7 +534,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
         } else {
             // Guru / TU
             KehadiranGuruTu::create([
-                'nipy' => $user->nipy ?? $user->email,
+                'nipy' => !empty($user->nipy) ? $user->nipy : $user->email,
                 'rfid_uid' => $user->rfid,
                 'waktu_tap' => $currentTime,
                 'status' => $status,
