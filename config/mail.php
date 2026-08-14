@@ -14,26 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Mailer Configurations
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure all of the mailers used by your application plus
-    | their respective settings. Several examples have been configured for
-    | you and you are free to add your own as your application requires.
-    |
-    | Laravel supports a variety of mail "transport" drivers that can be used
-    | when delivering an email. You may specify which one you're using for
-    | your mailers below. You may also add additional mailers if needed.
-    |
-    | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
-    |            "postmark", "resend", "log", "array",
-    |            "failover", "roundrobin"
-    |
-    */
+    'default' => (env('MAIL_MAILER') && env('MAIL_MAILER') !== 'log') ? env('MAIL_MAILER') : 'smtp',
 
     'mailers' => [
 
@@ -41,11 +22,11 @@ return [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
             'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'encryption' => env('MAIL_ENCRYPTION', 'ssl'),
+            'host' => (env('MAIL_HOST') && env('MAIL_HOST') !== '127.0.0.1') ? env('MAIL_HOST') : 'mail.smk.baktinusantara666.sch.id',
+            'port' => env('MAIL_PORT') ?: 465,
+            'username' => env('MAIL_USERNAME') ?: 'admin@smk.baktinusantara666.sch.id',
+            'password' => env('MAIL_PASSWORD') ?: 'Buhun666',
+            'encryption' => env('MAIL_ENCRYPTION') ?: 'ssl',
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
             'stream' => [
@@ -119,8 +100,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => (env('MAIL_FROM_ADDRESS') && !str_contains(env('MAIL_FROM_ADDRESS'), 'example') && !str_contains(env('MAIL_FROM_ADDRESS'), 'baknus.com')) ? env('MAIL_FROM_ADDRESS') : 'admin@smk.baktinusantara666.sch.id',
+        'name' => env('MAIL_FROM_NAME') ?: '[BaknusAttend]',
     ],
 
 ];
