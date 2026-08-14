@@ -28,17 +28,27 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $sendStudentNotification = function ($model) {
-            $user = \App\Models\User::where('email', 'like', $model->nis . '@%')
-                ->orWhere('nipy', $model->nis)
-                ->first();
-                
+            $user = null;
+            $nis = trim($model->nis ?? '');
+
+            if (!empty($nis)) {
+                $user = \App\Models\User::where('email', $nis)
+                    ->orWhere('nipy', $nis)
+                    ->orWhere('email', 'like', $nis . '@%')
+                    ->first();
+            }
+
+            if (!$user && auth()->check()) {
+                $user = auth()->user();
+            }
+
             $email = null;
             if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
                 $email = $user->email;
-            } elseif (filter_var($model->nis, FILTER_VALIDATE_EMAIL)) {
-                $email = $model->nis;
+            } elseif (!empty($nis) && filter_var($nis, FILTER_VALIDATE_EMAIL)) {
+                $email = $nis;
             } else {
-                $email = $model->nis . '@smk.baktinusantara666.sch.id';
+                $email = $nis . '@smk.baktinusantara666.sch.id';
             }
 
             $name = $user ? $user->name : 'Siswa';

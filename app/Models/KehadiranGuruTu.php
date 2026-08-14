@@ -44,7 +44,7 @@ class KehadiranGuruTu extends Model
                 ];
 
                 \App\Jobs\SyncAttendanceToBaknusDrive::dispatchAfterResponse($data);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Log::error('BaknusDrive Queue Error (Guru): ' . $e->getMessage());
             }
         });

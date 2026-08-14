@@ -44,7 +44,7 @@ class KehadiranSiswa extends Model
                 ];
 
                 \App\Jobs\SyncAttendanceToBaknusDrive::dispatchAfterResponse($data);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Log::error('BaknusDrive Queue Error (Siswa): ' . $e->getMessage());
             }
         });

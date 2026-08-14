@@ -43,12 +43,13 @@ class MailService
             Log::info("[MailService] Preparing to send email notification to '{$email}' with subject: '{$subject}'");
 
             Mail::html($html, function ($message) use ($email, $subject) {
-                // Tambahkan Message-ID unik agar Mailcow tidak mendeduplikasi
-                // email kedua yang dikirim ke inbox yang sama (misal: presensi ulang setelah hapus)
                 $uniqueId = uniqid('baknus', true) . '.' . time();
                 $domain = substr(strrchr($email, '@'), 1) ?: 'smk.baktinusantara666.sch.id';
+                $fromAddr = config('mail.from.address', 'admin@smk.baktinusantara666.sch.id');
+                $fromName = config('mail.from.name', 'BaknusAttend');
 
-                $message->to($email)
+                $message->from($fromAddr, $fromName)
+                        ->to($email)
                         ->subject($subject);
 
                 // Set unique Message-ID via Symfony Mailer headers
