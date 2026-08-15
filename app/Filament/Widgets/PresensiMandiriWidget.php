@@ -509,24 +509,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
             $keterangan .= " [Dinas Luar: " . $formData['lokasi_dinas_luar'] . "]";
         }
 
-        // ── Tentukan label tipe absen untuk email ──
-        $isPulang = str_contains(strtolower($keterangan), 'pulang');
-        $tipeLabel = $isPulang ? 'Pulang' : 'Masuk';
-        $nowTime = $currentTime->format('H:i:s');
-        $waktuFormatted = $currentTime->format('d-m-Y H:i:s');
-        $uniqueSubject = "[BaknusAttend] Presensi {$tipeLabel} ({$nowTime})";
-        $userName = $user->name ?? 'Pengguna';
-        $userEmail = filter_var($user->email, FILTER_VALIDATE_EMAIL) ? $user->email : null;
-        $emailBody = "<p>Halo <b>{$userName}</b>,</p>
-                 <p>Aktivitas presensi kehadiran Anda telah tercatat dengan detail berikut:</p>
-                 <table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>
-                     <tr><td style='padding: 6px 0; font-weight: bold; width: 120px;'>Tipe Absen:</td><td><span style='background-color: " . ($tipeLabel === 'Masuk' ? '#dcfce7; color: #166534' : '#fef3c7; color: #92400e') . "; padding: 2px 8px; border-radius: 4px; font-size: 13px;'>{$tipeLabel}</span></td></tr>
-                     <tr><td style='padding: 6px 0; font-weight: bold;'>Waktu:</td><td>{$waktuFormatted} WIB</td></tr>
-                     <tr><td style='padding: 6px 0; font-weight: bold;'>Status:</td><td><span style='background-color: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 13px;'>{$status}</span></td></tr>
-                     <tr><td style='padding: 6px 0; font-weight: bold;'>Keterangan:</td><td>{$keterangan}</td></tr>
-                 </table>
-                 <p style='margin-top: 15px;'>Terima kasih.</p>";
-
         if ($user->role === 'Siswa') {
             $nis = $user->nipy ?? $user->email;
             $student = Student::where('nis', $nis)->first();
@@ -551,18 +533,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'is_dinas_luar' => $formData['is_dinas_luar'] ?? false,
                 'lokasi_dinas_luar' => $formData['lokasi_dinas_luar'] ?? null,
             ]);
-
-            // ── Kirim email langsung ke siswa ──
-            if ($userEmail) {
-                try {
-                    Log::info("[PresensiMandiri] Mengirim email presensi {$tipeLabel} ke siswa '{$userEmail}'");
-                    MailService::sendNotification($userEmail, $uniqueSubject, "Presensi {$tipeLabel} Berhasil", $emailBody);
-                } catch (\Throwable $e) {
-                    Log::error("[PresensiMandiri] Gagal kirim email siswa: " . $e->getMessage());
-                }
-            } else {
-                Log::warning("[PresensiMandiri] Email siswa tidak valid untuk user ID {$user->id}");
-            }
         } else {
             // Guru / TU
             KehadiranGuruTu::create([
@@ -577,18 +547,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'is_dinas_luar' => $formData['is_dinas_luar'] ?? false,
                 'lokasi_dinas_luar' => $formData['lokasi_dinas_luar'] ?? null,
             ]);
-
-            // ── Kirim email langsung ke guru/TU ──
-            if ($userEmail) {
-                try {
-                    Log::info("[PresensiMandiri] Mengirim email presensi {$tipeLabel} ke guru '{$userEmail}'");
-                    MailService::sendNotification($userEmail, $uniqueSubject, "Presensi {$tipeLabel} Berhasil", $emailBody);
-                } catch (\Throwable $e) {
-                    Log::error("[PresensiMandiri] Gagal kirim email guru: " . $e->getMessage());
-                }
-            } else {
-                Log::warning("[PresensiMandiri] Email guru tidak valid untuk user ID {$user->id}");
-            }
         }
 
         Notification::make()
