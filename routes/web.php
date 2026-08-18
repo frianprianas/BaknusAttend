@@ -19,3 +19,7 @@ Route::match(['get', 'post'], '/api/attendance/tap', [AttendanceController::clas
 
 // Endpoint untuk PWA Push Subscription
 Route::post('/push/subscribe', [\App\Http\Controllers\PushNotificationController::class, 'store']);
+
+// Route Cetak & Export Rekap Kehadiran Guru/TU Khusus Admin
+Route::get('/admin/rekap-guru-tu/print', [\App\Http\Controllers\LaporanGuruTuController::class, 'print'])->name('admin.rekap-guru-tu.print');
+Route::get('/admin/rekap-guru-tu/export-csv', [\App\Http\Controllers\LaporanGuruTuController::class, 'exportCsv'])->name('admin.rekap-guru-tu.export-csv');

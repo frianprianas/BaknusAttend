@@ -188,9 +188,134 @@ class KehadiranGuruTuMonthlyResource extends Resource
                     })
                     ->query(fn (Builder $query) => $query)
                     ->default(now()->year),
+
+                Tables\Filters\SelectFilter::make('role')
+                    ->label('Jabatan')
+                    ->options([
+                        'all' => 'Semua (Guru & TU)',
+                        'Guru' => 'Guru',
+                        'TU' => 'TU',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['value']) && $data['value'] !== 'all') {
+                            $query->where('role', $data['value']);
+                        }
+                    })
+                    ->default('all'),
             ], layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(2)
-            ->actions([])
+            ->filtersFormColumns(3)
+            ->actions([
+                Tables\Actions\Action::make('detailHarian')
+                    ->label('Rincian Harian')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->modalHeading(fn($record) => "Rincian Kehadiran - " . $record->name)
+                    ->modalContent(function($record, Tables\Table $table) {
+                        $formDate = $table->getLivewire()->tableFilters ?? [];
+                        $selMonth = $formDate['bulan']['value'] ?? request()->query('tableFilters')['bulan']['value'] ?? now()->format('m');
+                        $selYear = $formDate['tahun']['value'] ?? request()->query('tableFilters')['tahun']['value'] ?? now()->format('Y');
+
+                        $month = (int) $selMonth;
+                        $year = (int) $selYear;
+                        $daysInMonth = Carbon::create($year, $month, 1)->daysInMonth;
+
+                        $kehadirans = KehadiranGuruTu::where(function($q) use ($record) {
+                                $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
+                            })
+                            ->whereMonth('waktu_tap', $month)
+                            ->whereYear('waktu_tap', $year)
+                            ->get()
+                            ->groupBy(fn($item) => Carbon::parse($item->waktu_tap)->format('Y-m-d'));
+
+                        $izins = \App\Models\IzinGuruTu::where(function($q) use ($record) {
+                                $q->where('nipy', $record->nipy)->orWhere('nipy', $record->email);
+                            })
+                            ->whereMonth('tanggal', $month)
+                            ->whereYear('tanggal', $year)
+                            ->get()
+                            ->keyBy(fn($item) => Carbon::parse($item->tanggal)->format('Y-m-d'));
+
+                        $holidays = \App\Models\Holiday::whereMonth('holiday_date', $month)
+                            ->whereYear('holiday_date', $year)
+                            ->get()
+                            ->keyBy(fn($item) => Carbon::parse($item->holiday_date)->format('Y-m-d'));
+
+                        $rowsHtml = "";
+                        for ($day = 1; $day <= $daysInMonth; $day++) {
+                            $dateObj = Carbon::create($year, $month, $day);
+                            $dateStr = $dateObj->format('Y-m-d');
+                            $dayName = $dateObj->translatedFormat('l, d M Y');
+
+                            $dayKehadiran = $kehadirans->get($dateStr);
+                            $dayIzin = $izins->get($dateStr);
+                            $dayHoliday = $holidays->get($dateStr);
+
+                            $statusBadge = "";
+                            $detailInfo = "-";
+
+                            if ($dayKehadiran && $dayKehadiran->count() > 0) {
+                                $masuk = $dayKehadiran->first(fn($i) => str_contains(strtolower($i->keterangan ?? ''), 'masuk') || !str_contains(strtolower($i->keterangan ?? ''), 'pulang')) ?? $dayKehadiran->first();
+                                $pulang = $dayKehadiran->first(fn($i) => str_contains(strtolower($i->keterangan ?? ''), 'pulang'));
+
+                                $waktuMasuk = $masuk ? Carbon::parse($masuk->waktu_tap)->format('H:i:s') : '-';
+                                $waktuPulang = $pulang ? Carbon::parse($pulang->waktu_tap)->format('H:i:s') : '-';
+
+                                $isDl = $dayKehadiran->contains('is_dinas_luar', true) || $dayKehadiran->contains('status', 'Dinas Luar');
+                                $isTerlambat = $dayKehadiran->contains('status', 'Terlambat');
+
+                                if ($isDl) {
+                                    $statusBadge = "<span class='bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded font-bold'>Dinas Luar</span>";
+                                    $detailInfo = "Masuk: {$waktuMasuk} | Pulang: {$waktuPulang}";
+                                } elseif ($isTerlambat) {
+                                    $statusBadge = "<span class='bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded font-bold'>Terlambat</span>";
+                                    $detailInfo = "Masuk: {$waktuMasuk} | Pulang: {$waktuPulang}";
+                                } else {
+                                    $statusBadge = "<span class='bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded font-bold'>Hadir</span>";
+                                    $detailInfo = "Masuk: {$waktuMasuk} | Pulang: {$waktuPulang}";
+                                }
+                            } elseif ($dayIzin) {
+                                $statusBadge = "<span class='bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold'>{$dayIzin->tipe}</span>";
+                                $detailInfo = "Alasan: {$dayIzin->alasan}";
+                            } elseif ($dayHoliday) {
+                                $statusBadge = "<span class='bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded font-bold'>Libur</span>";
+                                $detailInfo = $dayHoliday->holiday_name;
+                            } elseif ($dateObj->isWeekend()) {
+                                $statusBadge = "<span class='bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded font-bold'>Akhir Pekan</span>";
+                                $detailInfo = "Sabtu / Minggu";
+                            } else {
+                                $statusBadge = "<span class='bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold'>Tanpa Keterangan</span>";
+                                $detailInfo = "Tidak ada presensi";
+                            }
+
+                            $rowsHtml .= "
+                                <tr class='border-b hover:bg-gray-50 text-xs'>
+                                    <td class='px-3 py-2 font-medium text-gray-900'>{$dayName}</td>
+                                    <td class='px-3 py-2'>{$statusBadge}</td>
+                                    <td class='px-3 py-2 text-gray-600'>{$detailInfo}</td>
+                                </tr>
+                            ";
+                        }
+
+                        return new \Illuminate\Support\HtmlString("
+                            <div class='max-h-[60vh] overflow-y-auto border rounded-lg shadow-sm'>
+                                <table class='w-full text-left border-collapse'>
+                                    <thead class='bg-gray-100 text-xs uppercase font-semibold text-gray-700 sticky top-0'>
+                                        <tr>
+                                            <th class='px-3 py-2 border-b'>Hari & Tanggal</th>
+                                            <th class='px-3 py-2 border-b'>Status</th>
+                                            <th class='px-3 py-2 border-b'>Rincian Waktu / Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {$rowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ");
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
+            ])
             ->bulkActions([])
             ->paginated(true)
             ->defaultPaginationPageOption(25);
