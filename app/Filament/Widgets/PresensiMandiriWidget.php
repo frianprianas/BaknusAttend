@@ -563,6 +563,38 @@ class PresensiMandiriWidget extends Widget implements HasForms
     }
 
     /**
+     * Membandingkan dua UID RFID/NFC secara fleksibel (memperhitungkan Hex, Decimal, Leading Zero)
+     */
+    private function compareRfid(?string $rfid1, ?string $rfid2): bool
+    {
+        if (empty($rfid1) || empty($rfid2)) return false;
+
+        $clean1 = strtoupper(str_replace([':', ' ', '-'], '', trim($rfid1)));
+        $clean2 = strtoupper(str_replace([':', ' ', '-'], '', trim($rfid2)));
+
+        if ($clean1 === $clean2) {
+            return true;
+        }
+
+        // Cek perbandingan tanpa leading zeros (misal 00123 vs 123)
+        if (ltrim($clean1, '0') === ltrim($clean2, '0')) {
+            return true;
+        }
+
+        // Cek konversi Hex ke Decimal jika salah satu format Hex dan salah satu Desimal
+        try {
+            if (ctype_xdigit($clean1) && is_numeric($clean2)) {
+                if (hexdec($clean1) == $clean2) return true;
+            }
+            if (ctype_xdigit($clean2) && is_numeric($clean1)) {
+                if (hexdec($clean2) == $clean1) return true;
+            }
+        } catch (\Throwable $e) {}
+
+        return false;
+    }
+
+    /**
      * Submit presensi menggunakan Tap Kartu NFC / RFID Smartphone
      */
     public function submitRfidPresensi(?string $rfidUid, $lat = null, $long = null, $clientIp = null): void
@@ -571,7 +603,11 @@ class PresensiMandiriWidget extends Widget implements HasForms
         if (!$user) return;
 
         if (empty($rfidUid)) {
-            Notification::make()->title('Gagal membaca Kartu NFC/RFID!')->danger()->send();
+            Notification::make()
+                ->title('❌ GAGAL MEMBACA KARTU!')
+                ->body('ID Kartu NFC/RFID tidak terbaca. Silakan dekatkan ulang kartu ke sensor NFC HP.')
+                ->danger()
+                ->send();
             return;
         }
 
@@ -685,23 +721,29 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 return;
             }
 
-            // A. Cek apakah kartu ini milik user/siswa lain di database
-            $otherOwnerStudent = Student::where('rfid', $cleanUid)->where('id', '!=', $student->id)->first();
-            $otherOwnerUser = User::where('rfid', $cleanUid)->where('id', '!=', $user->id)->first();
+            // A. Cek jika kartu ini terdaftar atas nama siswa lain
+            $otherStudents = Student::whereNotNull('rfid')->where('id', '!=', $student->id)->get();
+            $otherOwnerStudent = $otherStudents->first(fn($s) => $this->compareRfid($s->rfid, $cleanUid));
+            
+            // Cek jika kartu ini terdaftar atas nama pegawai lain
+            $otherUsers = User::whereNotNull('rfid')->where('id', '!=', $user->id)->get();
+            $otherOwnerUser = $otherUsers->first(fn($u) => $this->compareRfid($u->rfid, $cleanUid));
+
             $otherOwnerName = $otherOwnerStudent?->name ?? $otherOwnerUser?->name;
 
             if ($otherOwnerName) {
                 Notification::make()
-                    ->title('⚠️ KARTU MILIK ORANG LAIN!')
-                    ->body("Kartu NFC yang di-scan (ID: {$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID milik Anda sendiri.")
+                    ->title('⚠️ KARTU TIDAK COCOK / MILIK ORANG LAIN!')
+                    ->body("Kartu ID yang Anda tap (ID: {$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID resmi milik Anda sendiri.")
                     ->danger()
                     ->persistent()
                     ->send();
                 return;
             }
 
-            // B. Jika siswa ini belum memiliki RFID di database, tautkan kartu baru ini
+            // B. Cek kartu siswa ini
             if (empty($student->rfid)) {
+                // Tautkan kartu pertama kali
                 $student->rfid = $cleanUid;
                 $student->save();
                 Notification::make()
@@ -710,12 +752,12 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->info()
                     ->send();
             } else {
-                // C. Jika siswa sudah punya RFID terdaftar, tapi kartu yang ditap TIDAK COCOK
-                $cleanDatabaseRfid = strtoupper(str_replace([':', ' ', '-'], '', trim($student->rfid)));
-                if ($cleanDatabaseRfid !== $cleanUid) {
+                // Cek apakah kartu yang di-tap COCOK dengan terdaftar
+                if (!$this->compareRfid($student->rfid, $cleanUid)) {
+                    $registeredId = strtoupper(str_replace([':', ' ', '-'], '', trim($student->rfid)));
                     Notification::make()
                         ->title('❌ KARTU TIDAK COCOK DENGAN AKUN ANDA!')
-                        ->body("Kartu yang di-scan (ID: {$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$cleanDatabaseRfid}). Silakan scan Kartu ID resmi Anda.")
+                        ->body("Kartu ID yang di-scan (ID: {$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$registeredId}). Silakan scan Kartu ID resmi milik Anda.")
                         ->danger()
                         ->persistent()
                         ->send();
@@ -724,22 +766,27 @@ class PresensiMandiriWidget extends Widget implements HasForms
             }
         } else {
             // Guru / TU
-            // A. Cek apakah kartu ini milik pegawai/siswa lain
-            $otherOwnerUser = User::where('rfid', $cleanUid)->where('id', '!=', $user->id)->first();
-            $otherOwnerStudent = Student::where('rfid', $cleanUid)->first();
+            // A. Cek jika kartu ini terdaftar atas nama pegawai lain
+            $otherUsers = User::whereNotNull('rfid')->where('id', '!=', $user->id)->get();
+            $otherOwnerUser = $otherUsers->first(fn($u) => $this->compareRfid($u->rfid, $cleanUid));
+
+            // Cek jika kartu ini terdaftar atas nama siswa lain
+            $otherStudents = Student::whereNotNull('rfid')->get();
+            $otherOwnerStudent = $otherStudents->first(fn($s) => $this->compareRfid($s->rfid, $cleanUid));
+
             $otherOwnerName = $otherOwnerUser?->name ?? $otherOwnerStudent?->name;
 
             if ($otherOwnerName) {
                 Notification::make()
-                    ->title('⚠️ KARTU MILIK ORANG LAIN!')
-                    ->body("Kartu NFC yang di-scan (ID: {$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID milik Anda sendiri.")
+                    ->title('⚠️ KARTU TIDAK COCOK / MILIK ORANG LAIN!')
+                    ->body("Kartu ID yang Anda tap (ID: {$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID resmi milik Anda sendiri.")
                     ->danger()
                     ->persistent()
                     ->send();
                 return;
             }
 
-            // B. Jika user belum memiliki RFID di database, tautkan kartu baru ini
+            // B. Cek kartu pegawai ini
             if (empty($user->rfid)) {
                 $user->rfid = $cleanUid;
                 $user->save();
@@ -749,12 +796,11 @@ class PresensiMandiriWidget extends Widget implements HasForms
                     ->info()
                     ->send();
             } else {
-                // C. Jika user sudah punya RFID terdaftar, tapi kartu yang ditap TIDAK COCOK
-                $cleanDatabaseRfid = strtoupper(str_replace([':', ' ', '-'], '', trim($user->rfid)));
-                if ($cleanDatabaseRfid !== $cleanUid) {
+                if (!$this->compareRfid($user->rfid, $cleanUid)) {
+                    $registeredId = strtoupper(str_replace([':', ' ', '-'], '', trim($user->rfid)));
                     Notification::make()
                         ->title('❌ KARTU TIDAK COCOK DENGAN AKUN ANDA!')
-                        ->body("Kartu yang di-scan (ID: {$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$cleanDatabaseRfid}). Silakan scan Kartu ID resmi Anda.")
+                        ->body("Kartu ID yang di-scan (ID: {$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$registeredId}). Silakan scan Kartu ID resmi milik Anda.")
                         ->danger()
                         ->persistent()
                         ->send();
