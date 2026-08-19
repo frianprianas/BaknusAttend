@@ -1,5 +1,5 @@
 <x-filament-widgets::widget>
-    <!-- PRODUCTION FINAL: 2.5.0-NFC-REDESIGN -->
+    <!-- PRODUCTION FINAL: 2.6.0-NFC-GEOFENCE-UI-REDESIGN -->
     @script
     <script>
         window.mesinAbsenFormalFixV15 = function() {
@@ -34,6 +34,35 @@
                         return;
                     }
 
+                    // 1. Wajib Kunci Lokasi GPS Terlebih Dahulu Sebelum NFC Scan
+                    if (!this.gpsLocked) {
+                        this.isBusy = true;
+                        this.busyText = 'Melacak lokasi GPS...';
+                        try {
+                            await new Promise((resolve, reject) => {
+                                navigator.geolocation.getCurrentPosition((p) => {
+                                    this.lat = p.coords.latitude;
+                                    this.long = p.coords.longitude;
+                                    this.gpsLocked = true;
+                                    this.statusText = 'Posisi terkunci · ' + p.coords.latitude.toFixed(4) + ', ' + p.coords.longitude.toFixed(4);
+                                    this.statusClass = 'gps-ok';
+                                    resolve();
+                                }, (err) => reject(err), { enableHighAccuracy: true, timeout: 8000 });
+                            });
+                        } catch(e) {
+                            this.isBusy = false;
+                            alert('Presensi Gagal: Sinyal GPS HP Anda belum terkunci. Aktifkan lokasi GPS HP Anda.');
+                            return;
+                        } finally {
+                            this.isBusy = false;
+                        }
+                    }
+
+                    if (!this.clientIp) {
+                        await this.getClientIp();
+                    }
+
+                    // 2. Aktifkan Listener Sensor NFC
                     try {
                         this.isScanningNfc = true;
                         this.nfcStatusText = '📡 Sensor NFC Aktif! Silakan Tempelkan Kartu ID Card ke bodi belakang HP Anda...';
@@ -49,9 +78,9 @@
                             }
 
                             const cleanUid = serialNumber.replace(/[: -]/g, '').toUpperCase();
-                            this.nfcStatusText = `✅ Kartu Terbaca (${cleanUid})! Memproses presensi...`;
+                            this.nfcStatusText = `✅ Kartu Terbaca (${cleanUid})! Memverifikasi lokasi & presensi...`;
                             this.isBusy = true;
-                            this.busyText = 'Memverifikasi Kartu NFC...';
+                            this.busyText = 'Memverifikasi Lokasi & Kartu NFC...';
 
                             try {
                                 await this.$wire.call('submitRfidPresensi', cleanUid, this.lat, this.long, this.clientIp);
@@ -142,7 +171,6 @@
                     );
                 },
                 async submitAbsenFinal() {
-                    // Paksa inisialisasi WebPush dari dalam interaksi pengguna untuk membypass limitasi iOS Safari
                     if (window.initWebPush && 'Notification' in window && Notification.permission !== 'denied') {
                         window.initWebPush();
                     }
@@ -164,7 +192,6 @@
                         } catch(e) { /* Abaikan untuk ditangani server */ }
                     }
 
-                    // Sinkronisasi koordinat GPS ke backend Livewire TEPAT SEBELUM submit
                     if (this.gpsLocked) {
                         this.$wire.set('data.lat', this.lat);
                         this.$wire.set('data.long', this.long);
@@ -280,7 +307,7 @@
                 padding: 20px 24px;
                 display: flex; align-items: center; gap: 16px;
                 box-shadow: 0 2px 12px rgba(0,0,0,.06);
-                margin-bottom: 28px;
+                margin-bottom: 24px;
             }
             .dark .absen-profile-card {
                 background: linear-gradient(135deg, rgba(30,41,59,.8), rgba(15,23,42,.6));
@@ -309,6 +336,32 @@
             .absen-divider {
                 width: 32px; height: 3px; background: #6366f1; border-radius: 99px;
                 margin: 0 auto 20px; opacity: .6;
+            }
+
+            /* ---- Modern Glassmorphic Tab Container ---- */
+            .absen-tab-container {
+                display: flex; align-items: center; justify-content: center; gap: 8px;
+                padding: 6px; background: rgba(241, 245, 249, 0.85);
+                backdrop-filter: blur(10px);
+                border: 1px solid #e2e8f0; border-radius: 18px;
+                margin-bottom: 24px; max-width: 440px; width: 100%;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            }
+            .dark .absen-tab-container {
+                background: rgba(30, 41, 59, 0.7);
+                border-color: #334155;
+            }
+            .absen-tab-btn {
+                flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+                padding: 10px 16px; border-radius: 14px; font-size: 0.75rem; font-weight: 800;
+                letter-spacing: 0.02em; border: none; cursor: pointer; transition: all 0.25s ease;
+                color: #64748b; background: transparent;
+            }
+            .dark .absen-tab-btn { color: #94a3b8; }
+            .absen-tab-btn.active {
+                background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
             }
 
             /* ---- GPS pill ---- */
@@ -421,27 +474,29 @@
             <p class="absen-section-title">PRESENSI {{ strtoupper($tipeAbsens) }}</p>
             <div class="absen-divider"></div>
 
-            {{-- Option Tab Switcher --}}
+            {{-- Option Tab Switcher (Modern Metallic Glass Pill) --}}
             @if($tipeAbsens !== 'Selesai' && $tipeAbsens !== 'Libur')
-                <div class="flex items-center justify-center gap-2 mb-6">
+                <div class="absen-tab-container">
                     <button type="button" 
                             @click="activeTab = 'selfie'" 
-                            :class="activeTab === 'selfie' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200'" 
-                            class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer">
+                            :class="{ 'active': activeTab === 'selfie' }" 
+                            class="absen-tab-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         <span>📸 Kamera Selfie</span>
                     </button>
                     
                     <button type="button" 
                             @click="activeTab = 'nfc'; checkNfcSupport()" 
-                            :class="activeTab === 'nfc' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200'" 
-                            class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer">
+                            :class="{ 'active': activeTab === 'nfc' }" 
+                            class="absen-tab-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                         <span>💳 Tap Kartu NFC / RFID</span>
                     </button>
                 </div>
             @endif
 
             {{-- Form / Done State --}}
-            <form @submit.prevent="submitAbsenFinal()" class="w-full max-w-2xl relative">
+            <form @submit.prevent="submitAbsenFinal()" class="w-full max-w-2xl relative flex flex-col items-center justify-center">
                 @if($tipeAbsens === 'Selesai')
                     <div class="absen-done">
                         <div class="absen-done-icon">🚀</div>
@@ -476,8 +531,8 @@
                         </div>
                     </div>
 
-                    {{-- TAB 1: KAMERA SELFIE (100% UTUH) --}}
-                    <div x-show="activeTab === 'selfie'">
+                    {{-- TAB 1: KAMERA SELFIE (100% UTUH DENGAN MODEL LAMA) --}}
+                    <div x-show="activeTab === 'selfie'" class="w-full">
                         {{ $this->form }}
 
                         <script>
@@ -518,27 +573,39 @@
                     </div>
 
                     {{-- TAB 2: TAP KARTU NFC / RFID --}}
-                    <div x-show="activeTab === 'nfc'" style="display: none;">
+                    <div x-show="activeTab === 'nfc'" style="display: none;" class="w-full">
                         {{-- JIKA SENSOR NFC DIDUKUNG --}}
-                        <div x-show="isNfcSupported" class="w-full max-w-lg mx-auto text-center p-8 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
-                            <div class="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
-                                <div x-show="isScanningNfc" class="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping"></div>
-                                <div class="w-24 h-24 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-2xl flex items-center justify-center text-4xl shadow-lg shadow-indigo-500/30">
-                                    💳
+                        <div x-show="isNfcSupported" class="w-full max-w-md mx-auto text-center p-8 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-3xl shadow-2xl relative overflow-hidden">
+                            {{-- Ambient Background Glow --}}
+                            <div class="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                            <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                            {{-- Animated NFC Credit Card Graphic --}}
+                            <div class="relative w-44 h-28 mx-auto mb-6 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 rounded-2xl p-4 shadow-xl border border-indigo-400/30 flex flex-col justify-between text-left overflow-hidden">
+                                {{-- Card Shine Line --}}
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12"></div>
+                                
+                                <div class="flex items-center justify-between z-10">
+                                    <div class="w-8 h-6 bg-gradient-to-r from-amber-300 to-amber-500 rounded-md border border-amber-200/50 shadow-inner"></div>
+                                    <span class="text-white/80 font-mono text-[10px] tracking-widest font-bold">BAKNUS ID</span>
+                                </div>
+                                <div class="z-10 flex items-center justify-between">
+                                    <span class="text-white/90 font-mono text-xs font-semibold">•••• •••• NFC</span>
+                                    <svg class="w-6 h-6 text-white/90 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                 </div>
                             </div>
 
-                            <h3 class="font-extrabold text-slate-900 dark:text-slate-100 text-base mb-2">Presensi via Tap Kartu NFC</h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6" x-text="nfcStatusText"></p>
+                            <h3 class="font-extrabold text-white text-base mb-1.5 tracking-wide">Presensi Tap Kartu NFC</h3>
+                            <p class="text-xs text-slate-400 font-medium leading-relaxed mb-6 px-2" x-text="nfcStatusText"></p>
 
                             <button type="button" 
                                     @click="startNfcScan()" 
                                     :disabled="isBusy"
-                                    class="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-indigo-500/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer">
+                                    class="w-full py-4 px-6 bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-indigo-500/40 transition-all active:scale-95 disabled:opacity-50 cursor-pointer">
                                 <span x-show="!isScanningNfc">📡 Mulai Scan Kartu NFC</span>
                                 <span x-show="isScanningNfc" style="display:none;" class="flex items-center justify-center gap-2">
-                                    <span class="w-2 h-2 bg-white rounded-full animate-ping"></span>
-                                    Menunggu Tap Kartu...
+                                    <span class="w-2.5 h-2.5 bg-white rounded-full animate-ping"></span>
+                                    Menunggu Tap Kartu ke HP...
                                 </span>
                             </button>
                         </div>
@@ -556,7 +623,7 @@
                         </div>
                     </div>
 
-                    {{-- GPS Status --}}
+                    {{-- GPS Status Pill --}}
                     <div class="flex items-center justify-center mt-4">
                         <div class="gps-pill" :class="statusClass">
                             <div class="gps-dot"></div>

@@ -575,10 +575,93 @@ class PresensiMandiriWidget extends Widget implements HasForms
             return;
         }
 
-        // Format UID (Huruf Kapital, hilangkan titik dua atau spasi jika ada)
+        // 1. VERIFIKASI LOKASI GPS GEOFENCING
+        if ($lat === null || $long === null) {
+            Notification::make()
+                ->title('GPS Tidak Aktif')
+                ->body('Sinyal GPS belum terkunci. Pastikan lokasi GPS HP Anda aktif.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        $setting = SchoolSetting::first();
+        if (!$setting) {
+            Notification::make()->title('Pengaturan GPS Sekolah belum ada!')->danger()->send();
+            return;
+        }
+
+        // VALIDASI IP PUBLIK (Anti Fake GPS via koneksi luar sekolah)
+        if ($setting->is_ip_validation_active) {
+            $allowedIps = array_filter(array_map('trim', [
+                $setting->allowed_ip_1,
+                $setting->allowed_ip_2,
+                $setting->allowed_ip_3,
+                $setting->allowed_ip_4,
+                $setting->allowed_ip_5,
+                $setting->allowed_ip_6,
+            ]));
+
+            if (!empty($allowedIps)) {
+                $clientIp = trim($clientIp ?? '');
+                if (empty($clientIp)) {
+                    if ($cf = request()->header('CF-Connecting-IP')) {
+                        $clientIp = trim($cf);
+                    } elseif ($real = request()->header('X-Real-IP')) {
+                        $clientIp = trim($real);
+                    } elseif ($forward = request()->header('X-Forwarded-For')) {
+                        $ips = array_map('trim', explode(',', $forward));
+                        foreach ($ips as $ip) {
+                            if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                                $clientIp = $ip;
+                                break;
+                            }
+                        }
+                        if (empty($clientIp)) $clientIp = $ips[0];
+                    }
+                    if (empty($clientIp)) $clientIp = request()->ip();
+                }
+
+                $ipMatched = false;
+                foreach ($allowedIps as $allowedIpPattern) {
+                    if ($this->ipMatches($clientIp, $allowedIpPattern)) {
+                        $ipMatched = true;
+                        break;
+                    }
+                }
+
+                if (!$ipMatched) {
+                    Notification::make()
+                        ->title('Akses Ditolak')
+                        ->body("Silahkan Pakai Wifi Sekolah. IP Anda saat ini: " . ($clientIp ?: 'Tidak terdeteksi'))
+                        ->danger()
+                        ->persistent()
+                        ->send();
+                    return;
+                }
+            }
+        }
+
+        // VALIDASI RADIUS GPS
+        $distance = $this->haversineGreatCircleDistance(
+            $lat, 
+            $long, 
+            $setting->lat, 
+            $setting->long
+        );
+
+        if ($distance > $setting->radius) {
+            Notification::make()
+                ->title('Maaf Anda diluar jangkauan Absen!')
+                ->body('Pastikan Anda berada di lingkungan sekolah.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        // 2. VERIFIKASI KEPEMILIKAN KARTU RFID
         $cleanUid = strtoupper(str_replace([':', ' ', '-'], '', trim($rfidUid)));
 
-        // Verifikasi Kepemilikan Kartu RFID
         if ($user->role === 'Siswa') {
             $nis = $user->nipy ?? $user->email;
             $student = Student::where('nis', $nis)->first();
