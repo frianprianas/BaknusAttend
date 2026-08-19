@@ -1,5 +1,5 @@
 <x-filament-widgets::widget>
-    <!-- PRODUCTION FINAL: 2.6.0-NFC-GEOFENCE-UI-REDESIGN -->
+    <!-- PRODUCTION FINAL: 2.7.0-NFC-DINAS-LUAR-ERROR-DISTINCT -->
     @script
     <script>
         window.mesinAbsenFormalFixV15 = function() {
@@ -34,7 +34,7 @@
                         return;
                     }
 
-                    // 1. Wajib Kunci Lokasi GPS Terlebih Dahulu Sebelum NFC Scan
+                    // 1. Wajib Kunci Lokasi GPS Terlebih Dahulu Sebelum NFC Scan (jika bukan Dinas Luar)
                     if (!this.gpsLocked) {
                         this.isBusy = true;
                         this.busyText = 'Melacak lokasi GPS...';
@@ -50,9 +50,7 @@
                                 }, (err) => reject(err), { enableHighAccuracy: true, timeout: 8000 });
                             });
                         } catch(e) {
-                            this.isBusy = false;
-                            alert('Presensi Gagal: Sinyal GPS HP Anda belum terkunci. Aktifkan lokasi GPS HP Anda.');
-                            return;
+                            // Abaikan error lokasi jika user mengaktifkan Dinas Luar
                         } finally {
                             this.isBusy = false;
                         }
@@ -78,7 +76,7 @@
                             }
 
                             const cleanUid = serialNumber.replace(/[: -]/g, '').toUpperCase();
-                            this.nfcStatusText = `✅ Kartu Terbaca (${cleanUid})! Memverifikasi lokasi & presensi...`;
+                            this.nfcStatusText = `✅ Kartu Terbaca (${cleanUid})! Memverifikasi presensi...`;
                             this.isBusy = true;
                             this.busyText = 'Memverifikasi Lokasi & Kartu NFC...';
 
@@ -249,6 +247,10 @@
             .fi-absen-wrapper * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 
             .fi-absen-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+
+            /* ---- Sembunyikan foto selfie jika tab NFC aktif ---- */
+            .tab-nfc-active .filepond--root,
+            .tab-nfc-active .fi-fo-file-upload { display: none !important; }
 
             /* ---- Sembunyikan teks bawaan namun tetap clickable ---- */
             .fi-fo-file-upload-dropzone-label { display: none !important; }
@@ -496,7 +498,7 @@
             @endif
 
             {{-- Form / Done State --}}
-            <form @submit.prevent="submitAbsenFinal()" class="w-full max-w-2xl relative flex flex-col items-center justify-center">
+            <form @submit.prevent="submitAbsenFinal()" :class="{ 'tab-nfc-active': activeTab === 'nfc' }" class="w-full max-w-2xl relative flex flex-col items-center justify-center">
                 @if($tipeAbsens === 'Selesai')
                     <div class="absen-done">
                         <div class="absen-done-icon">🚀</div>
@@ -531,10 +533,13 @@
                         </div>
                     </div>
 
-                    {{-- TAB 1: KAMERA SELFIE (100% UTUH DENGAN MODEL LAMA) --}}
-                    <div x-show="activeTab === 'selfie'" class="w-full">
+                    {{-- FILAMENT FORM STATE (Toggles Dinas Luar & Inputs) --}}
+                    <div class="w-full mb-4">
                         {{ $this->form }}
+                    </div>
 
+                    {{-- TAB 1: KAMERA SELFIE BUTTON --}}
+                    <div x-show="activeTab === 'selfie'" class="w-full">
                         <script>
                             document.addEventListener('DOMContentLoaded', function() {
                                 document.addEventListener('click', function(e) {
@@ -554,7 +559,7 @@
                             });
                         </script>
 
-                        <div class="mt-6">
+                        <div class="mt-4">
                             <button
                                 type="submit"
                                 :disabled="isBusy"

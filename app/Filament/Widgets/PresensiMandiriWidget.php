@@ -575,91 +575,106 @@ class PresensiMandiriWidget extends Widget implements HasForms
             return;
         }
 
-        // 1. VERIFIKASI LOKASI GPS GEOFENCING
-        if ($lat === null || $long === null) {
+        $formData = $this->form->getState();
+        $isDinasLuar = !empty($formData['is_dinas_luar']);
+        $lokasiDinasLuar = $formData['lokasi_dinas_luar'] ?? null;
+
+        if ($isDinasLuar && empty($lokasiDinasLuar)) {
             Notification::make()
-                ->title('GPS Tidak Aktif')
-                ->body('Sinyal GPS belum terkunci. Pastikan lokasi GPS HP Anda aktif.')
-                ->danger()
+                ->title('Keterangan Dinas Luar Wajib Diisi!')
+                ->body('Harap isi Tempat / Keterangan Dinas Luar terlebih dahulu.')
+                ->warning()
                 ->send();
             return;
         }
 
-        $setting = SchoolSetting::first();
-        if (!$setting) {
-            Notification::make()->title('Pengaturan GPS Sekolah belum ada!')->danger()->send();
-            return;
-        }
+        // 1. VERIFIKASI LOKASI GPS GEOFENCING (Hanya jika BUKAN Dinas Luar)
+        if (!$isDinasLuar) {
+            if ($lat === null || $long === null) {
+                Notification::make()
+                    ->title('GPS Tidak Aktif')
+                    ->body('Sinyal GPS belum terkunci. Pastikan lokasi GPS HP Anda aktif.')
+                    ->danger()
+                    ->send();
+                return;
+            }
 
-        // VALIDASI IP PUBLIK (Anti Fake GPS via koneksi luar sekolah)
-        if ($setting->is_ip_validation_active) {
-            $allowedIps = array_filter(array_map('trim', [
-                $setting->allowed_ip_1,
-                $setting->allowed_ip_2,
-                $setting->allowed_ip_3,
-                $setting->allowed_ip_4,
-                $setting->allowed_ip_5,
-                $setting->allowed_ip_6,
-            ]));
+            $setting = SchoolSetting::first();
+            if (!$setting) {
+                Notification::make()->title('Pengaturan GPS Sekolah belum ada!')->danger()->send();
+                return;
+            }
 
-            if (!empty($allowedIps)) {
-                $clientIp = trim($clientIp ?? '');
-                if (empty($clientIp)) {
-                    if ($cf = request()->header('CF-Connecting-IP')) {
-                        $clientIp = trim($cf);
-                    } elseif ($real = request()->header('X-Real-IP')) {
-                        $clientIp = trim($real);
-                    } elseif ($forward = request()->header('X-Forwarded-For')) {
-                        $ips = array_map('trim', explode(',', $forward));
-                        foreach ($ips as $ip) {
-                            if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                                $clientIp = $ip;
-                                break;
+            // VALIDASI IP PUBLIK (Anti Fake GPS via koneksi luar sekolah)
+            if ($setting->is_ip_validation_active) {
+                $allowedIps = array_filter(array_map('trim', [
+                    $setting->allowed_ip_1,
+                    $setting->allowed_ip_2,
+                    $setting->allowed_ip_3,
+                    $setting->allowed_ip_4,
+                    $setting->allowed_ip_5,
+                    $setting->allowed_ip_6,
+                ]));
+
+                if (!empty($allowedIps)) {
+                    $clientIp = trim($clientIp ?? '');
+                    if (empty($clientIp)) {
+                        if ($cf = request()->header('CF-Connecting-IP')) {
+                            $clientIp = trim($cf);
+                        } elseif ($real = request()->header('X-Real-IP')) {
+                            $clientIp = trim($real);
+                        } elseif ($forward = request()->header('X-Forwarded-For')) {
+                            $ips = array_map('trim', explode(',', $forward));
+                            foreach ($ips as $ip) {
+                                if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                                    $clientIp = $ip;
+                                    break;
+                                }
                             }
+                            if (empty($clientIp)) $clientIp = $ips[0];
                         }
-                        if (empty($clientIp)) $clientIp = $ips[0];
+                        if (empty($clientIp)) $clientIp = request()->ip();
                     }
-                    if (empty($clientIp)) $clientIp = request()->ip();
-                }
 
-                $ipMatched = false;
-                foreach ($allowedIps as $allowedIpPattern) {
-                    if ($this->ipMatches($clientIp, $allowedIpPattern)) {
-                        $ipMatched = true;
-                        break;
+                    $ipMatched = false;
+                    foreach ($allowedIps as $allowedIpPattern) {
+                        if ($this->ipMatches($clientIp, $allowedIpPattern)) {
+                            $ipMatched = true;
+                            break;
+                        }
+                    }
+
+                    if (!$ipMatched) {
+                        Notification::make()
+                            ->title('Akses Ditolak')
+                            ->body("Silahkan Pakai Wifi Sekolah. IP Anda saat ini: " . ($clientIp ?: 'Tidak terdeteksi'))
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                        return;
                     }
                 }
+            }
 
-                if (!$ipMatched) {
-                    Notification::make()
-                        ->title('Akses Ditolak')
-                        ->body("Silahkan Pakai Wifi Sekolah. IP Anda saat ini: " . ($clientIp ?: 'Tidak terdeteksi'))
-                        ->danger()
-                        ->persistent()
-                        ->send();
-                    return;
-                }
+            // VALIDASI RADIUS GPS
+            $distance = $this->haversineGreatCircleDistance(
+                $lat, 
+                $long, 
+                $setting->lat, 
+                $setting->long
+            );
+
+            if ($distance > $setting->radius) {
+                Notification::make()
+                    ->title('Maaf Anda diluar jangkauan Absen!')
+                    ->body('Pastikan Anda berada di lingkungan sekolah.')
+                    ->danger()
+                    ->send();
+                return;
             }
         }
 
-        // VALIDASI RADIUS GPS
-        $distance = $this->haversineGreatCircleDistance(
-            $lat, 
-            $long, 
-            $setting->lat, 
-            $setting->long
-        );
-
-        if ($distance > $setting->radius) {
-            Notification::make()
-                ->title('Maaf Anda diluar jangkauan Absen!')
-                ->body('Pastikan Anda berada di lingkungan sekolah.')
-                ->danger()
-                ->send();
-            return;
-        }
-
-        // 2. VERIFIKASI KEPEMILIKAN KARTU RFID
+        // 2. VERIFIKASI KEPEMILIKAN KARTU RFID DENGAN PESAN BERBEDA (DISTINCT ERROR MESSAGES)
         $cleanUid = strtoupper(str_replace([':', ' ', '-'], '', trim($rfidUid)));
 
         if ($user->role === 'Siswa') {
@@ -670,52 +685,78 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 return;
             }
 
-            // Jika rfid siswa di database masih kosong, tautkan otomatis ke kartu ini jika belum dipakai siswa lain
+            // A. Cek apakah kartu ini milik user/siswa lain di database
+            $otherOwnerStudent = Student::where('rfid', $cleanUid)->where('id', '!=', $student->id)->first();
+            $otherOwnerUser = User::where('rfid', $cleanUid)->where('id', '!=', $user->id)->first();
+            $otherOwnerName = $otherOwnerStudent?->name ?? $otherOwnerUser?->name;
+
+            if ($otherOwnerName) {
+                Notification::make()
+                    ->title('⚠️ KARTU MILIK ORANG LAIN!')
+                    ->body("Kartu NFC yang di-scan (ID: {$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID milik Anda sendiri.")
+                    ->danger()
+                    ->persistent()
+                    ->send();
+                return;
+            }
+
+            // B. Jika siswa ini belum memiliki RFID di database, tautkan kartu baru ini
             if (empty($student->rfid)) {
-                $existingOwner = Student::where('rfid', $cleanUid)->where('id', '!=', $student->id)->first();
-                if ($existingOwner) {
-                    Notification::make()
-                        ->title('Kartu Terdaftar untuk Orang Lain!')
-                        ->body("Kartu NFC ini sudah terdaftar atas nama siswa lain ({$existingOwner->name}).")
-                        ->danger()
-                        ->send();
-                    return;
-                }
                 $student->rfid = $cleanUid;
                 $student->save();
+                Notification::make()
+                    ->title('Kartu Berhasil Ditautkan')
+                    ->body("ID Kartu {$cleanUid} telah resmi terdaftar untuk akun Anda.")
+                    ->info()
+                    ->send();
             } else {
-                // Jika rfid siswa sudah ada, pastikan cocok
+                // C. Jika siswa sudah punya RFID terdaftar, tapi kartu yang ditap TIDAK COCOK
                 $cleanDatabaseRfid = strtoupper(str_replace([':', ' ', '-'], '', trim($student->rfid)));
                 if ($cleanDatabaseRfid !== $cleanUid) {
                     Notification::make()
-                        ->title('Kartu NFC Tidak Cocok!')
-                        ->body("Kartu yang ditap tidak sesuai dengan Kartu ID terdaftar Anda.")
+                        ->title('❌ KARTU TIDAK COCOK DENGAN AKUN ANDA!')
+                        ->body("Kartu yang di-scan (ID: {$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$cleanDatabaseRfid}). Silakan scan Kartu ID resmi Anda.")
                         ->danger()
+                        ->persistent()
                         ->send();
                     return;
                 }
             }
         } else {
             // Guru / TU
+            // A. Cek apakah kartu ini milik pegawai/siswa lain
+            $otherOwnerUser = User::where('rfid', $cleanUid)->where('id', '!=', $user->id)->first();
+            $otherOwnerStudent = Student::where('rfid', $cleanUid)->first();
+            $otherOwnerName = $otherOwnerUser?->name ?? $otherOwnerStudent?->name;
+
+            if ($otherOwnerName) {
+                Notification::make()
+                    ->title('⚠️ KARTU MILIK ORANG LAIN!')
+                    ->body("Kartu NFC yang di-scan (ID: {$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID milik Anda sendiri.")
+                    ->danger()
+                    ->persistent()
+                    ->send();
+                return;
+            }
+
+            // B. Jika user belum memiliki RFID di database, tautkan kartu baru ini
             if (empty($user->rfid)) {
-                $existingOwner = User::where('rfid', $cleanUid)->where('id', '!=', $user->id)->first();
-                if ($existingOwner) {
-                    Notification::make()
-                        ->title('Kartu Terdaftar untuk Orang Lain!')
-                        ->body("Kartu NFC ini sudah terdaftar atas nama pegawai lain ({$existingOwner->name}).")
-                        ->danger()
-                        ->send();
-                    return;
-                }
                 $user->rfid = $cleanUid;
                 $user->save();
+                Notification::make()
+                    ->title('Kartu Berhasil Ditautkan')
+                    ->body("ID Kartu {$cleanUid} telah resmi terdaftar untuk akun Anda.")
+                    ->info()
+                    ->send();
             } else {
+                // C. Jika user sudah punya RFID terdaftar, tapi kartu yang ditap TIDAK COCOK
                 $cleanDatabaseRfid = strtoupper(str_replace([':', ' ', '-'], '', trim($user->rfid)));
                 if ($cleanDatabaseRfid !== $cleanUid) {
                     Notification::make()
-                        ->title('Kartu NFC Tidak Cocok!')
-                        ->body("Kartu yang ditap tidak sesuai dengan Kartu ID terdaftar Anda.")
+                        ->title('❌ KARTU TIDAK COCOK DENGAN AKUN ANDA!')
+                        ->body("Kartu yang di-scan (ID: {$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$cleanDatabaseRfid}). Silakan scan Kartu ID resmi Anda.")
                         ->danger()
+                        ->persistent()
                         ->send();
                     return;
                 }
@@ -735,12 +776,15 @@ class PresensiMandiriWidget extends Widget implements HasForms
             return;
         }
 
-        $status = 'Hadir';
+        $status = $isDinasLuar ? 'Dinas Luar' : 'Hadir';
         $keterangan = "{$tipeAbsens} - Tap NFC Smartphone";
+        if ($isDinasLuar) {
+            $keterangan .= " [Dinas Luar: {$lokasiDinasLuar}]";
+        }
 
         if ($user->role === 'Siswa') {
             $student = Student::where('nis', $user->nipy ?? $user->email)->first();
-            if ($tipeAbsens === 'Masuk' && $currentTime->format('H:i') > '07:05') {
+            if ($tipeAbsens === 'Masuk' && $currentTime->format('H:i') > '07:05' && !$isDinasLuar) {
                 $status = 'Terlambat';
             }
 
@@ -753,8 +797,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'long' => $long,
                 'photo' => null,
                 'keterangan' => $keterangan,
-                'is_dinas_luar' => false,
-                'lokasi_dinas_luar' => null,
+                'is_dinas_luar' => $isDinasLuar,
+                'lokasi_dinas_luar' => $lokasiDinasLuar,
             ]);
         } else {
             // Guru / TU
@@ -767,13 +811,13 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'long' => $long,
                 'photo' => null,
                 'keterangan' => $keterangan,
-                'is_dinas_luar' => false,
-                'lokasi_dinas_luar' => null,
+                'is_dinas_luar' => $isDinasLuar,
+                'lokasi_dinas_luar' => $lokasiDinasLuar,
             ]);
         }
 
         Notification::make()
-            ->title('Berhasil Absen ' . $tipeAbsens . ' (NFC)!')
+            ->title('Berhasil Absen ' . $tipeAbsens . ($isDinasLuar ? ' (Dinas Luar)' : ' (NFC)') . '!')
             ->body('Presensi Tap NFC Anda telah tercatat pada ' . now()->format('H:i'))
             ->success()
             ->send()
