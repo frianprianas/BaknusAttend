@@ -177,7 +177,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                             'capture' => 'user', 
                             'accept' => 'image/jpeg, image/png;capture=user'
                         ])
-                        ->required(fn () => $this->determinePresensiType() !== 'Selesai')
                         ->maxSize(8192)
                         ->imageResizeTargetWidth('640')
                         ->imageResizeTargetHeight('640')
@@ -247,7 +246,6 @@ class PresensiMandiriWidget extends Widget implements HasForms
                                     'capture' => 'user', 
                                     'accept' => 'image/jpeg, image/png;capture=user'
                                 ])
-                                ->required()
                                 ->maxSize(8192)
                                 ->imageResizeTargetWidth('640')
                                 ->imageResizeTargetHeight('640')
@@ -611,9 +609,8 @@ class PresensiMandiriWidget extends Widget implements HasForms
             return;
         }
 
-        $formData = $this->form->getState();
-        $isDinasLuar = !empty($formData['is_dinas_luar']);
-        $lokasiDinasLuar = $formData['lokasi_dinas_luar'] ?? null;
+        $isDinasLuar = !empty($this->data['is_dinas_luar']);
+        $lokasiDinasLuar = $this->data['lokasi_dinas_luar'] ?? null;
 
         if ($isDinasLuar && empty($lokasiDinasLuar)) {
             Notification::make()
