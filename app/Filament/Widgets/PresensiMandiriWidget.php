@@ -562,6 +562,144 @@ class PresensiMandiriWidget extends Widget implements HasForms
         $this->form->fill();
     }
 
+    /**
+     * Submit presensi menggunakan Tap Kartu NFC / RFID Smartphone
+     */
+    public function submitRfidPresensi(?string $rfidUid, $lat = null, $long = null, $clientIp = null): void
+    {
+        $user = auth()->user();
+        if (!$user) return;
+
+        if (empty($rfidUid)) {
+            Notification::make()->title('Gagal membaca Kartu NFC/RFID!')->danger()->send();
+            return;
+        }
+
+        // Format UID (Huruf Kapital, hilangkan titik dua atau spasi jika ada)
+        $cleanUid = strtoupper(str_replace([':', ' ', '-'], '', trim($rfidUid)));
+
+        // Verifikasi Kepemilikan Kartu RFID
+        if ($user->role === 'Siswa') {
+            $nis = $user->nipy ?? $user->email;
+            $student = Student::where('nis', $nis)->first();
+            if (!$student) {
+                Notification::make()->title('Data Siswa tidak ditemukan!')->danger()->send();
+                return;
+            }
+
+            // Jika rfid siswa di database masih kosong, tautkan otomatis ke kartu ini jika belum dipakai siswa lain
+            if (empty($student->rfid)) {
+                $existingOwner = Student::where('rfid', $cleanUid)->where('id', '!=', $student->id)->first();
+                if ($existingOwner) {
+                    Notification::make()
+                        ->title('Kartu Terdaftar untuk Orang Lain!')
+                        ->body("Kartu NFC ini sudah terdaftar atas nama siswa lain ({$existingOwner->name}).")
+                        ->danger()
+                        ->send();
+                    return;
+                }
+                $student->rfid = $cleanUid;
+                $student->save();
+            } else {
+                // Jika rfid siswa sudah ada, pastikan cocok
+                $cleanDatabaseRfid = strtoupper(str_replace([':', ' ', '-'], '', trim($student->rfid)));
+                if ($cleanDatabaseRfid !== $cleanUid) {
+                    Notification::make()
+                        ->title('Kartu NFC Tidak Cocok!')
+                        ->body("Kartu yang ditap tidak sesuai dengan Kartu ID terdaftar Anda.")
+                        ->danger()
+                        ->send();
+                    return;
+                }
+            }
+        } else {
+            // Guru / TU
+            if (empty($user->rfid)) {
+                $existingOwner = User::where('rfid', $cleanUid)->where('id', '!=', $user->id)->first();
+                if ($existingOwner) {
+                    Notification::make()
+                        ->title('Kartu Terdaftar untuk Orang Lain!')
+                        ->body("Kartu NFC ini sudah terdaftar atas nama pegawai lain ({$existingOwner->name}).")
+                        ->danger()
+                        ->send();
+                    return;
+                }
+                $user->rfid = $cleanUid;
+                $user->save();
+            } else {
+                $cleanDatabaseRfid = strtoupper(str_replace([':', ' ', '-'], '', trim($user->rfid)));
+                if ($cleanDatabaseRfid !== $cleanUid) {
+                    Notification::make()
+                        ->title('Kartu NFC Tidak Cocok!')
+                        ->body("Kartu yang ditap tidak sesuai dengan Kartu ID terdaftar Anda.")
+                        ->danger()
+                        ->send();
+                    return;
+                }
+            }
+        }
+
+        $currentTime = Carbon::now();
+        $tipeAbsens = $this->determinePresensiType();
+
+        if ($tipeAbsens === 'Selesai') {
+            Notification::make()->title('Anda sudah menyelesaikan presensi hari ini!')->warning()->send();
+            return;
+        }
+
+        if ($tipeAbsens === 'Libur') {
+            Notification::make()->title('Hari ini libur!')->warning()->send();
+            return;
+        }
+
+        $status = 'Hadir';
+        $keterangan = "{$tipeAbsens} - Tap NFC Smartphone";
+
+        if ($user->role === 'Siswa') {
+            $student = Student::where('nis', $user->nipy ?? $user->email)->first();
+            if ($tipeAbsens === 'Masuk' && $currentTime->format('H:i') > '07:05') {
+                $status = 'Terlambat';
+            }
+
+            KehadiranSiswa::create([
+                'nis' => $student->nis,
+                'rfid_uid' => $cleanUid,
+                'waktu_tap' => $currentTime,
+                'status' => $status,
+                'lat' => $lat,
+                'long' => $long,
+                'photo' => null,
+                'keterangan' => $keterangan,
+                'is_dinas_luar' => false,
+                'lokasi_dinas_luar' => null,
+            ]);
+        } else {
+            // Guru / TU
+            KehadiranGuruTu::create([
+                'nipy' => !empty($user->nipy) ? $user->nipy : $user->email,
+                'rfid_uid' => $cleanUid,
+                'waktu_tap' => $currentTime,
+                'status' => $status,
+                'lat' => $lat,
+                'long' => $long,
+                'photo' => null,
+                'keterangan' => $keterangan,
+                'is_dinas_luar' => false,
+                'lokasi_dinas_luar' => null,
+            ]);
+        }
+
+        Notification::make()
+            ->title('Berhasil Absen ' . $tipeAbsens . ' (NFC)!')
+            ->body('Presensi Tap NFC Anda telah tercatat pada ' . now()->format('H:i'))
+            ->success()
+            ->send()
+            ->sendToDatabase($user);
+
+        $this->dispatch('kehadiran-updated');
+        $this->form->fill();
+    }
+
     private function haversineGreatCircleDistance($latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo, $earthRadius = 6371000)
     {
         $latFrom = deg2rad($latitudeFrom);

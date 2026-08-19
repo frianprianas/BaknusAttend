@@ -1,15 +1,21 @@
 <x-filament-widgets::widget>
-    <!-- PRODUCTION FINAL: 2.4.0-REDESIGN -->
+    <!-- PRODUCTION FINAL: 2.5.0-NFC-REDESIGN -->
     @script
     <script>
         window.mesinAbsenFormalFixV15 = function() {
             return {
                 statusText: 'Mengecek GPS...', statusClass: 'gps-idle', isBusy: false, busyText: '', gpsLocked: false, faceApiLoaded: false,
                 lat: null, long: null, clientIp: null,
+                activeTab: 'selfie',
+                isNfcSupported: false,
+                nfcStatusText: 'Ketuk tombol di bawah lalu tempelkan Kartu ID Card ke bodi belakang HP',
+                isScanningNfc: false,
+
                 init() {
                     this.getGPS();
                     this.loadFaceApi();
                     this.getClientIp();
+                    this.checkNfcSupport();
                     setInterval(() => { if(!this.gpsLocked) this.getGPS(false); }, 45000);
                     
                     // Listen event absen sukses dari server
@@ -17,6 +23,61 @@
                         this.showNativePush();
                     });
                 },
+
+                checkNfcSupport() {
+                    this.isNfcSupported = ('NDEFReader' in window);
+                },
+
+                async startNfcScan() {
+                    if (!('NDEFReader' in window)) {
+                        alert('Smartphone atau Browser Anda belum mendukung sensor Web NFC. Silakan gunakan Opsi Kamera Selfie.');
+                        return;
+                    }
+
+                    try {
+                        this.isScanningNfc = true;
+                        this.nfcStatusText = '📡 Sensor NFC Aktif! Silakan Tempelkan Kartu ID Card ke bodi belakang HP Anda...';
+
+                        const ndef = new NDEFReader();
+                        await ndef.scan();
+
+                        ndef.addEventListener("reading", async ({ serialNumber }) => {
+                            if (!serialNumber) {
+                                alert("Gagal membaca ID Kartu NFC.");
+                                this.isScanningNfc = false;
+                                return;
+                            }
+
+                            const cleanUid = serialNumber.replace(/[: -]/g, '').toUpperCase();
+                            this.nfcStatusText = `✅ Kartu Terbaca (${cleanUid})! Memproses presensi...`;
+                            this.isBusy = true;
+                            this.busyText = 'Memverifikasi Kartu NFC...';
+
+                            try {
+                                await this.$wire.call('submitRfidPresensi', cleanUid, this.lat, this.long, this.clientIp);
+                            } catch(e) {
+                                console.error(e);
+                            } finally {
+                                this.isBusy = false;
+                                this.isScanningNfc = false;
+                                this.nfcStatusText = 'Ketuk tombol di bawah lalu tempelkan Kartu ID Card ke bodi belakang HP';
+                            }
+                        });
+
+                        ndef.addEventListener("readingerror", () => {
+                            alert("Gagal membaca data dari Kartu. Coba dekatkan ulang kartu ke sensor NFC HP.");
+                            this.isScanningNfc = false;
+                            this.nfcStatusText = 'Ketuk tombol di bawah lalu tempelkan Kartu ID Card ke bodi belakang HP';
+                        });
+
+                    } catch (error) {
+                        console.error("NFC Scan Error:", error);
+                        this.isScanningNfc = false;
+                        this.nfcStatusText = 'Gagal mengaktifkan sensor NFC';
+                        alert(`Gagal mengakses Sensor NFC HP: ${error.message || error}`);
+                    }
+                },
+
                 showNativePush() {
                     if ('Notification' in window && navigator.serviceWorker && Notification.permission === 'granted') {
                         navigator.serviceWorker.ready.then((reg) => {
@@ -103,13 +164,12 @@
                         } catch(e) { /* Abaikan untuk ditangani server */ }
                     }
 
-                    // Sinkronisasi koordinat GPS ke backend Livewire TEPAT SEBELUM submit (Menghindari XHR siluman di bekgraun)
+                    // Sinkronisasi koordinat GPS ke backend Livewire TEPAT SEBELUM submit
                     if (this.gpsLocked) {
                         this.$wire.set('data.lat', this.lat);
                         this.$wire.set('data.long', this.long);
                     }
 
-                    // Jika IP belum terdeteksi, coba ambil kembali sesaat sebelum submit
                     if (!this.clientIp) {
                         this.busyText = 'Mengecek alamat IP...';
                         await this.getClientIp();
@@ -128,8 +188,6 @@
                             if (det.length === 0) {
                                 this.isBusy = false;
                                 alert('Wajah tidak terdeteksi. Pastikan wajah jelas dan menghadap kamera.');
-                                
-                                // Solusi: Panggil method reset di backend agar sinkronisasi FilePond 100% bersih kembali ke logo Kamera
                                 this.$wire.call('resetSelfie');
                                 return;
                             }
@@ -164,13 +222,12 @@
             .fi-absen-wrapper * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 
             .fi-absen-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
-            /* .fi-fo-field-wrp-label { display: none !important; } -- Dinonaktifkan agar label Dinas Luar muncul */
 
             /* ---- Sembunyikan teks bawaan namun tetap clickable ---- */
             .fi-fo-file-upload-dropzone-label { display: none !important; }
             .filepond--label-action { text-decoration: none !important; }
             .filepond--drop-label { 
-                opacity: 0 !important; /* HARUS opacity 0, JANGAN display none karena menghilangkan area klik kamera */
+                opacity: 0 !important;
                 cursor: pointer !important;
             }
 
@@ -206,7 +263,7 @@
             /* ---- BA Logo (ilustrasi) – tampil di semua ukuran layar ---- */
             .absen-ba-logo {
                 display: block;
-                width: clamp(80px, 18vw, 120px); /* Responsif: minimum 80px, max 120px */
+                width: clamp(80px, 18vw, 120px);
                 height: auto;
                 margin: 0 auto 18px;
                 opacity: .85;
@@ -251,7 +308,7 @@
             }
             .absen-divider {
                 width: 32px; height: 3px; background: #6366f1; border-radius: 99px;
-                margin: 0 auto 28px; opacity: .6;
+                margin: 0 auto 20px; opacity: .6;
             }
 
             /* ---- GPS pill ---- */
@@ -344,7 +401,6 @@
                         <span>{{ strtoupper(substr($userName ?? '?', 0, 1)) }}</span>
                     @endif
                     
-                    {{-- Overlay Edit (Hanya muncul saat hover) --}}
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </div>
@@ -358,12 +414,31 @@
                 </div>
             </div>
 
-            {{-- Logo dashboard sesuai request user --}}
+            {{-- Logo dashboard --}}
             <img src="{{ asset('images/logo_BG.png') }}" alt="BaknusAI" class="absen-ba-logo">
 
             {{-- Section Label --}}
             <p class="absen-section-title">PRESENSI {{ strtoupper($tipeAbsens) }}</p>
             <div class="absen-divider"></div>
+
+            {{-- Option Tab Switcher --}}
+            @if($tipeAbsens !== 'Selesai' && $tipeAbsens !== 'Libur')
+                <div class="flex items-center justify-center gap-2 mb-6">
+                    <button type="button" 
+                            @click="activeTab = 'selfie'" 
+                            :class="activeTab === 'selfie' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200'" 
+                            class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <span>📸 Kamera Selfie</span>
+                    </button>
+                    
+                    <button type="button" 
+                            @click="activeTab = 'nfc'; checkNfcSupport()" 
+                            :class="activeTab === 'nfc' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200'" 
+                            class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <span>💳 Tap Kartu NFC / RFID</span>
+                    </button>
+                </div>
+            @endif
 
             {{-- Form / Done State --}}
             <form @submit.prevent="submitAbsenFinal()" class="w-full max-w-2xl relative">
@@ -377,7 +452,7 @@
                             <button type="button" 
                                     wire:click="hapusAbsenPulang" 
                                     wire:confirm="Apakah Anda yakin ingin menghapus presensi pulang hari ini?"
-                                    class="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 mx-auto"
+                                    class="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -401,49 +476,84 @@
                         </div>
                     </div>
 
-                    {{-- Form FileUpload --}}
-                    {{ $this->form }}
+                    {{-- TAB 1: KAMERA SELFIE (100% UTUH) --}}
+                    <div x-show="activeTab === 'selfie'">
+                        {{ $this->form }}
 
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            // Interseptor untuk tombol kamera (FilePond)
-                            document.addEventListener('click', function(e) {
-                                // Cari apakah yang diklik adalah bagian dari pengunggah foto
-                                let target = e.target.closest('.filepond--root') || e.target.closest('input[type="file"]');
-                                
-                                if (target && !target.dataset.isConfirming) {
-                                    // Mencegah browser langsung buka kamera
-                                    e.preventDefault();
-                                    e.stopPropagation();
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                document.addEventListener('click', function(e) {
+                                    let target = e.target.closest('.filepond--root') || e.target.closest('input[type="file"]');
+                                    
+                                    if (target && !target.dataset.isConfirming) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
 
-                                    // Memunculkan pesan konfirmasi
-                                    if (confirm("Buka Kamera Depan (Selfie)?")) {
-                                        target.dataset.isConfirming = "true";
-                                        target.click(); // Lanjutkan buka kamera
-                                        
-                                        // Reset tanda konfirmasi agar bisa diklik lagi nanti jika gagal
-                                        setTimeout(() => { delete target.dataset.isConfirming; }, 1000);
+                                        if (confirm("Buka Kamera Depan (Selfie)?")) {
+                                            target.dataset.isConfirming = "true";
+                                            target.click();
+                                            setTimeout(() => { delete target.dataset.isConfirming; }, 1000);
+                                        }
                                     }
-                                }
-                            }, true);
-                        });
-                    </script>
+                                }, true);
+                            });
+                        </script>
 
-                    <div class="mt-6">
-                        <button
-                            type="submit"
-                            :disabled="isBusy"
-                            class="btn-absen-v2"
-                        >
-                            <span x-show="!isBusy">Kirim Presensi {{ strtoupper($tipeAbsens) }}</span>
-                            <span x-cloak x-show="isBusy" class="flex items-center justify-center gap-2" style="display: none;">
-                                <svg style="animation:spin .8s linear infinite;width:18px;height:18px;flex-shrink:0;" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"></circle>
-                                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:.75"></path>
-                                </svg>
-                                <span x-text="busyText || 'Mengirim...'"></span>
-                            </span>
-                        </button>
+                        <div class="mt-6">
+                            <button
+                                type="submit"
+                                :disabled="isBusy"
+                                class="btn-absen-v2"
+                            >
+                                <span x-show="!isBusy">Kirim Presensi {{ strtoupper($tipeAbsens) }}</span>
+                                <span x-cloak x-show="isBusy" class="flex items-center justify-center gap-2" style="display: none;">
+                                    <svg style="animation:spin .8s linear infinite;width:18px;height:18px;flex-shrink:0;" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"></circle>
+                                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:.75"></path>
+                                    </svg>
+                                    <span x-text="busyText || 'Mengirim...'"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- TAB 2: TAP KARTU NFC / RFID --}}
+                    <div x-show="activeTab === 'nfc'" style="display: none;">
+                        {{-- JIKA SENSOR NFC DIDUKUNG --}}
+                        <div x-show="isNfcSupported" class="w-full max-w-lg mx-auto text-center p-8 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
+                            <div class="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+                                <div x-show="isScanningNfc" class="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping"></div>
+                                <div class="w-24 h-24 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-2xl flex items-center justify-center text-4xl shadow-lg shadow-indigo-500/30">
+                                    💳
+                                </div>
+                            </div>
+
+                            <h3 class="font-extrabold text-slate-900 dark:text-slate-100 text-base mb-2">Presensi via Tap Kartu NFC</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6" x-text="nfcStatusText"></p>
+
+                            <button type="button" 
+                                    @click="startNfcScan()" 
+                                    :disabled="isBusy"
+                                    class="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-indigo-500/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer">
+                                <span x-show="!isScanningNfc">📡 Mulai Scan Kartu NFC</span>
+                                <span x-show="isScanningNfc" style="display:none;" class="flex items-center justify-center gap-2">
+                                    <span class="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                                    Menunggu Tap Kartu...
+                                </span>
+                            </button>
+                        </div>
+
+                        {{-- JIKA PERANGKAT / BROWSER BELUM DUKUNG NFC --}}
+                        <div x-show="!isNfcSupported" style="display: none;" class="w-full max-w-md mx-auto p-6 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-3xl text-center shadow-sm">
+                            <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/60 text-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">⚠️</div>
+                            <h4 class="font-extrabold text-amber-900 dark:text-amber-200 text-sm mb-2">Perangkat / Browser Belum Mendukung Sensor NFC</h4>
+                            <p class="text-xs text-amber-700 dark:text-amber-300 font-medium leading-relaxed mb-5">
+                                Smartphone atau browser yang Anda gunakan saat ini belum mendukung fitur sensor Web NFC. Silakan gunakan opsi Presensi Kamera Selfie.
+                            </p>
+                            <button type="button" @click="activeTab = 'selfie'" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer">
+                                📸 Kembali ke Kamera Selfie
+                            </button>
+                        </div>
                     </div>
 
                     {{-- GPS Status --}}
@@ -461,7 +571,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // A. Fungsi Paksa Kamera Selfie (berusaha memaksa HTML)
+        // A. Fungsi Paksa Kamera Selfie
         const forceSelfieMode = () => {
             document.querySelectorAll('input[type="file"]').forEach(input => {
                 if (input.getAttribute('capture') !== 'user') {
@@ -471,31 +581,24 @@
             });
         };
 
-        // B. Fungsi Pesan Peringatan (Jalan di Layar Sentuh / Mouse)
+        // B. Fungsi Pesan Peringatan Kamera Selfie
         const alertSelfie = (e) => {
             let el = e.target.closest('.filepond--root') || 
                      e.target.closest('.filepond--label-action') || 
                      e.target.closest('input[type="file"]');
             
-            // Tampilkan alert jika belum muncul baru-baru ini
             if (el && !el.dataset.hasAlerted) {
                 el.dataset.hasAlerted = "true";
-                
                 alert("📣 BUKA KAMERA DEPAN?\n\nJika yang terbukan adalah kamera belakang, mohon ketuk tombol putar/switch ke KAMERA DEPAN (Selfie) ya!");
-                
-                // Beri jeda 10 detik agar tidak spam
                 setTimeout(() => { delete el.dataset.hasAlerted; }, 10000);
             }
         };
 
-        // Pantau Perubahan Layar (Observer)
         const observer = new MutationObserver(forceSelfieMode);
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // MENDETEKSI SENTUHAN (pointerdown) BUKAN HANYA KLIK
         document.addEventListener('pointerdown', alertSelfie, true);
 
-        // Backup eksekusi berkala
         setInterval(forceSelfieMode, 2000);
         forceSelfieMode();
     });
