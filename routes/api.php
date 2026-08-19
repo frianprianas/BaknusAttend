@@ -9,6 +9,7 @@ Route::get('/get-date', [PresenceController::class, 'getDateTime']);
 Route::get('/user/image', [PresenceController::class, 'getUserImage']);
 Route::get('/dashboard-stats', [PresenceController::class, 'getDashboardStats']);
 Route::get('/user-stats', [PresenceController::class, 'getUserStats']);
+Route::get('/presence/unattended-emails', [PresenceController::class, 'getUnattendedEmails']);
 
 // Endpoint untuk Tap Kartu RFID (Mesin RFID / MPS1)
 Route::get('/attendance/tap', [AttendanceController::class, 'tap']);

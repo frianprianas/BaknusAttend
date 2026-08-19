@@ -396,4 +396,75 @@ class PresenceController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Endpoint API untuk mendapatkan daftar email user yang BELUM presensi hari ini
+     * GET /api/presence/unattended-emails?type=masuk atau type=pulang
+     */
+    public function getUnattendedEmails(Request $request)
+    {
+        $type = strtolower($request->query('type', 'masuk')); // 'masuk' atau 'pulang'
+        $today = Carbon::today();
+
+        // 1. Ambil NIPY / Email Guru/TU yang SUDAH presensi sesuai type hari ini
+        $guruTuQuery = KehadiranGuruTu::whereDate('waktu_tap', $today);
+        if ($type === 'pulang') {
+            $guruTuQuery->where(function($q) {
+                $q->whereRaw('LOWER(keterangan) LIKE ?', ['%pulang%'])
+                  ->orWhereRaw('LOWER(status) LIKE ?', ['%pulang%']);
+            });
+        }
+        $alreadyAttendedGuruTuNipy = $guruTuQuery->pluck('nipy')->toArray();
+
+        // Izin / Sakit Guru/TU dianggap tidak perlu dikirimi pengingat
+        $izinsGuruTu = \App\Models\IzinGuruTu::whereDate('tanggal', $today)
+            ->whereIn('status', ['Diajukan', 'Disetujui'])
+            ->pluck('nipy')
+            ->toArray();
+
+        $excludeGuruTuIdentifiers = array_unique(array_merge($alreadyAttendedGuruTuNipy, $izinsGuruTu));
+
+        // Cari Email Guru/TU yang BELUM presensi
+        $unattendedGuruTuEmails = User::whereIn('role', ['Guru', 'TU'])
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get()
+            ->filter(function($user) use ($excludeGuruTuIdentifiers) {
+                $nipy = !empty($user->nipy) ? $user->nipy : $user->email;
+                return !in_array($user->nipy, $excludeGuruTuIdentifiers) && !in_array($user->email, $excludeGuruTuIdentifiers);
+            })
+            ->pluck('email')
+            ->toArray();
+
+        // 2. Ambil NIS / Email Siswa yang SUDAH presensi sesuai type hari ini
+        $siswaQuery = KehadiranSiswa::whereDate('waktu_tap', $today);
+        if ($type === 'pulang') {
+            $siswaQuery->where(function($q) {
+                $q->whereRaw('LOWER(keterangan) LIKE ?', ['%pulang%'])
+                  ->orWhereRaw('LOWER(status) LIKE ?', ['%pulang%']);
+            });
+        }
+        $alreadyAttendedSiswaNis = $siswaQuery->pluck('nis')->toArray();
+
+        $unattendedSiswaEmails = User::where('role', 'Siswa')
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get()
+            ->filter(function($user) use ($alreadyAttendedSiswaNis) {
+                $nis = !empty($user->nipy) ? $user->nipy : $user->email;
+                return !in_array($nis, $alreadyAttendedSiswaNis) && !in_array($user->email, $alreadyAttendedSiswaNis);
+            })
+            ->pluck('email')
+            ->toArray();
+
+        $allUnattendedEmails = array_values(array_unique(array_merge($unattendedGuruTuEmails, $unattendedSiswaEmails)));
+
+        return response()->json([
+            'status' => 'SUCCESS',
+            'type' => $type,
+            'date' => $today->format('Y-m-d'),
+            'total_unattended' => count($allUnattendedEmails),
+            'emails' => $allUnattendedEmails
+        ]);
+    }
 }
