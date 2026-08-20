@@ -615,15 +615,20 @@
                             </button>
                         </div>
 
-                        {{-- JIKA PERANGKAT / BROWSER BELUM DUKUNG NFC --}}
-                        <div x-show="!isNfcSupported" style="display: none;" class="w-full max-w-md mx-auto p-6 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-3xl text-center shadow-sm">
-                            <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/60 text-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">⚠️</div>
-                            <h4 class="font-extrabold text-amber-900 dark:text-amber-200 text-sm mb-2">Perangkat / Browser Belum Mendukung Sensor NFC</h4>
-                            <p class="text-xs text-amber-700 dark:text-amber-300 font-medium leading-relaxed mb-5">
-                                Smartphone atau browser yang Anda gunakan saat ini belum mendukung fitur sensor Web NFC. Silakan gunakan opsi Presensi Kamera Selfie.
+                        {{-- JIKA PERANGKAT / BROWSER BELUM DUKUNG NFC (misal iPhone / Safari) --}}
+                        <div x-show="!isNfcSupported" style="display: none;" class="w-full max-w-md mx-auto p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-slate-900 border border-amber-200/80 dark:border-amber-900/60 rounded-3xl text-center shadow-lg">
+                            <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/60 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 shadow-sm border border-amber-200">
+                                📱
+                            </div>
+                            <h4 class="font-extrabold text-amber-950 dark:text-amber-200 text-sm mb-2">Web NFC Belum Didukung di Browser Ini</h4>
+                            <p class="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed mb-3">
+                                Khusus pengguna <strong>iPhone (iOS / Safari)</strong> atau browser non-Chromium, Apple membatasi akses sensor NFC langsung dari browser web.
                             </p>
-                            <button type="button" @click="activeTab = 'selfie'" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer">
-                                📸 Kembali ke Kamera Selfie
+                            <div class="bg-amber-100/80 dark:bg-amber-900/40 rounded-xl p-3 mb-5 border border-amber-200/60 dark:border-amber-800/50 text-[11px] text-amber-900 dark:text-amber-200 font-semibold leading-relaxed">
+                                🚀 Fitur Tap NFC untuk iPhone akan segera hadir di <strong>Aplikasi Mobile BaknusAttend</strong> yang nanti dapat Anda unduh di <strong>App Store</strong>!
+                            </div>
+                            <button type="button" @click="activeTab = 'selfie'" class="w-full py-3 px-5 bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white rounded-xl text-xs font-extrabold transition shadow-md cursor-pointer flex items-center justify-center gap-2">
+                                <span>📸 Gunakan Presensi Kamera Selfie</span>
                             </button>
                         </div>
                     </div>
