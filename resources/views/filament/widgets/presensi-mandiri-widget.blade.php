@@ -615,21 +615,70 @@
                             </button>
                         </div>
 
-                        {{-- JIKA PERANGKAT / BROWSER BELUM DUKUNG NFC (misal iPhone / Safari) --}}
-                        <div x-show="!isNfcSupported" style="display: none;" class="w-full max-w-md mx-auto p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-slate-900 border border-amber-200/80 dark:border-amber-900/60 rounded-3xl text-center shadow-lg">
-                            <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/60 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 shadow-sm border border-amber-200">
-                                📱
+                        {{-- JIKA PENGGUNA IPHONE / BROWSER TANPA WEB NFC --}}
+                        <div x-show="!isNfcSupported" style="display: none;" class="w-full max-w-lg mx-auto p-6 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-slate-700/80 rounded-3xl text-left shadow-2xl text-white relative overflow-hidden">
+                            {{-- Ambient Background Glow --}}
+                            <div class="absolute -top-10 -right-10 w-28 h-28 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                            {{-- Header --}}
+                            <div class="flex items-center gap-3.5 mb-4 pb-3 border-b border-slate-800">
+                                <div class="w-11 h-11 bg-indigo-600/30 border border-indigo-400/40 rounded-2xl flex items-center justify-center text-xl shrink-0 shadow-inner">
+                                    
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-white text-sm">Trik Tap NFC untuk Pengguna iPhone</h4>
+                                    <p class="text-[11px] text-slate-400 font-medium">Menggunakan Fitur Bawaan Apple Shortcuts (Pintasan)</p>
+                                </div>
                             </div>
-                            <h4 class="font-extrabold text-amber-950 dark:text-amber-200 text-sm mb-2">Web NFC Belum Didukung di Browser Ini</h4>
-                            <p class="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed mb-3">
-                                Khusus pengguna <strong>iPhone (iOS / Safari)</strong> atau browser non-Chromium, Apple membatasi akses sensor NFC langsung dari browser web.
+
+                            <p class="text-xs text-slate-300 font-medium leading-relaxed mb-4">
+                                Apple membatasi akses sensor NFC di browser web Safari, namun Anda tetap bisa <strong>Tap Kartu NFC secara otomatis di iPhone</strong> dengan mengatur <em>Pintasan Otomatis</em> sekali saja:
                             </p>
-                            <div class="bg-amber-100/80 dark:bg-amber-900/40 rounded-xl p-3 mb-5 border border-amber-200/60 dark:border-amber-800/50 text-[11px] text-amber-900 dark:text-amber-200 font-semibold leading-relaxed">
-                                🚀 Fitur Tap NFC untuk iPhone akan segera hadir di <strong>Aplikasi Mobile BaknusAttend</strong> yang nanti dapat Anda unduh di <strong>App Store</strong>!
+
+                            {{-- Step-by-Step Guide Card --}}
+                            <div class="space-y-2.5 mb-5 bg-slate-950/70 p-4 rounded-2xl border border-slate-800 text-xs">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                                    <span class="text-slate-300">Buka aplikasi bawaan <strong>Pintasan (Shortcuts)</strong> di iPhone Anda.</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                                    <span class="text-slate-300">Pilih tab <strong>Otomatisasi (Automation)</strong> di bagian bawah ➜ Ketuk <strong>Buat Otomatisasi Pribadi</strong> ➜ Pilih <strong>NFC</strong>.</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                                    <span class="text-slate-300">Ketuk <strong>Pindai</strong> lalu tempelkan Kartu ID Card sekolah ke bodi atas belakang iPhone Anda.</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                                    <span class="text-slate-300">Tambah Tindakan ➜ Cari <strong>Buka URL</strong> ➜ Masukkan link presensi di bawah & matikan <em>"Tanya Sebelum Menjalankan"</em>.</span>
+                                </div>
                             </div>
-                            <button type="button" @click="activeTab = 'selfie'" class="w-full py-3 px-5 bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white rounded-xl text-xs font-extrabold transition shadow-md cursor-pointer flex items-center justify-center gap-2">
-                                <span>📸 Gunakan Presensi Kamera Selfie</span>
-                            </button>
+
+                            {{-- Action Buttons --}}
+                            <div class="flex flex-col gap-2.5">
+                                {{-- Copy URL Button --}}
+                                <button type="button" 
+                                        @click="navigator.clipboard.writeText('https://baknusattend.smkbn666.sch.id'); alert('✅ Link presensi berhasil disalin ke clipboard!');"
+                                        class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                    <span>📋 Salin Link Presensi Cepat</span>
+                                </button>
+
+                                {{-- Open Shortcuts App directly --}}
+                                <a href="shortcuts://" 
+                                   class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-center shadow-lg shadow-indigo-600/30">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    <span>⚡ Buka Aplikasi Pintasan di iPhone</span>
+                                </a>
+
+                                {{-- Switch to Selfie mode --}}
+                                <button type="button" 
+                                        @click="activeTab = 'selfie'" 
+                                        class="w-full py-2.5 px-4 bg-transparent hover:bg-white/5 text-slate-400 hover:text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer mt-1">
+                                    <span>📸 Atau Gunakan Presensi Kamera Selfie Saja</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
