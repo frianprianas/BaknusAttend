@@ -350,6 +350,11 @@ class PresenceController extends Controller
                         $presentDays[$date] = true;
                     }
                     
+                    $photoUrl = null;
+                    if (!empty($tap->photo) && $tap->photo !== 'rfid_placeholder') {
+                        $photoUrl = url('storage/' . ltrim($tap->photo, '/'));
+                    }
+
                     $detailKehadiran[] = [
                         'waktu_tap' => $tap->waktu_tap,
                         'status' => $tap->status,
@@ -358,6 +363,7 @@ class PresenceController extends Controller
                         'long' => $tap->long,
                         'is_dinas_luar' => $tap->is_dinas_luar,
                         'lokasi_dinas_luar' => $tap->lokasi_dinas_luar,
+                        'photo_url' => $photoUrl,
                     ];
                 }
                 $totalKehadiran = count($presentDays);
@@ -381,6 +387,11 @@ class PresenceController extends Controller
                     $presentDays[$date] = true;
                 }
 
+                $photoUrl = null;
+                if (!empty($tap->photo) && $tap->photo !== 'rfid_placeholder') {
+                    $photoUrl = url('storage/' . ltrim($tap->photo, '/'));
+                }
+
                 $detailKehadiran[] = [
                     'waktu_tap' => $tap->waktu_tap,
                     'status' => $tap->status,
@@ -389,6 +400,7 @@ class PresenceController extends Controller
                     'long' => $tap->long,
                     'is_dinas_luar' => $tap->is_dinas_luar,
                     'lokasi_dinas_luar' => $tap->lokasi_dinas_luar,
+                    'photo_url' => $photoUrl,
                 ];
             }
             $totalKehadiran = count($presentDays);
