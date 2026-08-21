@@ -309,8 +309,17 @@ class PresenceController extends Controller
             ], 404);
         }
 
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
+        $month = $request->query('month');
+        $year = $request->query('year');
+
+        if ($month && $year) {
+            $date = Carbon::createFromDate((int)$year, (int)$month, 1);
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+        } else {
+            $startOfMonth = Carbon::now()->startOfMonth();
+            $endOfMonth = Carbon::now()->endOfMonth();
+        }
 
         $totalKehadiran = 0;
         $detailKehadiran = [];
