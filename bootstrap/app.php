@@ -20,5 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->expectsJson() || $request->isXmlHttpRequest()) {
+                return response()->json([
+                    'message' => 'Sesi Anda telah berakhir. Silakan muat ulang halaman atau login kembali.',
+                    'redirect' => route('filament.admin.auth.login'),
+                ], 419);
+            }
+            return redirect()->route('filament.admin.auth.login')
+                ->with('error', 'Sesi Anda telah berakhir. Silakan login kembali.');
+        });
     })->create();

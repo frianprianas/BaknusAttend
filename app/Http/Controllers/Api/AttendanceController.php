@@ -38,16 +38,29 @@ class AttendanceController extends Controller
         $batasTerlambat = '07:15';
         $statusHadir = ($jamTap <= $batasTerlambat) ? 'Hadir' : 'Terlambat';
 
+        // Ambil koordinat GPS dari request jika dikirim oleh mesin
+        $lat = $request->input('lat') ?? $request->input('latitude') ?? $request->query('lat') ?? $request->query('latitude');
+        $long = $request->input('long') ?? $request->input('longitude') ?? $request->query('long') ?? $request->query('longitude');
+
+        // Jika mesin RFID fisik tidak mengirim GPS, fallback otomatis ke koordinat lokasi resmi sekolah
+        if (empty($lat) || empty($long)) {
+            $school = \App\Models\SchoolSetting::first();
+            if ($school) {
+                $lat = $lat ?: $school->lat;
+                $long = $long ?: $school->long;
+            }
+        }
+
         // 1. Cek apakah Siswa
         $student = Student::where('rfid', $rfid)->first();
         if ($student) {
-            return $this->processStudentAttendance($student, $today, $now, $statusHadir, $machineId);
+            return $this->processStudentAttendance($student, $today, $now, $statusHadir, $machineId, $lat, $long);
         }
 
         // 2. Cek apakah Guru / TU
         $user = User::where('rfid', $rfid)->first();
         if ($user) {
-            return $this->processGuruTuAttendance($user, $today, $now, $statusHadir, $machineId);
+            return $this->processGuruTuAttendance($user, $today, $now, $statusHadir, $machineId, $lat, $long);
         }
 
         // 3. Tidak ditemukan sama sekali
@@ -58,7 +71,7 @@ class AttendanceController extends Controller
         ], 404);
     }
 
-    private function processStudentAttendance($student, $today, $now, $statusHadir, $machineId)
+    private function processStudentAttendance($student, $today, $now, $statusHadir, $machineId, $lat = null, $long = null)
     {
         // Cek jumlah tap hari ini (untuk menentukan Masuk/Pulang)
         $tapsHariIni = KehadiranSiswa::where('nis', $student->nis)
@@ -87,6 +100,8 @@ class AttendanceController extends Controller
             'waktu_tap' => $now,
             'status' => $statusAbsen === 'Masuk' ? $keteranganAbsen : 'Hadir', 
             'keterangan' => "RFID Tap ({$statusAbsen}) via {$machineId}",
+            'lat' => $lat,
+            'long' => $long,
         ]);
 
         // Kirim ke API BaknusDrive
@@ -101,7 +116,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    private function processGuruTuAttendance($user, $today, $now, $statusHadir, $machineId)
+    private function processGuruTuAttendance($user, $today, $now, $statusHadir, $machineId, $lat = null, $long = null)
     {
         // Cek jumlah tap hari ini
         $tapsHariIni = KehadiranGuruTu::where('nipy', $user->nipy)
@@ -130,6 +145,8 @@ class AttendanceController extends Controller
             'waktu_tap' => $now,
             'status' => $statusAbsen === 'Masuk' ? $keteranganAbsen : 'Hadir',
             'keterangan' => "RFID Tap ({$statusAbsen}) via {$machineId}",
+            'lat' => $lat,
+            'long' => $long,
         ]);
 
         // Kirim ke API BaknusDrive
