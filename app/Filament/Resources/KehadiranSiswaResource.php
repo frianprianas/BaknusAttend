@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -170,7 +171,7 @@ class KehadiranSiswaResource extends Resource
                             default => $query,
                         };
                     }),
-            ])
+            ], layout: FiltersLayout::AboveContent)
             ->actions([])
             ->bulkActions([])
             ->paginated(true)
