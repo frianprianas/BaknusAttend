@@ -118,7 +118,7 @@
             padding: 4px 10px 10px;
             margin-bottom: 8px;
             width: 100%;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
         }
         .slide-tabs-nav::-webkit-scrollbar { display: none; }
 
@@ -176,7 +176,7 @@
         /* Grid Bioskop Kotak-Kotak */
         .cinema-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
             gap: 16px;
             width: 100%;
             padding: 4px;
@@ -184,7 +184,7 @@
 
         @media (min-width: 1024px) {
             .cinema-grid {
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
                 gap: 18px;
             }
         }
@@ -504,7 +504,7 @@
             <div class="slide-tab-pill active" onclick="goToSlide(0)">👨‍🏫 Guru</div>
             <div class="slide-tab-pill" onclick="goToSlide(1)">💼 TU</div>
             @foreach($classSlides as $idx => $cs)
-                <div class="slide-tab-pill" onclick="goToSlide({{ $idx + 2 }})">🎓 {{ $cs['kelas'] }}</div>
+                <div class="slide-tab-pill" onclick="goToSlide({{ $idx + 2 }})">🎓 {{ $cs['kelas'] }} ({{ $cs['total'] }})</div>
             @endforeach
         </div>
 
@@ -539,11 +539,38 @@
                                 <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
                                 <p style="font-size:10px;opacity:0.85;margin-top:1px;">Guru</p>
                             </div>
+
+                            {{-- Attendance Info Box (Jam, Metode, GPS) --}}
                             <div style="width:100%;margin-top:8px;">
-                                <span style="display:block;padding:4px 2px;font-size:9.5px;font-weight:900;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.3);letter-spacing:0.03em;">
-                                    {{ $t['status_code'] === 'HADIR' ? '✅ ' . $t['waktu_tap'] : ($t['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $t['waktu_tap'] : ($t['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
-                                </span>
+                                @if($t['status_code'] === 'HADIR' || $t['status_code'] === 'TERLAMBAT')
+                                    <div style="background:rgba(0,0,0,0.35);padding:5px 4px;border-radius:10px;font-size:9px;line-height:1.3;text-align:center;border:1px solid rgba(255,255,255,0.25);">
+                                        <div style="font-weight:900;">
+                                            {{ $t['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $t['tap_jam'] ?? $t['waktu_tap'] }})
+                                        </div>
+                                        <div style="font-size:8.5px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
+                                            <span>{{ $t['tap_metode'] ?? '💳 RFID' }}</span>
+                                            @if(!empty($t['tap_gps']))
+                                                <span>·</span>
+                                                <span title="GPS: {{ $t['tap_gps'] }}">📍 GPS</span>
+                                            @endif
+                                        </div>
+                                        @if(!empty($t['tap_gps']))
+                                            <div style="font-size:7.5px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $t['tap_gps'] }}">
+                                                {{ $t['tap_gps'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @elseif($t['status_code'] === 'IZIN')
+                                    <div style="background:rgba(0,0,0,0.35);padding:6px;border-radius:10px;font-size:9.5px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
+                                        📋 IZIN / SAKIT
+                                    </div>
+                                @else
+                                    <div style="background:rgba(0,0,0,0.25);padding:6px;border-radius:10px;font-size:9.5px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
+                                        ⚪ BELUM TAP
+                                    </div>
+                                @endif
                             </div>
+
                         </div>
                     @endforeach
                 </div>
@@ -572,17 +599,43 @@
                                 <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
                                 <p style="font-size:10px;opacity:0.85;margin-top:1px;">Staff TU</p>
                             </div>
+
                             <div style="width:100%;margin-top:8px;">
-                                <span style="display:block;padding:4px 2px;font-size:9.5px;font-weight:900;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.3);letter-spacing:0.03em;">
-                                    {{ $tu['status_code'] === 'HADIR' ? '✅ ' . $tu['waktu_tap'] : ($tu['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $tu['waktu_tap'] : ($tu['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
-                                </span>
+                                @if($tu['status_code'] === 'HADIR' || $tu['status_code'] === 'TERLAMBAT')
+                                    <div style="background:rgba(0,0,0,0.35);padding:5px 4px;border-radius:10px;font-size:9px;line-height:1.3;text-align:center;border:1px solid rgba(255,255,255,0.25);">
+                                        <div style="font-weight:900;">
+                                            {{ $tu['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $tu['tap_jam'] ?? $tu['waktu_tap'] }})
+                                        </div>
+                                        <div style="font-size:8.5px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
+                                            <span>{{ $tu['tap_metode'] ?? '💳 RFID' }}</span>
+                                            @if(!empty($tu['tap_gps']))
+                                                <span>·</span>
+                                                <span title="GPS: {{ $tu['tap_gps'] }}">📍 GPS</span>
+                                            @endif
+                                        </div>
+                                        @if(!empty($tu['tap_gps']))
+                                            <div style="font-size:7.5px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $tu['tap_gps'] }}">
+                                                {{ $tu['tap_gps'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @elseif($tu['status_code'] === 'IZIN')
+                                    <div style="background:rgba(0,0,0,0.35);padding:6px;border-radius:10px;font-size:9.5px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
+                                        📋 IZIN / SAKIT
+                                    </div>
+                                @else
+                                    <div style="background:rgba(0,0,0,0.25);padding:6px;border-radius:10px;font-size:9.5px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
+                                        ⚪ BELUM TAP
+                                    </div>
+                                @endif
                             </div>
+
                         </div>
                     @endforeach
                 </div>
             </div>
 
-            {{-- SLIDE 3+: KELAS SISWA (HANYA KELAS SISWA > 6 ORANG) --}}
+            {{-- SLIDE 3+: KELAS SISWA --}}
             @foreach($classSlides as $cs)
                 <div class="slide-item" data-title="DAFTAR SISWA KELAS {{ $cs['kelas'] }} ({{ $cs['total'] }} SISWA)">
                     <div class="cinema-grid">
@@ -604,13 +657,39 @@
 
                                 <div style="width:100%;margin-top:2px;">
                                     <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
-                                    <p style="font-size:10px;opacity:0.85;margin-top:1px;font-family:monospace;">{{ $st['nis'] }}</p>
+                                    <p style="font-size:10px;opacity:0.85;margin-top:1px;font-family:monospace;">{{ $st['code'] }}</p>
                                 </div>
+
                                 <div style="width:100%;margin-top:8px;">
-                                    <span style="display:block;padding:4px 2px;font-size:9.5px;font-weight:900;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.3);letter-spacing:0.03em;">
-                                        {{ $st['status_code'] === 'HADIR' ? '✅ ' . $st['waktu_tap'] : ($st['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $st['waktu_tap'] : ($st['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
-                                    </span>
+                                    @if($st['status_code'] === 'HADIR' || $st['status_code'] === 'TERLAMBAT')
+                                        <div style="background:rgba(0,0,0,0.35);padding:5px 4px;border-radius:10px;font-size:9px;line-height:1.3;text-align:center;border:1px solid rgba(255,255,255,0.25);">
+                                            <div style="font-weight:900;">
+                                                {{ $st['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $st['tap_jam'] ?? $st['waktu_tap'] }})
+                                            </div>
+                                            <div style="font-size:8.5px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
+                                                <span>{{ $st['tap_metode'] ?? '💳 RFID' }}</span>
+                                                @if(!empty($st['tap_gps']))
+                                                    <span>·</span>
+                                                    <span title="GPS: {{ $st['tap_gps'] }}">📍 GPS</span>
+                                                @endif
+                                            </div>
+                                            @if(!empty($st['tap_gps']))
+                                                <div style="font-size:7.5px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $st['tap_gps'] }}">
+                                                    {{ $st['tap_gps'] }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @elseif($st['status_code'] === 'IZIN')
+                                        <div style="background:rgba(0,0,0,0.35);padding:6px;border-radius:10px;font-size:9.5px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
+                                            📋 IZIN / SAKIT
+                                        </div>
+                                    @else
+                                        <div style="background:rgba(0,0,0,0.25);padding:6px;border-radius:10px;font-size:9.5px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
+                                            ⚪ BELUM TAP
+                                        </div>
+                                    @endif
                                 </div>
+
                             </div>
                         @endforeach
                     </div>

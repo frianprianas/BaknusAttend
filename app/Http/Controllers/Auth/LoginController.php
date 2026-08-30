@@ -41,6 +41,8 @@ class LoginController extends Controller
             
             $statusCode = 'BELUM';
             $waktu = '-';
+            $tapDetails = null;
+
             if ($firstTap) {
                 $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
                 $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
@@ -51,6 +53,7 @@ class LoginController extends Controller
                 } else {
                     $statusCode = 'HADIR';
                 }
+                $tapDetails = $this->parseTapDetails($firstTap);
             }
 
             // BaknusMail Avatar Endpoint API
@@ -60,9 +63,13 @@ class LoginController extends Controller
             return [
                 'seat_number' => sprintf('#G%02d', $idx + 1),
                 'name'        => $user->name,
+                'code'        => 'Guru',
                 'email'       => $user->email,
                 'status_code' => $statusCode,
                 'waktu_tap'   => $waktu,
+                'tap_jam'     => $tapDetails['jam'] ?? null,
+                'tap_metode'  => $tapDetails['metode'] ?? null,
+                'tap_gps'     => $tapDetails['gps'] ?? null,
                 'avatar_url'  => $avatarUrl,
             ];
         })->values()->toArray();
@@ -79,6 +86,8 @@ class LoginController extends Controller
             
             $statusCode = 'BELUM';
             $waktu = '-';
+            $tapDetails = null;
+
             if ($firstTap) {
                 $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
                 $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
@@ -89,6 +98,7 @@ class LoginController extends Controller
                 } else {
                     $statusCode = 'HADIR';
                 }
+                $tapDetails = $this->parseTapDetails($firstTap);
             }
 
             $emailClean = strtolower(trim($user->email));
@@ -97,24 +107,24 @@ class LoginController extends Controller
             return [
                 'seat_number' => sprintf('#T%02d', $idx + 1),
                 'name'        => $user->name,
+                'code'        => 'Staff TU',
                 'email'       => $user->email,
                 'status_code' => $statusCode,
                 'waktu_tap'   => $waktu,
+                'tap_jam'     => $tapDetails['jam'] ?? null,
+                'tap_metode'  => $tapDetails['metode'] ?? null,
+                'tap_gps'     => $tapDetails['gps'] ?? null,
                 'avatar_url'  => $avatarUrl,
             ];
         })->values()->toArray();
 
-        // 3. Filter Kelas yang siswanya LEBIH DARI 6 ORANG
+        // 3. SELURUH KELAS AKTIF (Pastikan 100% muncul di slide)
         $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
             ->with(['students' => function ($q) {
                 $q->orderBy('name', 'asc');
             }])
             ->orderBy('kelas')
-            ->get()
-            ->filter(function ($c) {
-                return $c->students->count() > 6;
-            })
-            ->values();
+            ->get();
 
         $allStudentNis = $classes->pluck('students')->flatten()->pluck('nis')->filter();
 
@@ -130,6 +140,8 @@ class LoginController extends Controller
 
                 $statusCode = 'BELUM';
                 $waktu = '-';
+                $tapDetails = null;
+
                 if ($firstTap) {
                     $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
                     $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
@@ -140,6 +152,7 @@ class LoginController extends Controller
                     } else {
                         $statusCode = 'HADIR';
                     }
+                    $tapDetails = $this->parseTapDetails($firstTap);
                 }
 
                 $nisClean = strtolower(trim($student->nis));
@@ -149,9 +162,12 @@ class LoginController extends Controller
                 return [
                     'seat_number' => sprintf('#%02d', $idx + 1),
                     'name'        => $student->name,
-                    'nis'         => $student->nis,
+                    'code'        => $student->nis,
                     'status_code' => $statusCode,
                     'waktu_tap'   => $waktu,
+                    'tap_jam'     => $tapDetails['jam'] ?? null,
+                    'tap_metode'  => $tapDetails['metode'] ?? null,
+                    'tap_gps'     => $tapDetails['gps'] ?? null,
                     'avatar_url'  => $avatarUrl,
                 ];
             });
@@ -165,6 +181,42 @@ class LoginController extends Controller
         })->values()->toArray();
 
         return view('auth.login', compact('teacherGrid', 'tuGrid', 'classSlides'));
+    }
+
+    private function parseTapDetails($tapRecord): array
+    {
+        if (!$tapRecord) {
+            return ['jam' => '-', 'metode' => '⚪ Belum', 'gps' => null];
+        }
+
+        $jam = Carbon::parse($tapRecord->waktu_tap)->format('H:i:s');
+        $ketLower = strtolower($tapRecord->keterangan ?? '');
+
+        // Tentukan Metode Presensi
+        $metode = '💳 RFID';
+        if (!empty($tapRecord->lat) && !empty($tapRecord->long)) {
+            $metode = '📍 GPS HP';
+        } elseif (!empty($tapRecord->is_dinas_luar)) {
+            $metode = '🚗 Dinas Luar';
+        } elseif (str_contains($ketLower, 'wajah') || str_contains($ketLower, 'face') || str_contains($ketLower, 'foto')) {
+            $metode = '👤 Face AI';
+        } elseif (str_contains($ketLower, 'manual') || str_contains($ketLower, 'wali')) {
+            $metode = '✍️ Manual';
+        }
+
+        // Tentukan GPS / Koordinat Lokasi
+        $gps = null;
+        if (!empty($tapRecord->lat) && !empty($tapRecord->long)) {
+            $gps = round((float)$tapRecord->lat, 4) . ', ' . round((float)$tapRecord->long, 4);
+        } elseif (!empty($tapRecord->lokasi_dinas_luar)) {
+            $gps = $tapRecord->lokasi_dinas_luar;
+        }
+
+        return [
+            'jam'    => $jam,
+            'metode' => $metode,
+            'gps'    => $gps,
+        ];
     }
 
     public function login(Request $request)
