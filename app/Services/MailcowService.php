@@ -158,6 +158,10 @@ class MailcowService
         $tagsStr = is_array($tags) ? implode(' ', $tags) : (string)$tags;
         $allText = strtolower($tagsStr . ' ' . $comment . ' ' . $email);
 
+        if (str_contains($allText, 'test') || str_contains($allText, 'penguji')) {
+            return 'Test';
+        }
+
         if (str_contains($allText, 'admin') || str_contains($allText, 'kepsek')) {
             return 'Admin';
         }

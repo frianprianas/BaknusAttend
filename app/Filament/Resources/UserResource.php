@@ -20,7 +20,7 @@ class UserResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereIn('role', ['Admin', 'Guru', 'TU']);
+            ->whereIn('role', ['Admin', 'Guru', 'TU', 'Test']);
     }
 
     public static function canViewAny(): bool
@@ -62,6 +62,7 @@ class UserResource extends Resource
                         'Admin' => 'Admin',
                         'Guru' => 'Guru',
                         'TU' => 'Tenaga Usaha (TU)',
+                        'Test' => 'User Test',
                     ])
                     ->required()
                     ->default('TU'),
