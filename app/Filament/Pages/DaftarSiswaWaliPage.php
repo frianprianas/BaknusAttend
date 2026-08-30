@@ -7,15 +7,18 @@ use App\Models\KehadiranSiswa;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\DB;
+use Livewire\WithFileUploads;
 
 class DaftarSiswaWaliPage extends Page
 {
+    use WithFileUploads;
+
     protected static ?string $navigationIcon  = 'heroicon-o-academic-cap';
     protected static ?string $navigationLabel = 'Daftar Siswa Wali';
-    protected static ?string $title           = 'Presensi Bioskop Siswa Wali';
+    protected static ?string $title           = 'Daftar Siswa & Presensi Wali Kelas';
     protected static ?string $navigationGroup = 'Wali Kelas';
     protected static ?int $navigationSort     = 1;
     protected static string $view             = 'filament.pages.daftar-siswa-wali-page';
@@ -23,6 +26,18 @@ class DaftarSiswaWaliPage extends Page
     public ?int $selectedClassId = null;
     public ?array $modalStudent = null;
     public bool $showModal = false;
+
+    // Form Pengisian Status & Bukti Izin/Sakit/Alpa
+    public ?string $modalNis = null;
+    public string $inputStatus = 'Izin';
+    public string $inputKeterangan = '';
+    public $buktiFile = null;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->role === 'Admin' || $user->is_kepsek || $user->isWaliKelas());
+    }
 
     public static function canAccess(): bool
     {
@@ -32,7 +47,7 @@ class DaftarSiswaWaliPage extends Page
 
     public function getTitle(): string|Htmlable
     {
-        return 'Daftar Siswa Wali — Presensi Screen Bioskop';
+        return 'Daftar Siswa Wali Kelas';
     }
 
     public function mount(): void
@@ -54,14 +69,16 @@ class DaftarSiswaWaliPage extends Page
     public function selectClass(int $classId): void
     {
         $this->selectedClassId = $classId;
-        $this->showModal = false;
-        $this->modalStudent = null;
+        $this->closeModal();
     }
 
     public function openStudentModal(string $nis): void
     {
         $student = Student::with('classRoom')->where('nis', $nis)->first();
         if (!$student) return;
+
+        $this->modalNis = $nis;
+        $this->buktiFile = null;
 
         $todayTaps = KehadiranSiswa::where('nis', $nis)
             ->whereDate('waktu_tap', Carbon::today())
@@ -70,6 +87,20 @@ class DaftarSiswaWaliPage extends Page
 
         $firstTap = $todayTaps->first();
         $lastTap  = $todayTaps->count() > 1 ? $todayTaps->last() : null;
+
+        // Set default status & keterangan di form modal
+        if ($firstTap) {
+            $this->inputStatus = match($firstTap->status) {
+                'Sakit' => 'Sakit',
+                'Izin'  => 'Izin',
+                'Alpa'  => 'Alpa',
+                default => 'Hadir',
+            };
+            $this->inputKeterangan = $firstTap->keterangan ?? '';
+        } else {
+            $this->inputStatus = 'Izin';
+            $this->inputKeterangan = '';
+        }
 
         // Hitung statistik presensi bulan ini
         $activeDays = (new \App\Services\AttendanceService())->getEffectiveWorkingDays(now()->month, now()->year);
@@ -91,6 +122,7 @@ class DaftarSiswaWaliPage extends Page
             'waktu_pulang'   => $lastTap ? Carbon::parse($lastTap->waktu_tap)->format('H:i:s') : null,
             'status_masuk'   => $firstTap ? ($firstTap->status ?? 'Hadir') : 'Belum Tap',
             'keterangan'     => $firstTap ? ($firstTap->keterangan ?? '-') : 'Belum Melakukan Presensi Hari Ini',
+            'bukti_ada'      => $firstTap && $firstTap->photo ? asset('storage/' . $firstTap->photo) : null,
             'total_tap_today'=> $todayTaps->count(),
             'persen_bulan'   => $persenMonth,
             'hadir_bulan'    => $hadirMonth,
@@ -104,6 +136,76 @@ class DaftarSiswaWaliPage extends Page
     {
         $this->showModal = false;
         $this->modalStudent = null;
+        $this->modalNis = null;
+        $this->buktiFile = null;
+        $this->inputKeterangan = '';
+    }
+
+    /**
+     * Menyimpan Status Izin / Sakit / Alpa / Hadir dari Wali Kelas beserta Bukti Upload & Sinkronkan ke BaknusDrive.
+     */
+    public function saveAttendanceStatus(): void
+    {
+        if (!$this->modalNis) return;
+
+        $student = Student::with('classRoom')->where('nis', $this->modalNis)->first();
+        if (!$student) return;
+
+        $path = null;
+        if ($this->buktiFile) {
+            $path = $this->buktiFile->store('bukti-siswa', 'public');
+        }
+
+        $keteranganText = !empty($this->inputKeterangan) ? $this->inputKeterangan : $this->inputStatus;
+
+        $kehadiran = KehadiranSiswa::where('nis', $this->modalNis)
+            ->whereDate('waktu_tap', Carbon::today())
+            ->first();
+
+        if (!$kehadiran) {
+            $kehadiran = KehadiranSiswa::create([
+                'nis'        => $this->modalNis,
+                'waktu_tap'  => now(),
+                'status'     => $this->inputStatus,
+                'keterangan' => $keteranganText,
+                'photo'      => $path ?? null,
+            ]);
+        } else {
+            $updateData = [
+                'status'     => $this->inputStatus,
+                'keterangan' => $keteranganText,
+            ];
+            if ($path) {
+                $updateData['photo'] = $path;
+            }
+            $kehadiran->update($updateData);
+        }
+
+        // KANALSINKRONISASI OTOMATIS KE BAKNUSDRIVE
+        try {
+            $driveData = [
+                'NIS'       => $student->nis,
+                'Nama'      => $student->name,
+                'kelas'     => $student->classRoom ? $student->classRoom->kelas : '-',
+                'role'      => 'siswa',
+                'waktu_tap' => Carbon::parse($kehadiran->waktu_tap ?? now())->format('H:i:s'),
+                'status'    => $this->inputStatus,
+                'keterangan'=> $keteranganText,
+                'bukti_url' => $path ? asset('storage/' . $path) : null,
+            ];
+            \App\Jobs\SyncAttendanceToBaknusDrive::dispatchAfterResponse($driveData);
+        } catch (\Throwable $e) {
+            \Log::error('Gagal sync BaknusDrive dari Wali Kelas: ' . $e->getMessage());
+        }
+
+        Notification::make()
+            ->title('Berhasil Disimpan & Disinkronkan!')
+            ->body("Status presensi {$student->name} ({$this->inputStatus}) berhasil diperbarui dan dikirim ke BaknusDrive.")
+            ->success()
+            ->send();
+
+        // Refresh modal data & grid
+        $this->openStudentModal($this->modalNis);
     }
 
     public function getAvailableClassesProperty()
@@ -173,6 +275,10 @@ class DaftarSiswaWaliPage extends Page
                     $statusCode  = 'IZIN';
                     $statusLabel = 'Izin / Sakit';
                     $izinCount++;
+                } elseif (str_contains($statusStr, 'alpa') || str_contains($statusStr, 'tanpa keterangan')) {
+                    $statusCode  = 'ALPA';
+                    $statusLabel = 'Tanpa Keterangan';
+                    $belumCount++;
                 } else {
                     $statusCode  = 'HADIR';
                     $statusLabel = "Hadir ($waktuTap)";
@@ -187,7 +293,7 @@ class DaftarSiswaWaliPage extends Page
                 'student_id'   => $student->id,
                 'nis'          => $student->nis,
                 'name'         => $student->name,
-                'status_code'  => $statusCode, // HADIR, TERLAMBAT, IZIN, BELUM
+                'status_code'  => $statusCode, // HADIR, TERLAMBAT, IZIN, ALPA, BELUM
                 'status_label' => $statusLabel,
                 'waktu_masuk'  => $firstTap ? Carbon::parse($firstTap->waktu_tap)->format('H:i') : null,
                 'waktu_pulang' => $lastTap ? Carbon::parse($lastTap->waktu_tap)->format('H:i') : null,

@@ -39,9 +39,9 @@
         }
 
         .screen-label {
-            font-size: 0.72rem;
+            font-size: 0.85rem;
             font-weight: 900;
-            letter-spacing: 0.25em;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
             color: #4f46e5;
         }
@@ -135,7 +135,21 @@
             box-shadow: 0 6px 20px -4px rgba(59, 130, 246, 0.4);
         }
 
-        /* Status 4: BELUM TAP (Abu-abu / Neutral) */
+        /* Status 4: ALPA (Merah / Rose) */
+        .seat-alpa {
+            background: linear-gradient(145deg, #fff1f2 0%, #ffe4e6 100%);
+            border-color: #fca5a5;
+            color: #881337;
+            box-shadow: 0 4px 15px -3px rgba(244, 63, 94, 0.3);
+        }
+        .dark .seat-alpa {
+            background: linear-gradient(145deg, rgba(136, 19, 55, 0.85) 0%, rgba(159, 18, 57, 0.9) 100%);
+            border-color: #f43f5e;
+            color: #ffe4e6;
+            box-shadow: 0 6px 20px -4px rgba(244, 63, 94, 0.4);
+        }
+
+        /* Status 5: BELUM TAP (Abu-abu / Neutral) */
         .seat-belum {
             background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
             border-color: #e2e8f0;
@@ -173,6 +187,11 @@
             box-shadow: 0 0 10px #3b82f6;
         }
 
+        .led-alpa {
+            background-color: #f43f5e;
+            box-shadow: 0 0 10px #f43f5e;
+        }
+
         .led-belum {
             background-color: #94a3b8;
             opacity: 0.5;
@@ -195,14 +214,14 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl border border-indigo-500/20">
-                    🎬
+                    🎓
                 </div>
                 <div>
                     <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <span>{{ $currentClass ? $currentClass->kelas : 'Pilih Kelas' }}</span>
                         @if($currentClass)
                             <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                                Wali: {{ $currentClass->nipy ?? 'Belum Ditentukan' }}
+                                Wali Kelas
                             </span>
                         @endif
                     </h2>
@@ -308,7 +327,7 @@
         {{-- Cinema Layout Projection Screen --}}
         <div class="cinema-screen-container">
             <div class="cinema-screen">
-                <p class="screen-label">🍿 PROYEKSI DENAH KURSI PRESENSI KELAS (BIOSKOP VIEW) 🍿</p>
+                <p class="screen-label">DAFTAR SISWA</p>
                 <div class="w-1/3 h-1 mx-auto mt-2 rounded-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
             </div>
         </div>
@@ -328,6 +347,7 @@
                             'HADIR' => 'seat-hadir',
                             'TERLAMBAT' => 'seat-terlambat',
                             'IZIN' => 'seat-izin',
+                            'ALPA' => 'seat-alpa',
                             default => 'seat-belum',
                         };
 
@@ -335,6 +355,7 @@
                             'HADIR' => 'led-hadir',
                             'TERLAMBAT' => 'led-terlambat',
                             'IZIN' => 'led-izin',
+                            'ALPA' => 'led-alpa',
                             default => 'led-belum',
                         };
                     @endphp
@@ -379,6 +400,8 @@
                                     ⚠️ {{ $student['waktu_masuk'] }}
                                 @elseif($student['status_code'] === 'IZIN')
                                     📋 IZIN
+                                @elseif($student['status_code'] === 'ALPA')
+                                    ❌ ALPA
                                 @else
                                     ⚪ BELUM
                                 @endif
@@ -392,10 +415,10 @@
 
     </div>
 
-    {{-- Student Detail Modal (Pop-up Popover) --}}
+    {{-- Student Detail & Input Status Modal (Pop-up Popover) --}}
     @if($showModal && $modalStudent)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" wire:click.self="closeModal">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 max-w-md w-full shadow-2xl relative space-y-5">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto" wire:click.self="closeModal">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative space-y-5 my-8">
                 
                 {{-- Close Button --}}
                 <button wire:click="closeModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
@@ -420,46 +443,80 @@
                     </div>
                 </div>
 
-                {{-- Today's Attendance Details --}}
-                <div class="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/60 space-y-3">
-                    <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status Presensi Hari Ini</h4>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-                            <span class="text-[10px] font-semibold text-gray-400 block">Waktu Masuk</span>
-                            <span class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                                {{ $modalStudent['waktu_masuk'] ?? '-' }}
-                            </span>
-                        </div>
-                        <div class="p-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-                            <span class="text-[10px] font-semibold text-gray-400 block">Waktu Pulang</span>
-                            <span class="text-sm font-extrabold text-orange-600 dark:text-orange-400">
-                                {{ $modalStudent['waktu_pulang'] ?? '-' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs">
-                        <span class="font-medium text-gray-500 dark:text-gray-400">Keterangan:</span>
-                        <span class="font-bold text-gray-900 dark:text-white">{{ $modalStudent['keterangan'] }}</span>
-                    </div>
-                </div>
-
-                {{-- Monthly Statistics --}}
-                <div class="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex items-center justify-between">
+                {{-- Today's Attendance Info --}}
+                <div class="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/60 flex justify-between items-center text-xs">
                     <div>
-                        <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">Rekap Kehadiran Bulan Ini</span>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">Hadir {{ $modalStudent['hadir_bulan'] }} dari {{ $modalStudent['aktif_bulan'] }} hari aktif</span>
+                        <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Status Saat Ini:</span>
+                        <span class="font-bold text-gray-900 dark:text-white">{{ $modalStudent['status_masuk'] }} ({{ $modalStudent['keterangan'] }})</span>
                     </div>
-                    <span class="text-xl font-black text-indigo-600 dark:text-indigo-400">
-                        {{ $modalStudent['persen_bulan'] }}%
-                    </span>
+                    <div class="text-right">
+                        <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Tap Masuk:</span>
+                        <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $modalStudent['waktu_masuk'] ?? '-' }}</span>
+                    </div>
                 </div>
 
-                {{-- Footer Button --}}
-                <button wire:click="closeModal" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">
-                    Tutup Detail
-                </button>
+                @if($modalStudent['bukti_ada'])
+                    <div class="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-between">
+                        <span class="text-xs font-bold text-blue-700 dark:text-blue-300">📎 Bukti Terlampir</span>
+                        <a href="{{ $modalStudent['bukti_ada'] }}" target="_blank" class="text-xs font-bold text-indigo-600 hover:underline">
+                            Lihat Bukti Foto/PDF
+                        </a>
+                    </div>
+                @endif
+
+                {{-- Form Pengisian Wali Kelas (Izin / Sakit / Alpa & Upload Bukti) --}}
+                <form wire:submit.prevent="saveAttendanceStatus" class="p-4 rounded-2xl border-2 border-indigo-500/20 bg-indigo-500/5 space-y-4">
+                    <h4 class="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>✍️</span> Input / Ubah Presensi Siswa (Wali Kelas)
+                    </h4>
+
+                    {{-- Radio Pilihan Status --}}
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1.5">Pilih Status Presensi:</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-500">
+                                <input type="radio" wire:model.defer="inputStatus" value="Izin" class="hidden peer">
+                                <span class="text-xs font-bold text-blue-600">📋 Izin</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-amber-500">
+                                <input type="radio" wire:model.defer="inputStatus" value="Sakit" class="hidden peer">
+                                <span class="text-xs font-bold text-amber-600">🤒 Sakit</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-rose-500">
+                                <input type="radio" wire:model.defer="inputStatus" value="Alpa" class="hidden peer">
+                                <span class="text-xs font-bold text-rose-600">❌ Alpa</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-emerald-500">
+                                <input type="radio" wire:model.defer="inputStatus" value="Hadir" class="hidden peer">
+                                <span class="text-xs font-bold text-emerald-600">✅ Hadir</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Textarea Keterangan --}}
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">Keterangan / Alasan:</label>
+                        <textarea wire:model.defer="inputKeterangan" rows="2" placeholder="Contoh: Sakit demam, ada surat dokter / Izin acara keluarga..." class="w-full text-xs rounded-xl border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+
+                    {{-- Upload Bukti Surat / Chat Ortu --}}
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">Upload Bukti Surat / Chat Ortu (Opsional):</label>
+                        <input type="file" wire:model="buktiFile" accept="image/*,application/pdf" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <span class="text-[10px] text-gray-400 block mt-0.5">Mendukung format JPG, PNG, PDF (Maks. 2MB). Foto akan disimpan & dikirim ke BaknusDrive.</span>
+                    </div>
+
+                    {{-- Submit Button --}}
+                    <div class="flex items-center gap-2 pt-2">
+                        <button type="submit" wire:loading.attr="disabled" class="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5">
+                            <span wire:loading.remove>☁️ Simpan & Kirim ke BaknusDrive</span>
+                            <span wire:loading>⏳ Memproses & Mengirim...</span>
+                        </button>
+                        <button type="button" wire:click="closeModal" class="py-2.5 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs rounded-xl hover:bg-gray-300 transition-all">
+                            Batal
+                        </button>
+                    </div>
+                </form>
 
             </div>
         </div>
