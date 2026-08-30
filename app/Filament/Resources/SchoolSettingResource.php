@@ -256,6 +256,14 @@ class SchoolSettingResource extends Resource
                                     ->helperText('Daftar role yang disembunyikan dari slide (pisahkan dengan koma)')
                                     ->nullable(),
                             ]),
+                        Forms\Components\Select::make('slide_selected_class_ids')
+                            ->label('Pilih Kelas Spesifik Yang Ditampilkan')
+                            ->options(fn() => \App\Models\ClassRoom::where('kelas', '!=', 'Belum Ditentukan')->orderBy('kelas')->pluck('kelas', 'id'))
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Pilih satu atau beberapa kelas tertentu yang ingin dimunculkan pada slide. Kosongkan jika ingin memuat seluruh kelas otomatis (yang memenuhi batas minimal siswa di atas).')
+                            ->columnSpanFull(),
                     ]),
             ]);
     }

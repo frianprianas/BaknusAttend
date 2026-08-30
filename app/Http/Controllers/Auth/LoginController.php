@@ -143,15 +143,29 @@ class LoginController extends Controller
             })->values()->toArray();
         }
 
-        // 3. Slide Kelas (Jika Diaktifkan dan Memenuhi Min. Siswa)
+        // 3. Slide Kelas (Jika Diaktifkan & Berdasarkan Kelas Pilihan Admin)
         if ($showKelas) {
-            $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
+            $selectedClassIds = $setting->slide_selected_class_ids ?? [];
+            if (!is_array($selectedClassIds)) {
+                $selectedClassIds = json_decode($selectedClassIds, true) ?? [];
+            }
+
+            $classesQuery = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
                 ->with(['students' => function ($q) {
                     $q->orderBy('name', 'asc');
                 }])
-                ->orderBy('kelas')
-                ->get()
-                ->filter(function ($c) use ($minStudents) {
+                ->orderBy('kelas');
+
+            // Jika Admin memilih kelas-kelas tertentu, filter hanya kelas tersebut
+            if (!empty($selectedClassIds)) {
+                $classesQuery->whereIn('id', $selectedClassIds);
+            }
+
+            $classes = $classesQuery->get()
+                ->filter(function ($c) use ($minStudents, $selectedClassIds) {
+                    if (!empty($selectedClassIds)) {
+                        return true; // Jika kelas dipilih spesifik oleh Admin, tampilkan langsung
+                    }
                     return $c->students->count() > $minStudents;
                 })
                 ->values();

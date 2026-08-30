@@ -28,6 +28,14 @@ class SchoolSetting extends Model
         'slide_min_students',
         'slide_excluded_roles',
         'slide_duration',
+        'slide_selected_class_ids',
+    ];
+
+    protected $casts = [
+        'slide_selected_class_ids' => 'array',
+        'slide_show_guru'          => 'boolean',
+        'slide_show_tu'            => 'boolean',
+        'slide_show_kelas'         => 'boolean',
     ];
 
     public static function getFirst()
