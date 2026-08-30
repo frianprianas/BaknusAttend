@@ -113,21 +113,23 @@
         .slide-tabs-nav {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
+            gap: 8px;
+            overflow-x: auto;
             padding: 4px 10px 10px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             width: 100%;
+            scrollbar-width: none;
         }
+        .slide-tabs-nav::-webkit-scrollbar { display: none; }
 
         .slide-tab-pill {
-            padding: 8px 22px;
+            padding: 7px 16px;
             border-radius: 999px;
-            font-size: 0.82rem;
+            font-size: 0.75rem;
             font-weight: 800;
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(30, 41, 59, 0.65);
             color: #94a3b8;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s;
@@ -143,7 +145,7 @@
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: #fff;
             border-color: #60a5fa;
-            box-shadow: 0 4px 18px rgba(37, 99, 235, 0.55);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.55);
         }
 
         /* Slides Container */
@@ -210,7 +212,7 @@
            HIGH CONTRAST STATUS COLOR SCHEME
            ========================================================= */
 
-        /* 1. HADIR (Electric Blue Background) */
+        /* 1. HADIR (Electric Blue Background — SANGAT KONTRAS) */
         .seat-hadir {
             background: linear-gradient(145deg, #1d4ed8 0%, #2563eb 100%) !important;
             border: 2px solid #60a5fa !important;
@@ -501,6 +503,9 @@
         <div class="slide-tabs-nav" id="slideTabsNav">
             <div class="slide-tab-pill active" onclick="goToSlide(0)">👨‍🏫 Dewan Guru</div>
             <div class="slide-tab-pill" onclick="goToSlide(1)">💼 Staff TU</div>
+            @foreach($classSlides as $idx => $cs)
+                <div class="slide-tab-pill" onclick="goToSlide({{ $idx + 2 }})">🎓 {{ $cs['kelas'] }} ({{ $cs['total'] }})</div>
+            @endforeach
         </div>
 
         {{-- Arrow Nav Buttons --}}
@@ -630,6 +635,67 @@
                 </div>
             </div>
 
+            {{-- SLIDE 3+: KELAS SISWA (> 6 SISWA) --}}
+            @foreach($classSlides as $cs)
+                <div class="slide-item" data-title="DAFTAR SISWA KELAS {{ $cs['kelas'] }} ({{ $cs['total'] }} SISWA)">
+                    <div class="cinema-grid">
+                        @foreach($cs['student_grid'] as $st)
+                            @php
+                                $statusClass = match($st['status_code']) { 'HADIR' => 'seat-hadir', 'TERLAMBAT' => 'seat-terlambat', 'IZIN' => 'seat-izin', default => 'seat-belum' };
+                                $ledClass = match($st['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
+                            @endphp
+                            <div class="seat-pod {{ $statusClass }}">
+                                <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                                    <span style="font-size:9.5px;font-weight:900;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,0.35);color:#fff;">{{ $st['seat_number'] }}</span>
+                                    <span class="led-dot {{ $ledClass }}"></span>
+                                </div>
+
+                                <div class="seat-avatar-box">
+                                    <img src="{{ $st['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $st['name'] }}">
+                                    <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($st['name'], 0, 2)) }}</div>
+                                </div>
+
+                                <div style="width:100%;margin-top:4px;">
+                                    <h4 style="font-size:0.85rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
+                                    <p style="font-size:10.5px;opacity:0.85;margin-top:1px;font-family:monospace;">{{ $st['code'] }}</p>
+                                </div>
+
+                                <div style="width:100%;margin-top:8px;">
+                                    @if($st['status_code'] === 'HADIR' || $st['status_code'] === 'TERLAMBAT')
+                                        <div style="background:rgba(0,0,0,0.35);padding:6px 4px;border-radius:12px;font-size:9.5px;line-height:1.35;text-align:center;border:1px solid rgba(255,255,255,0.25);">
+                                            <div style="font-weight:900;">
+                                                {{ $st['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $st['tap_jam'] ?? $st['waktu_tap'] }})
+                                            </div>
+                                            <div style="font-size:9px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
+                                                <span>{{ $st['tap_metode'] ?? '💳 RFID' }}</span>
+                                                @if(!empty($st['tap_gps']))
+                                                    <span>·</span>
+                                                    <span title="GPS: {{ $st['tap_gps'] }}">📍 GPS</span>
+                                                @endif
+                                            </div>
+                                            @if(!empty($st['tap_gps']))
+                                                <div style="font-size:8px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $st['tap_gps'] }}">
+                                                    {{ $st['tap_gps'] }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @elseif($st['status_code'] === 'IZIN')
+                                        <div style="background:rgba(0,0,0,0.35);padding:7px;border-radius:12px;font-size:10px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
+                                            📋 IZIN / SAKIT
+                                        </div>
+                                    @else
+                                        <div style="background:rgba(0,0,0,0.25);padding:7px;border-radius:12px;font-size:10px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
+                                            ⚪ BELUM TAP
+                                        </div>
+                                    @endif
+                                </div>
+
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+
         </div>
 
     </div>
@@ -749,6 +815,7 @@
             slides[currentIndex].classList.add('active');
             if (tabs[currentIndex]) {
                 tabs[currentIndex].classList.add('active');
+                tabs[currentIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
             }
 
             const title = slides[currentIndex].getAttribute('data-title') || 'PRESENSI BAKNUSATTEND';
