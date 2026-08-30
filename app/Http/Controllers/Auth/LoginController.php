@@ -17,7 +17,150 @@ class LoginController extends Controller
         if (Auth::check()) {
             return redirect('/admin');
         }
-        return view('auth.login');
+
+        $today = \Carbon\Carbon::today();
+
+        // 1. Dewan Guru
+        $teachers = User::where('role', 'Guru')
+            ->orderBy('name')
+            ->get();
+
+        $teacherTaps = \App\Models\KehadiranGuruTu::whereDate('waktu_tap', $today)
+            ->get()
+            ->groupBy('nipy');
+
+        $teacherGrid = $teachers->map(function ($user, $idx) use ($teacherTaps) {
+            $nipyKey = $user->nipy ?: $user->email;
+            $taps = $teacherTaps->get($nipyKey, $teacherTaps->get($user->email, collect()));
+            $firstTap = $taps->sortBy('waktu_tap')->first();
+            
+            $statusCode = 'BELUM';
+            $waktu = '-';
+            if ($firstTap) {
+                $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
+                $waktu = \Carbon\Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                if (str_contains($statusStr, 'terlambat')) {
+                    $statusCode = 'TERLAMBAT';
+                } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
+                    $statusCode = 'IZIN';
+                } else {
+                    $statusCode = 'HADIR';
+                }
+            }
+
+            $photoUrl = null;
+            if (!empty($user->face_reference)) {
+                $photoUrl = asset('storage/' . $user->face_reference);
+            }
+
+            return [
+                'seat_number' => sprintf('#G%02d', $idx + 1),
+                'name'        => $user->name,
+                'code'        => $user->nipy ?? 'GURU',
+                'status_code' => $statusCode,
+                'waktu_tap'   => $waktu,
+                'photo_url'   => $photoUrl,
+            ];
+        });
+
+        // 2. Staff TU
+        $staffTu = User::where('role', 'TU')
+            ->orderBy('name')
+            ->get();
+
+        $tuGrid = $staffTu->map(function ($user, $idx) use ($teacherTaps) {
+            $nipyKey = $user->nipy ?: $user->email;
+            $taps = $teacherTaps->get($nipyKey, $teacherTaps->get($user->email, collect()));
+            $firstTap = $taps->sortBy('waktu_tap')->first();
+            
+            $statusCode = 'BELUM';
+            $waktu = '-';
+            if ($firstTap) {
+                $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
+                $waktu = \Carbon\Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                if (str_contains($statusStr, 'terlambat')) {
+                    $statusCode = 'TERLAMBAT';
+                } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
+                    $statusCode = 'IZIN';
+                } else {
+                    $statusCode = 'HADIR';
+                }
+            }
+
+            $photoUrl = null;
+            if (!empty($user->face_reference)) {
+                $photoUrl = asset('storage/' . $user->face_reference);
+            }
+
+            return [
+                'seat_number' => sprintf('#T%02d', $idx + 1),
+                'name'        => $user->name,
+                'code'        => $user->nipy ?? 'TU',
+                'status_code' => $statusCode,
+                'waktu_tap'   => $waktu,
+                'photo_url'   => $photoUrl,
+            ];
+        });
+
+        // 3. Kelas yang siswanya LEBIH DARI 6 ORANG saja
+        $classes = \App\Models\ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
+            ->has('students', '>', 6)
+            ->with(['students' => function ($q) {
+                $q->orderBy('name', 'asc');
+            }])
+            ->orderBy('kelas')
+            ->get();
+
+        $allStudentNis = $classes->pluck('students')->flatten()->pluck('nis')->filter();
+
+        $studentTaps = \App\Models\KehadiranSiswa::whereIn('nis', $allStudentNis)
+            ->whereDate('waktu_tap', $today)
+            ->get()
+            ->groupBy('nis');
+
+        $classSlides = $classes->map(function ($classRoom) use ($studentTaps) {
+            $studentGrid = $classRoom->students->map(function ($student, $idx) use ($studentTaps) {
+                $taps = $studentTaps->get($student->nis, collect());
+                $firstTap = $taps->sortBy('waktu_tap')->first();
+
+                $statusCode = 'BELUM';
+                $waktu = '-';
+                if ($firstTap) {
+                    $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
+                    $waktu = \Carbon\Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                    if (str_contains($statusStr, 'terlambat')) {
+                        $statusCode = 'TERLAMBAT';
+                    } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
+                        $statusCode = 'IZIN';
+                    } else {
+                        $statusCode = 'HADIR';
+                    }
+                }
+
+                $photoUrl = null;
+                if (!empty($student->face_reference)) {
+                    $photoUrl = asset('storage/' . $student->face_reference);
+                }
+
+                return [
+                    'seat_number' => sprintf('#%02d', $idx + 1),
+                    'name'        => $student->name,
+                    'code'        => $student->nis,
+                    'status_code' => $statusCode,
+                    'waktu_tap'   => $waktu,
+                    'photo_url'   => $photoUrl,
+                ];
+            });
+
+            return [
+                'id'           => $classRoom->id,
+                'kelas'        => $classRoom->kelas,
+                'total'        => $studentGrid->count(),
+                'student_grid' => $studentGrid,
+            ];
+        });
+
+        return view('auth.login', compact('teacherGrid', 'tuGrid', 'classSlides'));
     }
 
     public function login(Request $request)
