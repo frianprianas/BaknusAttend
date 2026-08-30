@@ -144,6 +144,17 @@ class KehadiranSiswaResource extends Resource
                 ])->from('md'),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('kelas')
+                    ->label('Filter Kelas')
+                    ->options(function () {
+                        return \App\Models\ClassRoom::pluck('kelas', 'id')->toArray();
+                    })
+                    ->searchable()
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) return $query;
+                        $niss = Student::where('class_room_id', $data['value'])->pluck('nis');
+                        return $query->whereIn('nis', $niss);
+                    }),
                 Tables\Filters\SelectFilter::make('tanggal')
                     ->label('Periode')
                     ->options([

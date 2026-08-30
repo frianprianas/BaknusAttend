@@ -82,7 +82,11 @@ class StudentResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('class_room_id')
+                    ->label('Filter Kelas')
+                    ->relationship('classRoom', 'kelas')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
