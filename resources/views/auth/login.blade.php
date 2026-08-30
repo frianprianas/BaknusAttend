@@ -19,38 +19,20 @@
         }
 
         :root {
-            --indigo-50: #eef2ff;
-            --indigo-100: #e0e7ff;
-            --indigo-400: #818cf8;
-            --indigo-500: #6366f1;
-            --indigo-600: #4f46e5;
-            --indigo-700: #4338ca;
-            --indigo-900: #312e81;
-            --slate-50: #f8fafc;
-            --slate-100: #f1f5f9;
-            --slate-200: #e2e8f0;
-            --slate-400: #94a3b8;
-            --slate-500: #64748b;
-            --slate-700: #334155;
-            --slate-800: #1e293b;
-            --slate-900: #0f172a;
             --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
-            --radius-lg: 16px;
-            --radius-xl: 20px;
-            --shadow-indigo: 0 8px 32px rgba(99, 102, 241, 0.35);
         }
 
         html, body {
             height: 100%;
             font-family: var(--font);
-            background: #090d16;
+            background: #070a13;
             color: #f8fafc;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
         /* =========================================================
-           CINEMATIC SLIDESHOW WRAPPER (LAYAR 10 INCH KE ATAS / >768PX)
+           CINEMATIC SLIDESHOW WRAPPER (LAYAR 10 INCH KE ATAS / >= 768PX)
            ========================================================= */
         .cinema-viewport {
             position: fixed;
@@ -58,7 +40,7 @@
             background: radial-gradient(circle at top center, #1e1b4b 0%, #0f172a 60%, #050811 100%);
             display: flex;
             flex-direction: column;
-            padding: 24px 32px;
+            padding: 20px 28px;
             z-index: 1;
         }
 
@@ -77,7 +59,7 @@
         }
 
         .cinema-brand img {
-            height: 42px;
+            height: 38px;
             width: auto;
             filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.5));
         }
@@ -95,13 +77,13 @@
 
         /* Slide Timer Progress Bar */
         .slide-progress-bar {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             height: 4px;
             background: linear-gradient(90deg, #6366f1, #38bdf8);
             width: 0%;
-            z-index: 30;
+            z-index: 999;
             transition: width 6s linear;
         }
 
@@ -114,13 +96,13 @@
             padding: 12px 24px;
             text-align: center;
             box-shadow: 0 12px 35px -10px rgba(99, 102, 241, 0.4);
-            margin: 16px auto 24px;
+            margin: 12px auto 20px;
             max-width: 650px;
             width: 100%;
         }
 
         .screen-title {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 900;
             letter-spacing: 0.18em;
             text-transform: uppercase;
@@ -140,7 +122,7 @@
             inset: 0;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
             transform: scale(0.98);
             overflow-y: auto;
             padding-bottom: 60px;
@@ -155,7 +137,7 @@
         /* Grid Bioskop Kotak-Kotak */
         .cinema-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 14px;
             width: 100%;
             padding: 4px;
@@ -163,7 +145,7 @@
 
         @media (min-width: 1024px) {
             .cinema-grid {
-                grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 16px;
             }
         }
@@ -179,11 +161,12 @@
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1.5px solid transparent;
             position: relative;
+            overflow: hidden;
         }
 
         .seat-pod:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
         }
 
         .seat-hadir {
@@ -208,9 +191,52 @@
         }
 
         .seat-belum {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
             border-color: #334155;
             color: #94a3b8;
+        }
+
+        /* STRICT AVATAR CONTAINER FIX FOR OVERFLOWING PHOTOS */
+        .seat-avatar-box {
+            width: 52px !important;
+            height: 52px !important;
+            min-width: 52px !important;
+            min-height: 52px !important;
+            max-width: 52px !important;
+            max-height: 52px !important;
+            border-radius: 50% !important;
+            overflow: hidden !important;
+            margin: 4px auto 6px !important;
+            border: 2px solid rgba(255, 255, 255, 0.4) !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+            background: rgba(15, 23, 42, 0.6) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative !important;
+            flex-shrink: 0 !important;
+        }
+
+        .seat-avatar-img {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+            display: block !important;
+        }
+
+        .seat-initial-fallback {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-weight: 900 !important;
+            font-size: 0.9rem !important;
+            color: #ffffff !important;
+            background: rgba(99, 102, 241, 0.4) !important;
         }
 
         /* LED Lamp */
@@ -229,15 +255,15 @@
         /* Floating Login Button at Top Right */
         .btn-floating-login {
             position: fixed;
-            top: 20px;
+            top: 18px;
             right: 24px;
             z-index: 50;
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             color: #fff;
-            padding: 10px 22px;
+            padding: 9px 20px;
             border-radius: 999px;
             font-weight: 800;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
             cursor: pointer;
@@ -277,7 +303,7 @@
             background: #ffffff;
             color: #0f172a;
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             border-radius: 28px;
             padding: 36px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -294,8 +320,8 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             background: #f1f5f9;
             border: none;
@@ -367,7 +393,7 @@
             justify-content: center;
             gap: 8px;
             z-index: 20;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .dot {
@@ -395,7 +421,7 @@
 
     {{-- Floating Login Button (Pojok Kanan Atas - Layar Besar) --}}
     <button class="btn-floating-login" onclick="toggleLoginDrawer(true)">
-        <svg class="w-4 h-4" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
         <span>Masuk Sistem</span>
     </button>
 
@@ -411,16 +437,16 @@
                 <span class="cinema-brand-title">Baknus<span>Attend</span></span>
             </div>
 
-            <div class="flex items-center gap-3 text-xs font-semibold text-gray-400">
+            <div style="display:flex;align-items:center;gap:12px;font-size:0.8rem;font-weight:600;color:#94a3b8;">
                 <span>📅 {{ now()->translatedFormat('l, j F Y') }}</span>
                 <span>·</span>
-                <span class="text-emerald-400 font-bold">⚡ Live Auto-Slide (6s)</span>
+                <span style="color:#34d399;font-weight:800;">⚡ Live Auto-Slide (6s)</span>
             </div>
         </div>
 
         {{-- Proyeksi Header Screen --}}
         <div class="screen-header-box">
-            <p class="screen-title" id="screenTitleText">DAFTAR SISWA</p>
+            <p class="screen-title" id="screenTitleText">DEWAN GURU — PRESENSI GURU</p>
         </div>
 
         {{-- Slides Container --}}
@@ -435,25 +461,23 @@
                             $ledClass = match($t['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
                         @endphp
                         <div class="seat-pod {{ $statusClass }}">
-                            <div class="w-full flex items-center justify-between mb-1.5">
-                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-black/20 text-white">{{ $t['seat_number'] }}</span>
+                            <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                                <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,0.3);color:#fff;">{{ $t['seat_number'] }}</span>
                                 <span class="led-dot {{ $ledClass }}"></span>
                             </div>
-                            <div class="my-1">
-                                @if($t['photo_url'])
-                                    <img src="{{ $t['photo_url'] }}" alt="{{ $t['name'] }}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
-                                @else
-                                    <div class="w-12 h-12 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-black text-sm text-white">
-                                        {{ strtoupper(substr($t['name'], 0, 2)) }}
-                                    </div>
-                                @endif
+
+                            {{-- Avatar Container (Strict 52px circular box) --}}
+                            <div class="seat-avatar-box">
+                                <img src="{{ $t['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $t['name'] }}">
+                                <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($t['name'], 0, 2)) }}</div>
                             </div>
-                            <div class="w-full mt-1">
-                                <h4 class="text-xs font-bold truncate" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
-                                <p class="text-[9.5px] opacity-75 mt-0.5 truncate">Guru</p>
+
+                            <div style="width:100%;margin-top:2px;">
+                                <h4 style="font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
+                                <p style="font-size:9.5px;opacity:0.75;margin-top:2px;">Guru</p>
                             </div>
-                            <div class="w-full mt-2.5">
-                                <span class="block py-1 px-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wide bg-black/20">
+                            <div style="width:100%;margin-top:8px;">
+                                <span style="display:block;padding:3px 2px;font-size:9px;font-weight:800;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.25);">
                                     {{ $t['status_code'] === 'HADIR' ? '✅ ' . $t['waktu_tap'] : ($t['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $t['waktu_tap'] : ($t['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
                                 </span>
                             </div>
@@ -471,25 +495,22 @@
                             $ledClass = match($tu['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
                         @endphp
                         <div class="seat-pod {{ $statusClass }}">
-                            <div class="w-full flex items-center justify-between mb-1.5">
-                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-black/20 text-white">{{ $tu['seat_number'] }}</span>
+                            <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                                <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,0.3);color:#fff;">{{ $tu['seat_number'] }}</span>
                                 <span class="led-dot {{ $ledClass }}"></span>
                             </div>
-                            <div class="my-1">
-                                @if($tu['photo_url'])
-                                    <img src="{{ $tu['photo_url'] }}" alt="{{ $tu['name'] }}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
-                                @else
-                                    <div class="w-12 h-12 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-black text-sm text-white">
-                                        {{ strtoupper(substr($tu['name'], 0, 2)) }}
-                                    </div>
-                                @endif
+
+                            <div class="seat-avatar-box">
+                                <img src="{{ $tu['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $tu['name'] }}">
+                                <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($tu['name'], 0, 2)) }}</div>
                             </div>
-                            <div class="w-full mt-1">
-                                <h4 class="text-xs font-bold truncate" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
-                                <p class="text-[9.5px] opacity-75 mt-0.5 truncate">Staff TU</p>
+
+                            <div style="width:100%;margin-top:2px;">
+                                <h4 style="font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
+                                <p style="font-size:9.5px;opacity:0.75;margin-top:2px;">Staff TU</p>
                             </div>
-                            <div class="w-full mt-2.5">
-                                <span class="block py-1 px-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wide bg-black/20">
+                            <div style="width:100%;margin-top:8px;">
+                                <span style="display:block;padding:3px 2px;font-size:9px;font-weight:800;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.25);">
                                     {{ $tu['status_code'] === 'HADIR' ? '✅ ' . $tu['waktu_tap'] : ($tu['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $tu['waktu_tap'] : ($tu['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
                                 </span>
                             </div>
@@ -498,9 +519,9 @@
                 </div>
             </div>
 
-            {{-- SLIDE 3+: KELAS (HANYA KELAS DENGAN SISWA > 6 ORANG) --}}
+            {{-- SLIDE 3+: KELAS SISWA (HANYA KELAS SISWA > 6 ORANG) --}}
             @foreach($classSlides as $cs)
-                <div class="slide-item" data-title="DAFTAR SISWA KELAS {{ $cs['kelas'] }}">
+                <div class="slide-item" data-title="DAFTAR SISWA KELAS {{ $cs['kelas'] }} ({{ $cs['total'] }} SISWA)">
                     <div class="cinema-grid">
                         @foreach($cs['student_grid'] as $st)
                             @php
@@ -508,25 +529,22 @@
                                 $ledClass = match($st['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
                             @endphp
                             <div class="seat-pod {{ $statusClass }}">
-                                <div class="w-full flex items-center justify-between mb-1.5">
-                                    <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-black/20 text-white">{{ $st['seat_number'] }}</span>
+                                <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                                    <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,0.3);color:#fff;">{{ $st['seat_number'] }}</span>
                                     <span class="led-dot {{ $ledClass }}"></span>
                                 </div>
-                                <div class="my-1">
-                                    @if($st['photo_url'])
-                                        <img src="{{ $st['photo_url'] }}" alt="{{ $st['name'] }}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
-                                    @else
-                                        <div class="w-12 h-12 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-black text-sm text-white">
-                                            {{ strtoupper(substr($st['name'], 0, 2)) }}
-                                        </div>
-                                    @endif
+
+                                <div class="seat-avatar-box">
+                                    <img src="{{ $st['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $st['name'] }}">
+                                    <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($st['name'], 0, 2)) }}</div>
                                 </div>
-                                <div class="w-full mt-1">
-                                    <h4 class="text-xs font-bold truncate" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
-                                    <p class="text-[9.5px] opacity-75 mt-0.5 truncate font-mono">{{ $st['code'] }}</p>
+
+                                <div style="width:100%;margin-top:2px;">
+                                    <h4 style="font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
+                                    <p style="font-size:9.5px;opacity:0.75;margin-top:2px;font-family:monospace;">{{ $st['nis'] }}</p>
                                 </div>
-                                <div class="w-full mt-2.5">
-                                    <span class="block py-1 px-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wide bg-black/20">
+                                <div style="width:100%;margin-top:8px;">
+                                    <span style="display:block;padding:3px 2px;font-size:9px;font-weight:800;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.25);">
                                         {{ $st['status_code'] === 'HADIR' ? '✅ ' . $st['waktu_tap'] : ($st['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $st['waktu_tap'] : ($st['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
                                     </span>
                                 </div>
@@ -583,20 +601,20 @@
        LAYAR KECIL / MOBILE (< 768PX) — FORM LOGIN DEFAULT
        ========================================================= --}}
     <div class="mobile-login-view">
-        <div class="w-full max-w-sm">
-            <div class="text-center mb-6">
-                <img src="{{ asset('images/logo_BG.png') }}" alt="Logo" class="h-12 mx-auto mb-2">
-                <h1 class="text-xl font-black text-gray-900">BaknusAttend</h1>
-                <p class="text-xs text-gray-500">Sistem Presensi Digital SMK Bakti Nusantara 666</p>
+        <div style="width:100%;max-width:380px;">
+            <div style="text-align:center;margin-bottom:24px;">
+                <img src="{{ asset('images/logo_BG.png') }}" alt="Logo" style="height:48px;margin:0 auto 8px;">
+                <h1 style="font-size:1.5rem;font-weight:900;color:#0f172a;">BaknusAttend</h1>
+                <p style="font-size:0.8rem;color:#64748b;">Sistem Presensi Digital SMK Bakti Nusantara 666</p>
             </div>
 
             @if($errors->any())
-                <div class="alert-error mb-4">
+                <div class="alert-error">
                     ⚠️ {{ $errors->first() }}
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login.post') }}" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <form method="POST" action="{{ route('login.post') }}" style="background:#fff;padding:28px;border-radius:20px;border:1px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,0.05);">
                 @csrf
                 <div class="field-group">
                     <label>Username / Email</label>
@@ -608,7 +626,7 @@
                     <input type="password" name="password" placeholder="Password Anda" required>
                 </div>
 
-                <button type="submit" class="btn-login-submit">
+                <button type="submit" class="btn-login-submit" style="margin-top:8px;">
                     Masuk Sekarang &nbsp;→
                 </button>
             </form>
@@ -649,12 +667,12 @@
 
             function goToSlide(index) {
                 slides[currentIndex].classList.remove('active');
-                dots[currentIndex].classList.remove('active');
+                if (dots[currentIndex]) dots[currentIndex].classList.remove('active');
 
                 currentIndex = index;
 
                 slides[currentIndex].classList.add('active');
-                dots[currentIndex].classList.add('active');
+                if (dots[currentIndex]) dots[currentIndex].classList.add('active');
 
                 const title = slides[currentIndex].getAttribute('data-title') || 'DAFTAR SISWA';
                 titleText.textContent = title;
@@ -667,7 +685,10 @@
                 goToSlide(nextIdx);
             }
 
-            // Start 6-second auto slide
+            // Set initial title & start 6-second auto slide
+            if (slides[0]) {
+                titleText.textContent = slides[0].getAttribute('data-title') || 'DAFTAR SISWA';
+            }
             updateProgress();
             slideInterval = setInterval(nextSlide, 6000);
         });

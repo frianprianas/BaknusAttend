@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassRoom;
+use App\Models\KehadiranGuruTu;
+use App\Models\KehadiranSiswa;
+use App\Models\Student;
 use App\Models\User;
 use App\Services\MailcowAuth;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -18,14 +23,14 @@ class LoginController extends Controller
             return redirect('/admin');
         }
 
-        $today = \Carbon\Carbon::today();
+        $today = Carbon::today();
 
         // 1. Dewan Guru
         $teachers = User::where('role', 'Guru')
             ->orderBy('name')
             ->get();
 
-        $teacherTaps = \App\Models\KehadiranGuruTu::whereDate('waktu_tap', $today)
+        $teacherTaps = KehadiranGuruTu::whereDate('waktu_tap', $today)
             ->get()
             ->groupBy('nipy');
 
@@ -38,7 +43,7 @@ class LoginController extends Controller
             $waktu = '-';
             if ($firstTap) {
                 $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
-                $waktu = \Carbon\Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
                 if (str_contains($statusStr, 'terlambat')) {
                     $statusCode = 'TERLAMBAT';
                 } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
@@ -48,18 +53,17 @@ class LoginController extends Controller
                 }
             }
 
-            $photoUrl = null;
-            if (!empty($user->face_reference)) {
-                $photoUrl = asset('storage/' . $user->face_reference);
-            }
+            // BaknusMail Avatar Endpoint API
+            $emailClean = strtolower(trim($user->email));
+            $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($emailClean);
 
             return [
                 'seat_number' => sprintf('#G%02d', $idx + 1),
                 'name'        => $user->name,
-                'code'        => $user->nipy ?? 'GURU',
+                'email'       => $user->email,
                 'status_code' => $statusCode,
                 'waktu_tap'   => $waktu,
-                'photo_url'   => $photoUrl,
+                'avatar_url'  => $avatarUrl,
             ];
         });
 
@@ -77,7 +81,7 @@ class LoginController extends Controller
             $waktu = '-';
             if ($firstTap) {
                 $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
-                $waktu = \Carbon\Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
                 if (str_contains($statusStr, 'terlambat')) {
                     $statusCode = 'TERLAMBAT';
                 } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
@@ -87,33 +91,34 @@ class LoginController extends Controller
                 }
             }
 
-            $photoUrl = null;
-            if (!empty($user->face_reference)) {
-                $photoUrl = asset('storage/' . $user->face_reference);
-            }
+            $emailClean = strtolower(trim($user->email));
+            $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($emailClean);
 
             return [
                 'seat_number' => sprintf('#T%02d', $idx + 1),
                 'name'        => $user->name,
-                'code'        => $user->nipy ?? 'TU',
+                'email'       => $user->email,
                 'status_code' => $statusCode,
                 'waktu_tap'   => $waktu,
-                'photo_url'   => $photoUrl,
+                'avatar_url'  => $avatarUrl,
             ];
         });
 
-        // 3. Kelas yang siswanya LEBIH DARI 6 ORANG saja
-        $classes = \App\Models\ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
-            ->has('students', '>', 6)
+        // 3. Filter Kelas yang siswanya LEBIH DARI 6 ORANG
+        $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
             ->with(['students' => function ($q) {
                 $q->orderBy('name', 'asc');
             }])
             ->orderBy('kelas')
-            ->get();
+            ->get()
+            ->filter(function ($c) {
+                return $c->students->count() > 6;
+            })
+            ->values();
 
         $allStudentNis = $classes->pluck('students')->flatten()->pluck('nis')->filter();
 
-        $studentTaps = \App\Models\KehadiranSiswa::whereIn('nis', $allStudentNis)
+        $studentTaps = KehadiranSiswa::whereIn('nis', $allStudentNis)
             ->whereDate('waktu_tap', $today)
             ->get()
             ->groupBy('nis');
@@ -127,7 +132,7 @@ class LoginController extends Controller
                 $waktu = '-';
                 if ($firstTap) {
                     $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
-                    $waktu = \Carbon\Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                    $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
                     if (str_contains($statusStr, 'terlambat')) {
                         $statusCode = 'TERLAMBAT';
                     } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
@@ -137,18 +142,17 @@ class LoginController extends Controller
                     }
                 }
 
-                $photoUrl = null;
-                if (!empty($student->face_reference)) {
-                    $photoUrl = asset('storage/' . $student->face_reference);
-                }
+                $nisClean = strtolower(trim($student->nis));
+                $studentEmail = $nisClean . '@smk.baktinusantara666.sch.id';
+                $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($studentEmail);
 
                 return [
                     'seat_number' => sprintf('#%02d', $idx + 1),
                     'name'        => $student->name,
-                    'code'        => $student->nis,
+                    'nis'         => $student->nis,
                     'status_code' => $statusCode,
                     'waktu_tap'   => $waktu,
-                    'photo_url'   => $photoUrl,
+                    'avatar_url'  => $avatarUrl,
                 ];
             });
 
