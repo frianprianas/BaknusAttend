@@ -65,7 +65,7 @@ class LoginController extends Controller
                 'waktu_tap'   => $waktu,
                 'avatar_url'  => $avatarUrl,
             ];
-        });
+        })->values()->toArray();
 
         // 2. Staff TU
         $staffTu = User::where('role', 'TU')
@@ -102,7 +102,7 @@ class LoginController extends Controller
                 'waktu_tap'   => $waktu,
                 'avatar_url'  => $avatarUrl,
             ];
-        });
+        })->values()->toArray();
 
         // 3. Filter Kelas yang siswanya LEBIH DARI 6 ORANG
         $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
@@ -160,9 +160,9 @@ class LoginController extends Controller
                 'id'           => $classRoom->id,
                 'kelas'        => $classRoom->kelas,
                 'total'        => $studentGrid->count(),
-                'student_grid' => $studentGrid,
+                'student_grid' => $studentGrid->values()->toArray(),
             ];
-        });
+        })->values()->toArray();
 
         return view('auth.login', compact('teacherGrid', 'tuGrid', 'classSlides'));
     }

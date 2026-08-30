@@ -25,7 +25,7 @@
         html, body {
             height: 100%;
             font-family: var(--font);
-            background: #070a13;
+            background: #050811;
             color: #f8fafc;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
@@ -37,10 +37,10 @@
         .cinema-viewport {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at top center, #1e1b4b 0%, #0f172a 60%, #050811 100%);
+            background: radial-gradient(circle at top center, #1e1b4b 0%, #0f172a 55%, #03050c 100%);
             display: flex;
             flex-direction: column;
-            padding: 20px 28px;
+            padding: 16px 24px 20px;
             z-index: 1;
         }
 
@@ -61,7 +61,7 @@
         .cinema-brand img {
             height: 38px;
             width: auto;
-            filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.5));
+            filter: drop-shadow(0 0 12px rgba(129, 140, 248, 0.6));
         }
 
         .cinema-brand-title {
@@ -81,7 +81,7 @@
             top: 0;
             left: 0;
             height: 4px;
-            background: linear-gradient(90deg, #6366f1, #38bdf8);
+            background: linear-gradient(90deg, #3b82f6, #38bdf8);
             width: 0%;
             z-index: 999;
             transition: width 6s linear;
@@ -89,15 +89,15 @@
 
         /* Proyeksi Layar Papan Tulis Bioskop */
         .screen-header-box {
-            background: linear-gradient(180deg, rgba(99, 102, 241, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%);
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
             border-top: 4px solid #818cf8;
             border-bottom: 1.5px solid rgba(129, 140, 248, 0.3);
-            border-radius: 12px 12px 50px 50px;
-            padding: 12px 24px;
+            border-radius: 12px 12px 40px 40px;
+            padding: 10px 20px;
             text-align: center;
             box-shadow: 0 12px 35px -10px rgba(99, 102, 241, 0.4);
-            margin: 12px auto 20px;
-            max-width: 650px;
+            margin: 10px auto 12px;
+            max-width: 680px;
             width: 100%;
         }
 
@@ -107,6 +107,45 @@
             letter-spacing: 0.18em;
             text-transform: uppercase;
             color: #a5b4fc;
+        }
+
+        /* Interactive Slide Tabs Bar */
+        .slide-tabs-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 10px 10px;
+            margin-bottom: 8px;
+            width: 100%;
+            scrollbar-width: none; /* Firefox */
+        }
+        .slide-tabs-nav::-webkit-scrollbar { display: none; }
+
+        .slide-tab-pill {
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            background: rgba(30, 41, 59, 0.6);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .slide-tab-pill:hover {
+            background: rgba(99, 102, 241, 0.3);
+            color: #fff;
+        }
+
+        .slide-tab-pill.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            border-color: #60a5fa;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
         }
 
         /* Slides Container */
@@ -137,79 +176,88 @@
         /* Grid Bioskop Kotak-Kotak */
         .cinema-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
             width: 100%;
             padding: 4px;
         }
 
         @media (min-width: 1024px) {
             .cinema-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 18px;
             }
         }
 
         /* Seat Pod Card */
         .seat-pod {
-            border-radius: 18px;
-            padding: 12px 10px;
+            border-radius: 20px;
+            padding: 14px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
             transition: transform 0.2s, box-shadow 0.2s;
-            border: 1.5px solid transparent;
             position: relative;
             overflow: hidden;
         }
 
         .seat-pod:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
+            z-index: 10;
         }
 
+        /* =========================================================
+           HIGH CONTRAST STATUS COLOR SCHEME
+           ========================================================= */
+
+        /* 1. HADIR (Electric Blue Background — SANGAT KONTRAS) */
         .seat-hadir {
-            background: linear-gradient(145deg, rgba(6, 78, 59, 0.85) 0%, rgba(4, 120, 87, 0.9) 100%);
-            border-color: #10b981;
-            color: #ecfdf5;
-            box-shadow: 0 4px 15px -3px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(145deg, #1d4ed8 0%, #2563eb 100%) !important;
+            border: 2px solid #60a5fa !important;
+            color: #ffffff !important;
+            box-shadow: 0 8px 25px -4px rgba(37, 99, 235, 0.6) !important;
         }
 
+        /* 2. TERLAMBAT (Amber / Gold Background) */
         .seat-terlambat {
-            background: linear-gradient(145deg, rgba(120, 53, 15, 0.85) 0%, rgba(180, 83, 9, 0.9) 100%);
-            border-color: #f59e0b;
-            color: #fef3c7;
-            box-shadow: 0 4px 15px -3px rgba(245, 158, 11, 0.4);
+            background: linear-gradient(145deg, #b45309 0%, #d97706 100%) !important;
+            border: 2px solid #fcd34d !important;
+            color: #ffffff !important;
+            box-shadow: 0 8px 25px -4px rgba(217, 119, 6, 0.6) !important;
         }
 
+        /* 3. IZIN / SAKIT (Purple Background) */
         .seat-izin {
-            background: linear-gradient(145deg, rgba(30, 58, 138, 0.85) 0%, rgba(29, 78, 216, 0.9) 100%);
-            border-color: #3b82f6;
-            color: #eff6ff;
-            box-shadow: 0 4px 15px -3px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(145deg, #6b21a8 0%, #7e22ce 100%) !important;
+            border: 2px solid #c084fc !important;
+            color: #ffffff !important;
+            box-shadow: 0 8px 25px -4px rgba(126, 34, 206, 0.6) !important;
         }
 
+        /* 4. BELUM TAP (Dark Muted Slate Gray Background) */
         .seat-belum {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
-            border-color: #334155;
-            color: #94a3b8;
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%) !important;
+            border: 1.5px solid #334155 !important;
+            color: #94a3b8 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
         }
 
-        /* STRICT AVATAR CONTAINER FIX FOR OVERFLOWING PHOTOS */
+        /* STRICT ENLARGED AVATAR BOX (76PX X 76PX) */
         .seat-avatar-box {
-            width: 52px !important;
-            height: 52px !important;
-            min-width: 52px !important;
-            min-height: 52px !important;
-            max-width: 52px !important;
-            max-height: 52px !important;
+            width: 76px !important;
+            height: 76px !important;
+            min-width: 76px !important;
+            min-height: 76px !important;
+            max-width: 76px !important;
+            max-height: 76px !important;
             border-radius: 50% !important;
             overflow: hidden !important;
-            margin: 4px auto 6px !important;
-            border: 2px solid rgba(255, 255, 255, 0.4) !important;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
-            background: rgba(15, 23, 42, 0.6) !important;
+            margin: 6px auto 8px !important;
+            border: 3px solid rgba(255, 255, 255, 0.7) !important;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+            background: rgba(15, 23, 42, 0.7) !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -234,38 +282,38 @@
             align-items: center !important;
             justify-content: center !important;
             font-weight: 900 !important;
-            font-size: 0.9rem !important;
+            font-size: 1.1rem !important;
             color: #ffffff !important;
             background: rgba(99, 102, 241, 0.4) !important;
         }
 
         /* LED Lamp */
         .led-dot {
-            width: 8px;
-            height: 8px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             display: inline-block;
         }
 
-        .led-hadir { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
-        .led-terlambat { background: #eab308; box-shadow: 0 0 10px #eab308; }
-        .led-izin { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
+        .led-hadir { background: #60a5fa; box-shadow: 0 0 10px #60a5fa; }
+        .led-terlambat { background: #fde047; box-shadow: 0 0 10px #fde047; }
+        .led-izin { background: #e879f9; box-shadow: 0 0 10px #e879f9; }
         .led-belum { background: #64748b; opacity: 0.5; }
 
         /* Floating Login Button at Top Right */
         .btn-floating-login {
             position: fixed;
-            top: 18px;
+            top: 16px;
             right: 24px;
             z-index: 50;
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
             color: #fff;
-            padding: 9px 20px;
+            padding: 10px 22px;
             border-radius: 999px;
             font-weight: 800;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -275,7 +323,7 @@
 
         .btn-floating-login:hover {
             transform: translateY(-2px) scale(1.04);
-            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.7);
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.7);
         }
 
         /* Login Modal Drawer on Desktop */
@@ -359,7 +407,7 @@
         }
 
         /* Form elements shared */
-        .form-eyebrow { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #6366f1; margin-bottom: 6px; }
+        .form-eyebrow { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #2563eb; margin-bottom: 6px; }
         .form-title { font-size: 1.75rem; font-weight: 900; color: #0f172a; margin-bottom: 6px; line-height: 1.15; }
         .form-subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 28px; line-height: 1.5; }
         
@@ -376,41 +424,43 @@
             background: #f8fafc; font-size: 0.9rem; font-family: var(--font); color: #0f172a; outline: none;
             transition: all 0.2s;
         }
-        .field-group input:focus { border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3.5px rgba(99, 102, 241, 0.15); }
+        .field-group input:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15); }
 
         .btn-login-submit {
             width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer;
-            background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff;
+            background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff;
             font-weight: 800; font-size: 0.9rem; font-family: var(--font);
-            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35); transition: transform 0.15s;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35); transition: transform 0.15s;
         }
         .btn-login-submit:active { transform: scale(0.98); }
 
-        /* Bottom Slide Dots */
-        .slide-dots-bar {
+        /* Slide Arrow Navigation */
+        .arrow-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 30;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            z-index: 20;
-            margin-top: 8px;
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.25);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+            user-select: none;
         }
-
-        .dot.active {
-            width: 28px;
-            border-radius: 99px;
-            background: #818cf8;
-            box-shadow: 0 0 10px #818cf8;
+        .arrow-nav-btn:hover {
+            background: #2563eb;
+            border-color: #60a5fa;
+            transform: translateY(-50%) scale(1.1);
         }
+        .arrow-left { left: 12px; }
+        .arrow-right { right: 12px; }
     </style>
 </head>
 
@@ -449,6 +499,19 @@
             <p class="screen-title" id="screenTitleText">DEWAN GURU — PRESENSI GURU</p>
         </div>
 
+        {{-- Interactive Slide Tabs Navigation --}}
+        <div class="slide-tabs-nav" id="slideTabsNav">
+            <div class="slide-tab-pill active" onclick="goToSlide(0)">👨‍🏫 Guru</div>
+            <div class="slide-tab-pill" onclick="goToSlide(1)">💼 TU</div>
+            @foreach($classSlides as $idx => $cs)
+                <div class="slide-tab-pill" onclick="goToSlide({{ $idx + 2 }})">🎓 {{ $cs['kelas'] }}</div>
+            @endforeach
+        </div>
+
+        {{-- Arrow Nav Buttons --}}
+        <div class="arrow-nav-btn arrow-left" onclick="prevSlide()">❮</div>
+        <div class="arrow-nav-btn arrow-right" onclick="nextSlide()">❯</div>
+
         {{-- Slides Container --}}
         <div class="slides-container" id="slidesContainer">
 
@@ -461,23 +524,23 @@
                             $ledClass = match($t['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
                         @endphp
                         <div class="seat-pod {{ $statusClass }}">
-                            <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                                <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,0.3);color:#fff;">{{ $t['seat_number'] }}</span>
+                            <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                                <span style="font-size:9.5px;font-weight:900;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,0.35);color:#fff;">{{ $t['seat_number'] }}</span>
                                 <span class="led-dot {{ $ledClass }}"></span>
                             </div>
 
-                            {{-- Avatar Container (Strict 52px circular box) --}}
+                            {{-- Enlarged Avatar Container (76px x 76px) --}}
                             <div class="seat-avatar-box">
                                 <img src="{{ $t['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $t['name'] }}">
                                 <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($t['name'], 0, 2)) }}</div>
                             </div>
 
                             <div style="width:100%;margin-top:2px;">
-                                <h4 style="font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
-                                <p style="font-size:9.5px;opacity:0.75;margin-top:2px;">Guru</p>
+                                <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
+                                <p style="font-size:10px;opacity:0.85;margin-top:1px;">Guru</p>
                             </div>
                             <div style="width:100%;margin-top:8px;">
-                                <span style="display:block;padding:3px 2px;font-size:9px;font-weight:800;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.25);">
+                                <span style="display:block;padding:4px 2px;font-size:9.5px;font-weight:900;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.3);letter-spacing:0.03em;">
                                     {{ $t['status_code'] === 'HADIR' ? '✅ ' . $t['waktu_tap'] : ($t['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $t['waktu_tap'] : ($t['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
                                 </span>
                             </div>
@@ -495,8 +558,8 @@
                             $ledClass = match($tu['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
                         @endphp
                         <div class="seat-pod {{ $statusClass }}">
-                            <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                                <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,0.3);color:#fff;">{{ $tu['seat_number'] }}</span>
+                            <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                                <span style="font-size:9.5px;font-weight:900;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,0.35);color:#fff;">{{ $tu['seat_number'] }}</span>
                                 <span class="led-dot {{ $ledClass }}"></span>
                             </div>
 
@@ -506,11 +569,11 @@
                             </div>
 
                             <div style="width:100%;margin-top:2px;">
-                                <h4 style="font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
-                                <p style="font-size:9.5px;opacity:0.75;margin-top:2px;">Staff TU</p>
+                                <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
+                                <p style="font-size:10px;opacity:0.85;margin-top:1px;">Staff TU</p>
                             </div>
                             <div style="width:100%;margin-top:8px;">
-                                <span style="display:block;padding:3px 2px;font-size:9px;font-weight:800;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.25);">
+                                <span style="display:block;padding:4px 2px;font-size:9.5px;font-weight:900;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.3);letter-spacing:0.03em;">
                                     {{ $tu['status_code'] === 'HADIR' ? '✅ ' . $tu['waktu_tap'] : ($tu['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $tu['waktu_tap'] : ($tu['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
                                 </span>
                             </div>
@@ -529,8 +592,8 @@
                                 $ledClass = match($st['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
                             @endphp
                             <div class="seat-pod {{ $statusClass }}">
-                                <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                                    <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,0.3);color:#fff;">{{ $st['seat_number'] }}</span>
+                                <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                                    <span style="font-size:9.5px;font-weight:900;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,0.35);color:#fff;">{{ $st['seat_number'] }}</span>
                                     <span class="led-dot {{ $ledClass }}"></span>
                                 </div>
 
@@ -540,11 +603,11 @@
                                 </div>
 
                                 <div style="width:100%;margin-top:2px;">
-                                    <h4 style="font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
-                                    <p style="font-size:9.5px;opacity:0.75;margin-top:2px;font-family:monospace;">{{ $st['nis'] }}</p>
+                                    <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
+                                    <p style="font-size:10px;opacity:0.85;margin-top:1px;font-family:monospace;">{{ $st['nis'] }}</p>
                                 </div>
                                 <div style="width:100%;margin-top:8px;">
-                                    <span style="display:block;padding:3px 2px;font-size:9px;font-weight:800;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.25);">
+                                    <span style="display:block;padding:4px 2px;font-size:9.5px;font-weight:900;border-radius:8px;text-transform:uppercase;background:rgba(0,0,0,0.3);letter-spacing:0.03em;">
                                         {{ $st['status_code'] === 'HADIR' ? '✅ ' . $st['waktu_tap'] : ($st['status_code'] === 'TERLAMBAT' ? '⚠️ ' . $st['waktu_tap'] : ($st['status_code'] === 'IZIN' ? '📋 IZIN' : '⚪ BELUM')) }}
                                     </span>
                                 </div>
@@ -555,9 +618,6 @@
             @endforeach
 
         </div>
-
-        {{-- Dots Pagination Indicator --}}
-        <div class="slide-dots-bar" id="slideDotsBar"></div>
 
     </div>
 
@@ -633,65 +693,75 @@
         </div>
     </div>
 
-    {{-- Slideshow Auto-Slide Script (6 Detik) --}}
+    {{-- Slideshow Auto-Slide Script & Nav Controller --}}
     <script>
+        let currentIndex = 0;
+        let slideTimer = null;
+
         document.addEventListener('DOMContentLoaded', function () {
             const slides = document.querySelectorAll('.slide-item');
-            const dotsBar = document.getElementById('slideDotsBar');
-            const titleText = document.getElementById('screenTitleText');
-            const progressBar = document.getElementById('slideProgressBar');
-            
             if (!slides.length) return;
 
-            let currentIndex = 0;
-            let slideInterval = null;
-
-            // Generate dots
-            slides.forEach((slide, idx) => {
-                const dot = document.createElement('div');
-                dot.className = 'dot' + (idx === 0 ? ' active' : '');
-                dot.addEventListener('click', () => goToSlide(idx));
-                dotsBar.appendChild(dot);
-            });
-
-            const dots = dotsBar.querySelectorAll('.dot');
-
-            function updateProgress() {
-                progressBar.style.transition = 'none';
-                progressBar.style.width = '0%';
-                setTimeout(() => {
-                    progressBar.style.transition = 'width 6s linear';
-                    progressBar.style.width = '100%';
-                }, 50);
-            }
-
-            function goToSlide(index) {
-                slides[currentIndex].classList.remove('active');
-                if (dots[currentIndex]) dots[currentIndex].classList.remove('active');
-
-                currentIndex = index;
-
-                slides[currentIndex].classList.add('active');
-                if (dots[currentIndex]) dots[currentIndex].classList.add('active');
-
-                const title = slides[currentIndex].getAttribute('data-title') || 'DAFTAR SISWA';
-                titleText.textContent = title;
-
-                updateProgress();
-            }
-
-            function nextSlide() {
-                const nextIdx = (currentIndex + 1) % slides.length;
-                goToSlide(nextIdx);
-            }
-
             // Set initial title & start 6-second auto slide
-            if (slides[0]) {
-                titleText.textContent = slides[0].getAttribute('data-title') || 'DAFTAR SISWA';
-            }
-            updateProgress();
-            slideInterval = setInterval(nextSlide, 6000);
+            goToSlide(0);
+            startAutoTimer();
         });
+
+        function updateProgress() {
+            const progressBar = document.getElementById('slideProgressBar');
+            if (!progressBar) return;
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '0%';
+            setTimeout(() => {
+                progressBar.style.transition = 'width 6s linear';
+                progressBar.style.width = '100%';
+            }, 50);
+        }
+
+        function goToSlide(index) {
+            const slides = document.querySelectorAll('.slide-item');
+            const tabs = document.querySelectorAll('.slide-tab-pill');
+            const titleText = document.getElementById('screenTitleText');
+            if (!slides.length) return;
+
+            // Normalize index loop
+            if (index < 0) index = slides.length - 1;
+            if (index >= slides.length) index = 0;
+
+            slides[currentIndex].classList.remove('active');
+            if (tabs[currentIndex]) tabs[currentIndex].classList.remove('active');
+
+            currentIndex = index;
+
+            slides[currentIndex].classList.add('active');
+            if (tabs[currentIndex]) {
+                tabs[currentIndex].classList.add('active');
+                tabs[currentIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+
+            const title = slides[currentIndex].getAttribute('data-title') || 'DAFTAR SISWA';
+            if (titleText) titleText.textContent = title;
+
+            updateProgress();
+            startAutoTimer();
+        }
+
+        function nextSlide() {
+            const slides = document.querySelectorAll('.slide-item');
+            if (!slides.length) return;
+            goToSlide((currentIndex + 1) % slides.length);
+        }
+
+        function prevSlide() {
+            const slides = document.querySelectorAll('.slide-item');
+            if (!slides.length) return;
+            goToSlide((currentIndex - 1 + slides.length) % slides.length);
+        }
+
+        function startAutoTimer() {
+            if (slideTimer) clearInterval(slideTimer);
+            slideTimer = setInterval(nextSlide, 6000);
+        }
 
         function toggleLoginDrawer(open) {
             const drawer = document.getElementById('loginDrawerOverlay');
