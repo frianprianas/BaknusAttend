@@ -113,23 +113,21 @@
         .slide-tabs-nav {
             display: flex;
             align-items: center;
-            gap: 8px;
-            overflow-x: auto;
+            justify-content: center;
+            gap: 12px;
             padding: 4px 10px 10px;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             width: 100%;
-            scrollbar-width: none;
         }
-        .slide-tabs-nav::-webkit-scrollbar { display: none; }
 
         .slide-tab-pill {
-            padding: 6px 14px;
+            padding: 8px 22px;
             border-radius: 999px;
-            font-size: 0.72rem;
+            font-size: 0.82rem;
             font-weight: 800;
-            background: rgba(30, 41, 59, 0.6);
+            background: rgba(30, 41, 59, 0.7);
             color: #94a3b8;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s;
@@ -137,7 +135,7 @@
         }
 
         .slide-tab-pill:hover {
-            background: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.35);
             color: #fff;
         }
 
@@ -145,7 +143,7 @@
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: #fff;
             border-color: #60a5fa;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
+            box-shadow: 0 4px 18px rgba(37, 99, 235, 0.55);
         }
 
         /* Slides Container */
@@ -176,23 +174,23 @@
         /* Grid Bioskop Kotak-Kotak */
         .cinema-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 18px;
             width: 100%;
             padding: 4px;
         }
 
         @media (min-width: 1024px) {
             .cinema-grid {
-                grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-                gap: 18px;
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 20px;
             }
         }
 
         /* Seat Pod Card */
         .seat-pod {
-            border-radius: 20px;
-            padding: 14px 10px;
+            border-radius: 24px;
+            padding: 16px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -203,8 +201,8 @@
         }
 
         .seat-pod:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.65);
             z-index: 10;
         }
 
@@ -212,7 +210,7 @@
            HIGH CONTRAST STATUS COLOR SCHEME
            ========================================================= */
 
-        /* 1. HADIR (Electric Blue Background — SANGAT KONTRAS) */
+        /* 1. HADIR (Electric Blue Background) */
         .seat-hadir {
             background: linear-gradient(145deg, #1d4ed8 0%, #2563eb 100%) !important;
             border: 2px solid #60a5fa !important;
@@ -244,19 +242,19 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
         }
 
-        /* STRICT ENLARGED AVATAR BOX (76PX X 76PX) */
+        /* SUPER ENLARGED AVATAR BOX (96PX X 96PX) */
         .seat-avatar-box {
-            width: 76px !important;
-            height: 76px !important;
-            min-width: 76px !important;
-            min-height: 76px !important;
-            max-width: 76px !important;
-            max-height: 76px !important;
+            width: 96px !important;
+            height: 96px !important;
+            min-width: 96px !important;
+            min-height: 96px !important;
+            max-width: 96px !important;
+            max-height: 96px !important;
             border-radius: 50% !important;
             overflow: hidden !important;
-            margin: 6px auto 8px !important;
-            border: 3px solid rgba(255, 255, 255, 0.7) !important;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+            margin: 8px auto 10px !important;
+            border: 3.5px solid rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45) !important;
             background: rgba(15, 23, 42, 0.7) !important;
             display: flex !important;
             align-items: center !important;
@@ -282,22 +280,22 @@
             align-items: center !important;
             justify-content: center !important;
             font-weight: 900 !important;
-            font-size: 1.1rem !important;
+            font-size: 1.4rem !important;
             color: #ffffff !important;
             background: rgba(99, 102, 241, 0.4) !important;
         }
 
         /* LED Lamp */
         .led-dot {
-            width: 9px;
-            height: 9px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             display: inline-block;
         }
 
-        .led-hadir { background: #60a5fa; box-shadow: 0 0 10px #60a5fa; }
-        .led-terlambat { background: #fde047; box-shadow: 0 0 10px #fde047; }
-        .led-izin { background: #e879f9; box-shadow: 0 0 10px #e879f9; }
+        .led-hadir { background: #60a5fa; box-shadow: 0 0 12px #60a5fa; }
+        .led-terlambat { background: #fde047; box-shadow: 0 0 12px #fde047; }
+        .led-izin { background: #e879f9; box-shadow: 0 0 12px #e879f9; }
         .led-belum { background: #64748b; opacity: 0.5; }
 
         /* Floating Login Button at Top Right */
@@ -440,10 +438,10 @@
             top: 50%;
             transform: translateY(-50%);
             z-index: 30;
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            background: rgba(15, 23, 42, 0.7);
+            background: rgba(15, 23, 42, 0.75);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff;
             display: flex;
@@ -451,7 +449,7 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             user-select: none;
         }
         .arrow-nav-btn:hover {
@@ -501,11 +499,8 @@
 
         {{-- Interactive Slide Tabs Navigation --}}
         <div class="slide-tabs-nav" id="slideTabsNav">
-            <div class="slide-tab-pill active" onclick="goToSlide(0)">👨‍🏫 Guru</div>
-            <div class="slide-tab-pill" onclick="goToSlide(1)">💼 TU</div>
-            @foreach($classSlides as $idx => $cs)
-                <div class="slide-tab-pill" onclick="goToSlide({{ $idx + 2 }})">🎓 {{ $cs['kelas'] }} ({{ $cs['total'] }})</div>
-            @endforeach
+            <div class="slide-tab-pill active" onclick="goToSlide(0)">👨‍🏫 Dewan Guru</div>
+            <div class="slide-tab-pill" onclick="goToSlide(1)">💼 Staff TU</div>
         </div>
 
         {{-- Arrow Nav Buttons --}}
@@ -529,25 +524,25 @@
                                 <span class="led-dot {{ $ledClass }}"></span>
                             </div>
 
-                            {{-- Enlarged Avatar Container (76px x 76px) --}}
+                            {{-- Super Enlarged Avatar Container (96px x 96px) --}}
                             <div class="seat-avatar-box">
                                 <img src="{{ $t['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $t['name'] }}">
                                 <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($t['name'], 0, 2)) }}</div>
                             </div>
 
-                            <div style="width:100%;margin-top:2px;">
-                                <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
-                                <p style="font-size:10px;opacity:0.85;margin-top:1px;">Guru</p>
+                            <div style="width:100%;margin-top:4px;">
+                                <h4 style="font-size:0.85rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $t['name'] }}">{{ $t['name'] }}</h4>
+                                <p style="font-size:10.5px;opacity:0.85;margin-top:1px;">Guru</p>
                             </div>
 
                             {{-- Attendance Info Box (Jam, Metode, GPS) --}}
                             <div style="width:100%;margin-top:8px;">
                                 @if($t['status_code'] === 'HADIR' || $t['status_code'] === 'TERLAMBAT')
-                                    <div style="background:rgba(0,0,0,0.35);padding:5px 4px;border-radius:10px;font-size:9px;line-height:1.3;text-align:center;border:1px solid rgba(255,255,255,0.25);">
+                                    <div style="background:rgba(0,0,0,0.35);padding:6px 4px;border-radius:12px;font-size:9.5px;line-height:1.35;text-align:center;border:1px solid rgba(255,255,255,0.25);">
                                         <div style="font-weight:900;">
                                             {{ $t['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $t['tap_jam'] ?? $t['waktu_tap'] }})
                                         </div>
-                                        <div style="font-size:8.5px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
+                                        <div style="font-size:9px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
                                             <span>{{ $t['tap_metode'] ?? '💳 RFID' }}</span>
                                             @if(!empty($t['tap_gps']))
                                                 <span>·</span>
@@ -555,17 +550,17 @@
                                             @endif
                                         </div>
                                         @if(!empty($t['tap_gps']))
-                                            <div style="font-size:7.5px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $t['tap_gps'] }}">
+                                            <div style="font-size:8px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $t['tap_gps'] }}">
                                                 {{ $t['tap_gps'] }}
                                             </div>
                                         @endif
                                     </div>
                                 @elseif($t['status_code'] === 'IZIN')
-                                    <div style="background:rgba(0,0,0,0.35);padding:6px;border-radius:10px;font-size:9.5px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
+                                    <div style="background:rgba(0,0,0,0.35);padding:7px;border-radius:12px;font-size:10px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
                                         📋 IZIN / SAKIT
                                     </div>
                                 @else
-                                    <div style="background:rgba(0,0,0,0.25);padding:6px;border-radius:10px;font-size:9.5px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
+                                    <div style="background:rgba(0,0,0,0.25);padding:7px;border-radius:12px;font-size:10px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
                                         ⚪ BELUM TAP
                                     </div>
                                 @endif
@@ -595,18 +590,18 @@
                                 <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($tu['name'], 0, 2)) }}</div>
                             </div>
 
-                            <div style="width:100%;margin-top:2px;">
-                                <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
-                                <p style="font-size:10px;opacity:0.85;margin-top:1px;">Staff TU</p>
+                            <div style="width:100%;margin-top:4px;">
+                                <h4 style="font-size:0.85rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $tu['name'] }}">{{ $tu['name'] }}</h4>
+                                <p style="font-size:10.5px;opacity:0.85;margin-top:1px;">Staff TU</p>
                             </div>
 
                             <div style="width:100%;margin-top:8px;">
                                 @if($tu['status_code'] === 'HADIR' || $tu['status_code'] === 'TERLAMBAT')
-                                    <div style="background:rgba(0,0,0,0.35);padding:5px 4px;border-radius:10px;font-size:9px;line-height:1.3;text-align:center;border:1px solid rgba(255,255,255,0.25);">
+                                    <div style="background:rgba(0,0,0,0.35);padding:6px 4px;border-radius:12px;font-size:9.5px;line-height:1.35;text-align:center;border:1px solid rgba(255,255,255,0.25);">
                                         <div style="font-weight:900;">
                                             {{ $tu['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $tu['tap_jam'] ?? $tu['waktu_tap'] }})
                                         </div>
-                                        <div style="font-size:8.5px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
+                                        <div style="font-size:9px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
                                             <span>{{ $tu['tap_metode'] ?? '💳 RFID' }}</span>
                                             @if(!empty($tu['tap_gps']))
                                                 <span>·</span>
@@ -614,17 +609,17 @@
                                             @endif
                                         </div>
                                         @if(!empty($tu['tap_gps']))
-                                            <div style="font-size:7.5px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $tu['tap_gps'] }}">
+                                            <div style="font-size:8px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $tu['tap_gps'] }}">
                                                 {{ $tu['tap_gps'] }}
                                             </div>
                                         @endif
                                     </div>
                                 @elseif($tu['status_code'] === 'IZIN')
-                                    <div style="background:rgba(0,0,0,0.35);padding:6px;border-radius:10px;font-size:9.5px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
+                                    <div style="background:rgba(0,0,0,0.35);padding:7px;border-radius:12px;font-size:10px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
                                         📋 IZIN / SAKIT
                                     </div>
                                 @else
-                                    <div style="background:rgba(0,0,0,0.25);padding:6px;border-radius:10px;font-size:9.5px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
+                                    <div style="background:rgba(0,0,0,0.25);padding:7px;border-radius:12px;font-size:10px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
                                         ⚪ BELUM TAP
                                     </div>
                                 @endif
@@ -634,67 +629,6 @@
                     @endforeach
                 </div>
             </div>
-
-            {{-- SLIDE 3+: KELAS SISWA --}}
-            @foreach($classSlides as $cs)
-                <div class="slide-item" data-title="DAFTAR SISWA KELAS {{ $cs['kelas'] }} ({{ $cs['total'] }} SISWA)">
-                    <div class="cinema-grid">
-                        @foreach($cs['student_grid'] as $st)
-                            @php
-                                $statusClass = match($st['status_code']) { 'HADIR' => 'seat-hadir', 'TERLAMBAT' => 'seat-terlambat', 'IZIN' => 'seat-izin', default => 'seat-belum' };
-                                $ledClass = match($st['status_code']) { 'HADIR' => 'led-hadir', 'TERLAMBAT' => 'led-terlambat', 'IZIN' => 'led-izin', default => 'led-belum' };
-                            @endphp
-                            <div class="seat-pod {{ $statusClass }}">
-                                <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-                                    <span style="font-size:9.5px;font-weight:900;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,0.35);color:#fff;">{{ $st['seat_number'] }}</span>
-                                    <span class="led-dot {{ $ledClass }}"></span>
-                                </div>
-
-                                <div class="seat-avatar-box">
-                                    <img src="{{ $st['avatar_url'] }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" class="seat-avatar-img" alt="{{ $st['name'] }}">
-                                    <div class="seat-initial-fallback" style="display:none;">{{ strtoupper(substr($st['name'], 0, 2)) }}</div>
-                                </div>
-
-                                <div style="width:100%;margin-top:2px;">
-                                    <h4 style="font-size:0.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $st['name'] }}">{{ $st['name'] }}</h4>
-                                    <p style="font-size:10px;opacity:0.85;margin-top:1px;font-family:monospace;">{{ $st['code'] }}</p>
-                                </div>
-
-                                <div style="width:100%;margin-top:8px;">
-                                    @if($st['status_code'] === 'HADIR' || $st['status_code'] === 'TERLAMBAT')
-                                        <div style="background:rgba(0,0,0,0.35);padding:5px 4px;border-radius:10px;font-size:9px;line-height:1.3;text-align:center;border:1px solid rgba(255,255,255,0.25);">
-                                            <div style="font-weight:900;">
-                                                {{ $st['status_code'] === 'HADIR' ? '✅ HADIR' : '⚠️ TERLAMBAT' }} ({{ $st['tap_jam'] ?? $st['waktu_tap'] }})
-                                            </div>
-                                            <div style="font-size:8.5px;opacity:0.95;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-weight:700;">
-                                                <span>{{ $st['tap_metode'] ?? '💳 RFID' }}</span>
-                                                @if(!empty($st['tap_gps']))
-                                                    <span>·</span>
-                                                    <span title="GPS: {{ $st['tap_gps'] }}">📍 GPS</span>
-                                                @endif
-                                            </div>
-                                            @if(!empty($st['tap_gps']))
-                                                <div style="font-size:7.5px;opacity:0.85;margin-top:1px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="GPS: {{ $st['tap_gps'] }}">
-                                                    {{ $st['tap_gps'] }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @elseif($st['status_code'] === 'IZIN')
-                                        <div style="background:rgba(0,0,0,0.35);padding:6px;border-radius:10px;font-size:9.5px;font-weight:900;border:1px solid rgba(255,255,255,0.2);">
-                                            📋 IZIN / SAKIT
-                                        </div>
-                                    @else
-                                        <div style="background:rgba(0,0,0,0.25);padding:6px;border-radius:10px;font-size:9.5px;font-weight:700;color:#94a3b8;border:1px solid rgba(255,255,255,0.08);">
-                                            ⚪ BELUM TAP
-                                        </div>
-                                    @endif
-                                </div>
-
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endforeach
 
         </div>
 
@@ -815,10 +749,9 @@
             slides[currentIndex].classList.add('active');
             if (tabs[currentIndex]) {
                 tabs[currentIndex].classList.add('active');
-                tabs[currentIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
             }
 
-            const title = slides[currentIndex].getAttribute('data-title') || 'DAFTAR SISWA';
+            const title = slides[currentIndex].getAttribute('data-title') || 'PRESENSI BAKNUSATTEND';
             if (titleText) titleText.textContent = title;
 
             updateProgress();

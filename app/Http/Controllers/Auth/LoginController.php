@@ -3,10 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\ClassRoom;
 use App\Models\KehadiranGuruTu;
-use App\Models\KehadiranSiswa;
-use App\Models\Student;
 use App\Models\User;
 use App\Services\MailcowAuth;
 use Carbon\Carbon;
@@ -118,67 +115,8 @@ class LoginController extends Controller
             ];
         })->values()->toArray();
 
-        // 3. SELURUH KELAS AKTIF (Pastikan 100% muncul di slide)
-        $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
-            ->with(['students' => function ($q) {
-                $q->orderBy('name', 'asc');
-            }])
-            ->orderBy('kelas')
-            ->get();
-
-        $allStudentNis = $classes->pluck('students')->flatten()->pluck('nis')->filter();
-
-        $studentTaps = KehadiranSiswa::whereIn('nis', $allStudentNis)
-            ->whereDate('waktu_tap', $today)
-            ->get()
-            ->groupBy('nis');
-
-        $classSlides = $classes->map(function ($classRoom) use ($studentTaps) {
-            $studentGrid = $classRoom->students->map(function ($student, $idx) use ($studentTaps) {
-                $taps = $studentTaps->get($student->nis, collect());
-                $firstTap = $taps->sortBy('waktu_tap')->first();
-
-                $statusCode = 'BELUM';
-                $waktu = '-';
-                $tapDetails = null;
-
-                if ($firstTap) {
-                    $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
-                    $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
-                    if (str_contains($statusStr, 'terlambat')) {
-                        $statusCode = 'TERLAMBAT';
-                    } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
-                        $statusCode = 'IZIN';
-                    } else {
-                        $statusCode = 'HADIR';
-                    }
-                    $tapDetails = $this->parseTapDetails($firstTap);
-                }
-
-                $nisClean = strtolower(trim($student->nis));
-                $studentEmail = $nisClean . '@smk.baktinusantara666.sch.id';
-                $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($studentEmail);
-
-                return [
-                    'seat_number' => sprintf('#%02d', $idx + 1),
-                    'name'        => $student->name,
-                    'code'        => $student->nis,
-                    'status_code' => $statusCode,
-                    'waktu_tap'   => $waktu,
-                    'tap_jam'     => $tapDetails['jam'] ?? null,
-                    'tap_metode'  => $tapDetails['metode'] ?? null,
-                    'tap_gps'     => $tapDetails['gps'] ?? null,
-                    'avatar_url'  => $avatarUrl,
-                ];
-            });
-
-            return [
-                'id'           => $classRoom->id,
-                'kelas'        => $classRoom->kelas,
-                'total'        => $studentGrid->count(),
-                'student_grid' => $studentGrid->values()->toArray(),
-            ];
-        })->values()->toArray();
+        // Kelas dinonaktifkan sementara sesuai permintaan user
+        $classSlides = [];
 
         return view('auth.login', compact('teacherGrid', 'tuGrid', 'classSlides'));
     }
