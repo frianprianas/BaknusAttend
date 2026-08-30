@@ -2,48 +2,45 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-use App\Models\User;
-use App\Models\Student;
 use App\Models\ClassRoom;
 use App\Models\ProgramStudi;
+use App\Models\Student;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class MailcowService
 {
-    protected $apiKey;
     protected $baseUrl;
+    protected $apiKey;
 
     public function __construct()
     {
-        $this->apiKey = config('mailcow.api_key');
-        $this->baseUrl = rtrim(config('mailcow.url'), '/');
+        $this->baseUrl = env('MAILCOW_URL', 'https://baknusmail.smkbn666.sch.id');
+        $this->apiKey = env('MAILCOW_API_KEY', 'BAKNUS_ATTEND_SECRET');
     }
 
     public function syncUsers()
     {
-        // Berikan waktu lebih lama untuk sinkronisasi jika data banyak
-        set_time_limit(180);
-
         $response = Http::withHeaders([
             'X-API-Key' => $this->apiKey,
-        ])->timeout(60)->get("{$this->baseUrl}/api/v1/get/mailbox/all");
+        ])->timeout(15)->get("{$this->baseUrl}/api/v1/get/mailbox/all");
 
         if (!$response->successful()) {
-            throw new \Exception("Gagal menghubungi Mailcow API: " . $response->body());
+            Log::error('Gagal mengambil data mailbox dari Mailcow: ' . $response->body());
+            return 0;
         }
 
         $mailboxes = $response->json();
         $syncedCount = 0;
 
-        // Ensure a default ProgramStudi exists to avoid foreign key failure
         $defaultProdi = ProgramStudi::firstOrCreate(
             ['program_studi' => 'Belum Ditentukan'],
             ['id_prodi' => 1]
         );
 
-        // Default ClassRoom if not specified
         $defaultClass = ClassRoom::firstOrCreate(
             ['kelas' => 'Belum Ditentukan'],
             ['id_prodi' => $defaultProdi->id_prodi]
@@ -51,12 +48,11 @@ class MailcowService
 
         foreach ($mailboxes as $mailbox) {
             $email = $mailbox['username'] ?? null;
+            if (!$email) continue;
+
             $fullName = $mailbox['name'] ?? 'No Name';
             $tags = $mailbox['tags'] ?? [];
             $comment = $mailbox['comment'] ?? '';
-
-            if (!$email)
-                continue;
 
             // Mapping Role from Tag or Comment
             $role = $this->determineRole($tags, $comment, $email);
@@ -72,16 +68,24 @@ class MailcowService
                 ]
             );
 
-            // Special handling for Student
+            // Special handling for Student: PRESERVE EXISTING CLASS ROOM ID!
             if ($role === 'Siswa') {
                 $nis = $this->extractNis($email, $comment);
-                Student::updateOrCreate(
-                    ['nis' => $nis],
-                    [
+                $existingStudent = Student::where('nis', $nis)->first();
+
+                if ($existingStudent) {
+                    // Update nama siswa tanpa menimpa/mereset kelas yang sudah diset!
+                    $existingStudent->update([
+                        'name' => $fullName,
+                    ]);
+                } else {
+                    // Siswa baru: set default kelas
+                    Student::create([
+                        'nis' => $nis,
                         'name' => $fullName,
                         'class_room_id' => $defaultClass->id,
-                    ]
-                );
+                    ]);
+                }
             }
 
             $syncedCount++;
@@ -119,63 +123,74 @@ class MailcowService
         );
 
         if ($role === 'Siswa') {
-            $defaultProdi = ProgramStudi::firstOrCreate(
-                ['program_studi' => 'Belum Ditentukan'],
-                ['id_prodi' => 1]
-            );
+            $nis = $this->extractNis($email, $comment);
+            $existingStudent = Student::where('nis', $nis)->first();
 
-            $defaultClass = ClassRoom::firstOrCreate(
-                ['kelas' => 'Belum Ditentukan'],
-                ['id_prodi' => $defaultProdi->id_prodi]
-            );
+            if ($existingStudent) {
+                // Jangan reset class_room_id jika siswa sudah ada!
+                $existingStudent->update([
+                    'name' => $fullName,
+                ]);
+            } else {
+                $defaultProdi = ProgramStudi::firstOrCreate(
+                    ['program_studi' => 'Belum Ditentukan'],
+                    ['id_prodi' => 1]
+                );
 
-            Student::updateOrCreate(
-                ['nis' => $this->extractNis($email, $comment)],
-                [
+                $defaultClass = ClassRoom::firstOrCreate(
+                    ['kelas' => 'Belum Ditentukan'],
+                    ['id_prodi' => $defaultProdi->id_prodi]
+                );
+
+                Student::create([
+                    'nis' => $nis,
                     'name' => $fullName,
                     'class_room_id' => $defaultClass->id,
-                ]
-            );
+                ]);
+            }
         }
 
         return $user;
     }
 
-    protected function determineRole($tags, $comment, $email)
+    private function determineRole($tags, $comment, $email)
     {
-        $searchable = array_map('strtolower', array_merge((array) $tags, explode(' ', (string) $comment)));
+        $tagsStr = is_array($tags) ? implode(' ', $tags) : (string)$tags;
+        $allText = strtolower($tagsStr . ' ' . $comment . ' ' . $email);
 
-        if (in_array('admin', $searchable))
+        if (str_contains($allText, 'admin') || str_contains($allText, 'kepsek')) {
             return 'Admin';
-        if (in_array('guru', $searchable))
+        }
+
+        if (str_contains($allText, 'guru') || str_contains($allText, 'pengajar') || str_contains($allText, 'teacher')) {
             return 'Guru';
-        if (in_array('tu', $searchable))
+        }
+
+        if (str_contains($allText, 'tu') || str_contains($allText, 'staff') || str_contains($allText, 'staf')) {
             return 'TU';
-        if (in_array('siswa', $searchable))
-            return 'Siswa';
+        }
 
-        // Deprecated checks if no tags found
-        if (str_contains(strtolower((string) $comment), 'siswa'))
+        // Cek pola angka NIS di email/username untuk siswa
+        if (preg_match('/\d{6,}/', $email)) {
             return 'Siswa';
-        if (preg_match('/^[0-9]+@/i', $email))
-            return 'Siswa';
+        }
 
-        return 'TU';
+        return 'Siswa'; // Fallback default
     }
 
-    protected function extractNis($email, $comment)
+    private function extractNis($email, $comment)
     {
-        // Paling aman: ambil angka yang ada tepat sebelum @
-        if (preg_match('/^([0-9]+)@/', $email, $matches)) {
+        // 1. Cek dari comment jika ada pola NIS
+        if (preg_match('/(\d{8,14})/', $comment, $matches)) {
             return $matches[1];
         }
 
-        // Kalau tidak ada, cari label "NIS:" di comment
-        if (preg_match('/NIS:\s*([0-9]+)/i', $comment, $matches)) {
-            return $matches[1];
+        // 2. Cek dari username email (misal: 242510119001@smk.baktinusantara666.sch.id -> 242510119001)
+        $username = explode('@', $email)[0];
+        if (preg_match('/^\d+$/', $username)) {
+            return $username;
         }
 
-        // Kalau gagal semua, gunakan string apapun sebelum @
-        return explode('@', $email)[0];
+        return $username;
     }
 }
