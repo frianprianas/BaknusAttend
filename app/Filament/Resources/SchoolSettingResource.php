@@ -218,6 +218,45 @@ class SchoolSettingResource extends Resource
                             ->helperText('Contoh: 20 hari kerja/bulan. Nilai ini akan dipakai otomatis jika di profil Guru tsb tidak diatur secara khusus.')
                             ->required(),
                     ]),
+
+                Forms\Components\Section::make('📺 Pengaturan Slideshow Halaman Login (Bioskop View)')
+                    ->description('Atur secara dinamis slide mana saja yang ditampilkan pada layar TV/monitor halaman login.')
+                    ->schema([
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
+                            ->schema([
+                                Forms\Components\Toggle::make('slide_show_guru')
+                                    ->label('Tampilkan Slide Dewan Guru')
+                                    ->default(true),
+                                Forms\Components\Toggle::make('slide_show_tu')
+                                    ->label('Tampilkan Slide Staff TU')
+                                    ->default(true),
+                                Forms\Components\Toggle::make('slide_show_kelas')
+                                    ->label('Tampilkan Slide Kelas Siswa')
+                                    ->default(true),
+                            ]),
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
+                            ->schema([
+                                Forms\Components\TextInput::make('slide_min_students')
+                                    ->label('Min. Siswa Per Kelas')
+                                    ->numeric()
+                                    ->default(6)
+                                    ->helperText('Hanya tampilkan kelas jika siswanya > batas ini (misal: 6)')
+                                    ->required(),
+                                Forms\Components\TextInput::make('slide_duration')
+                                    ->label('Durasi Autoplay (Detik)')
+                                    ->numeric()
+                                    ->default(6)
+                                    ->suffix('Detik')
+                                    ->helperText('Waktu perputaran antar-slide (misal: 6 detik)')
+                                    ->required(),
+                                Forms\Components\TextInput::make('slide_excluded_roles')
+                                    ->label('Role Disembunyikan')
+                                    ->placeholder('Contoh: Test')
+                                    ->default('Test')
+                                    ->helperText('Daftar role yang disembunyikan dari slide (pisahkan dengan koma)')
+                                    ->nullable(),
+                            ]),
+                    ]),
             ]);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClassRoom;
 use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
+use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\MailcowAuth;
@@ -24,126 +25,38 @@ class LoginController extends Controller
         }
 
         $today = Carbon::today();
+        $setting = SchoolSetting::first();
 
-        // 1. Dewan Guru (Keluarkan User dengan Role 'Test')
-        $teachers = User::where('role', 'Guru')
-            ->where('role', '!=', 'Test')
-            ->orderBy('name')
-            ->get();
+        // Konfigurasi dinamis dari Admin Panel
+        $showGuru          = $setting ? (bool)($setting->slide_show_guru ?? true) : true;
+        $showTu            = $setting ? (bool)($setting->slide_show_tu ?? true) : true;
+        $showKelas         = $setting ? (bool)($setting->slide_show_kelas ?? true) : true;
+        $minStudents       = $setting && isset($setting->slide_min_students) ? (int)$setting->slide_min_students : 6;
+        $slideDuration     = $setting && isset($setting->slide_duration) ? (int)$setting->slide_duration : 6;
 
-        $teacherTaps = KehadiranGuruTu::whereDate('waktu_tap', $today)
-            ->get()
-            ->groupBy('nipy');
+        $excludedRolesStr  = $setting->slide_excluded_roles ?? 'Test';
+        $excludedRolesArr  = array_filter(array_map('trim', explode(',', $excludedRolesStr)));
 
-        $teacherGrid = $teachers->map(function ($user, $idx) use ($teacherTaps) {
-            $nipyKey = $user->nipy ?: $user->email;
-            $taps = $teacherTaps->get($nipyKey, $teacherTaps->get($user->email, collect()));
-            $firstTap = $taps->sortBy('waktu_tap')->first();
-            
-            $statusCode = 'BELUM';
-            $waktu = '-';
-            $tapDetails = null;
+        $teacherGrid = [];
+        $tuGrid = [];
+        $classSlides = [];
 
-            if ($firstTap) {
-                $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
-                $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
-                if (str_contains($statusStr, 'terlambat')) {
-                    $statusCode = 'TERLAMBAT';
-                } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
-                    $statusCode = 'IZIN';
-                } else {
-                    $statusCode = 'HADIR';
-                }
-                $tapDetails = $this->parseTapDetails($firstTap);
-            }
+        // 1. Dewan Guru (Jika Diaktifkan)
+        if ($showGuru) {
+            $teachers = User::where('role', 'Guru')
+                ->whereNotIn('role', $excludedRolesArr)
+                ->orderBy('name')
+                ->get();
 
-            // BaknusMail Avatar Endpoint API
-            $emailClean = strtolower(trim($user->email));
-            $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($emailClean);
+            $teacherTaps = KehadiranGuruTu::whereDate('waktu_tap', $today)
+                ->get()
+                ->groupBy('nipy');
 
-            return [
-                'seat_number' => sprintf('#G%02d', $idx + 1),
-                'name'        => $user->name,
-                'code'        => 'Guru',
-                'email'       => $user->email,
-                'status_code' => $statusCode,
-                'waktu_tap'   => $waktu,
-                'tap_jam'     => $tapDetails['jam'] ?? null,
-                'tap_metode'  => $tapDetails['metode'] ?? null,
-                'tap_gps'     => $tapDetails['gps'] ?? null,
-                'avatar_url'  => $avatarUrl,
-            ];
-        })->values()->toArray();
-
-        // 2. Staff TU (Keluarkan User dengan Role 'Test')
-        $staffTu = User::where('role', 'TU')
-            ->where('role', '!=', 'Test')
-            ->orderBy('name')
-            ->get();
-
-        $tuGrid = $staffTu->map(function ($user, $idx) use ($teacherTaps) {
-            $nipyKey = $user->nipy ?: $user->email;
-            $taps = $teacherTaps->get($nipyKey, $teacherTaps->get($user->email, collect()));
-            $firstTap = $taps->sortBy('waktu_tap')->first();
-            
-            $statusCode = 'BELUM';
-            $waktu = '-';
-            $tapDetails = null;
-
-            if ($firstTap) {
-                $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
-                $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
-                if (str_contains($statusStr, 'terlambat')) {
-                    $statusCode = 'TERLAMBAT';
-                } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
-                    $statusCode = 'IZIN';
-                } else {
-                    $statusCode = 'HADIR';
-                }
-                $tapDetails = $this->parseTapDetails($firstTap);
-            }
-
-            $emailClean = strtolower(trim($user->email));
-            $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($emailClean);
-
-            return [
-                'seat_number' => sprintf('#T%02d', $idx + 1),
-                'name'        => $user->name,
-                'code'        => 'Staff TU',
-                'email'       => $user->email,
-                'status_code' => $statusCode,
-                'waktu_tap'   => $waktu,
-                'tap_jam'     => $tapDetails['jam'] ?? null,
-                'tap_metode'  => $tapDetails['metode'] ?? null,
-                'tap_gps'     => $tapDetails['gps'] ?? null,
-                'avatar_url'  => $avatarUrl,
-            ];
-        })->values()->toArray();
-
-        // 3. Slide Kelas (HANYA KELAS YANG SISWANYA DIBATASI > 6 ORANG)
-        $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
-            ->with(['students' => function ($q) {
-                $q->orderBy('name', 'asc');
-            }])
-            ->orderBy('kelas')
-            ->get()
-            ->filter(function ($c) {
-                return $c->students->count() > 6;
-            })
-            ->values();
-
-        $allStudentNis = $classes->pluck('students')->flatten()->pluck('nis')->filter();
-
-        $studentTaps = KehadiranSiswa::whereIn('nis', $allStudentNis)
-            ->whereDate('waktu_tap', $today)
-            ->get()
-            ->groupBy('nis');
-
-        $classSlides = $classes->map(function ($classRoom) use ($studentTaps) {
-            $studentGrid = $classRoom->students->map(function ($student, $idx) use ($studentTaps) {
-                $taps = $studentTaps->get($student->nis, collect());
+            $teacherGrid = $teachers->map(function ($user, $idx) use ($teacherTaps) {
+                $nipyKey = $user->nipy ?: $user->email;
+                $taps = $teacherTaps->get($nipyKey, $teacherTaps->get($user->email, collect()));
                 $firstTap = $taps->sortBy('waktu_tap')->first();
-
+                
                 $statusCode = 'BELUM';
                 $waktu = '-';
                 $tapDetails = null;
@@ -161,14 +74,14 @@ class LoginController extends Controller
                     $tapDetails = $this->parseTapDetails($firstTap);
                 }
 
-                $nisClean = strtolower(trim($student->nis));
-                $studentEmail = $nisClean . '@smk.baktinusantara666.sch.id';
-                $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($studentEmail);
+                $emailClean = strtolower(trim($user->email));
+                $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($emailClean);
 
                 return [
-                    'seat_number' => sprintf('#%02d', $idx + 1),
-                    'name'        => $student->name,
-                    'code'        => $student->nis,
+                    'seat_number' => sprintf('#G%02d', $idx + 1),
+                    'name'        => $user->name,
+                    'code'        => 'Guru',
+                    'email'       => $user->email,
                     'status_code' => $statusCode,
                     'waktu_tap'   => $waktu,
                     'tap_jam'     => $tapDetails['jam'] ?? null,
@@ -176,17 +89,129 @@ class LoginController extends Controller
                     'tap_gps'     => $tapDetails['gps'] ?? null,
                     'avatar_url'  => $avatarUrl,
                 ];
-            });
+            })->values()->toArray();
+        }
 
-            return [
-                'id'           => $classRoom->id,
-                'kelas'        => $classRoom->kelas,
-                'total'        => $studentGrid->count(),
-                'student_grid' => $studentGrid->values()->toArray(),
-            ];
-        })->values()->toArray();
+        // 2. Staff TU (Jika Diaktifkan)
+        if ($showTu) {
+            $staffTu = User::where('role', 'TU')
+                ->whereNotIn('role', $excludedRolesArr)
+                ->orderBy('name')
+                ->get();
 
-        return view('auth.login', compact('teacherGrid', 'tuGrid', 'classSlides'));
+            $teacherTaps = KehadiranGuruTu::whereDate('waktu_tap', $today)
+                ->get()
+                ->groupBy('nipy');
+
+            $tuGrid = $staffTu->map(function ($user, $idx) use ($teacherTaps) {
+                $nipyKey = $user->nipy ?: $user->email;
+                $taps = $teacherTaps->get($nipyKey, $teacherTaps->get($user->email, collect()));
+                $firstTap = $taps->sortBy('waktu_tap')->first();
+                
+                $statusCode = 'BELUM';
+                $waktu = '-';
+                $tapDetails = null;
+
+                if ($firstTap) {
+                    $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
+                    $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                    if (str_contains($statusStr, 'terlambat')) {
+                        $statusCode = 'TERLAMBAT';
+                    } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
+                        $statusCode = 'IZIN';
+                    } else {
+                        $statusCode = 'HADIR';
+                    }
+                    $tapDetails = $this->parseTapDetails($firstTap);
+                }
+
+                $emailClean = strtolower(trim($user->email));
+                $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($emailClean);
+
+                return [
+                    'seat_number' => sprintf('#T%02d', $idx + 1),
+                    'name'        => $user->name,
+                    'code'        => 'Staff TU',
+                    'email'       => $user->email,
+                    'status_code' => $statusCode,
+                    'waktu_tap'   => $waktu,
+                    'tap_jam'     => $tapDetails['jam'] ?? null,
+                    'tap_metode'  => $tapDetails['metode'] ?? null,
+                    'tap_gps'     => $tapDetails['gps'] ?? null,
+                    'avatar_url'  => $avatarUrl,
+                ];
+            })->values()->toArray();
+        }
+
+        // 3. Slide Kelas (Jika Diaktifkan dan Memenuhi Min. Siswa)
+        if ($showKelas) {
+            $classes = ClassRoom::where('kelas', '!=', 'Belum Ditentukan')
+                ->with(['students' => function ($q) {
+                    $q->orderBy('name', 'asc');
+                }])
+                ->orderBy('kelas')
+                ->get()
+                ->filter(function ($c) use ($minStudents) {
+                    return $c->students->count() > $minStudents;
+                })
+                ->values();
+
+            $allStudentNis = $classes->pluck('students')->flatten()->pluck('nis')->filter();
+
+            $studentTaps = KehadiranSiswa::whereIn('nis', $allStudentNis)
+                ->whereDate('waktu_tap', $today)
+                ->get()
+                ->groupBy('nis');
+
+            $classSlides = $classes->map(function ($classRoom) use ($studentTaps) {
+                $studentGrid = $classRoom->students->map(function ($student, $idx) use ($studentTaps) {
+                    $taps = $studentTaps->get($student->nis, collect());
+                    $firstTap = $taps->sortBy('waktu_tap')->first();
+
+                    $statusCode = 'BELUM';
+                    $waktu = '-';
+                    $tapDetails = null;
+
+                    if ($firstTap) {
+                        $statusStr = strtolower($firstTap->status . ' ' . $firstTap->keterangan);
+                        $waktu = Carbon::parse($firstTap->waktu_tap)->format('H:i');
+                        if (str_contains($statusStr, 'terlambat')) {
+                            $statusCode = 'TERLAMBAT';
+                        } elseif (str_contains($statusStr, 'izin') || str_contains($statusStr, 'sakit')) {
+                            $statusCode = 'IZIN';
+                        } else {
+                            $statusCode = 'HADIR';
+                        }
+                        $tapDetails = $this->parseTapDetails($firstTap);
+                    }
+
+                    $nisClean = strtolower(trim($student->nis));
+                    $studentEmail = $nisClean . '@smk.baktinusantara666.sch.id';
+                    $avatarUrl = "https://baknusmail.smkbn666.sch.id/api/auth/avatar/" . urlencode($studentEmail);
+
+                    return [
+                        'seat_number' => sprintf('#%02d', $idx + 1),
+                        'name'        => $student->name,
+                        'code'        => $student->nis,
+                        'status_code' => $statusCode,
+                        'waktu_tap'   => $waktu,
+                        'tap_jam'     => $tapDetails['jam'] ?? null,
+                        'tap_metode'  => $tapDetails['metode'] ?? null,
+                        'tap_gps'     => $tapDetails['gps'] ?? null,
+                        'avatar_url'  => $avatarUrl,
+                    ];
+                });
+
+                return [
+                    'id'           => $classRoom->id,
+                    'kelas'        => $classRoom->kelas,
+                    'total'        => $studentGrid->count(),
+                    'student_grid' => $studentGrid->values()->toArray(),
+                ];
+            })->values()->toArray();
+        }
+
+        return view('auth.login', compact('teacherGrid', 'tuGrid', 'classSlides', 'showGuru', 'showTu', 'showKelas', 'slideDuration'));
     }
 
     private function parseTapDetails($tapRecord): array
