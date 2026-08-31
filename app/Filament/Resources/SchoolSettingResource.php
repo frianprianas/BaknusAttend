@@ -256,14 +256,30 @@ class SchoolSettingResource extends Resource
                                     ->helperText('Daftar role yang disembunyikan dari slide (pisahkan dengan koma)')
                                     ->nullable(),
                             ]),
-                        Forms\Components\Select::make('slide_selected_class_ids')
-                            ->label('Pilih Kelas Spesifik Yang Ditampilkan')
-                            ->options(fn() => \App\Models\ClassRoom::where('kelas', '!=', 'Belum Ditentukan')->orderBy('kelas')->pluck('kelas', 'id'))
-                            ->multiple()
-                            ->searchable()
-                            ->preload()
-                            ->helperText('Pilih satu atau beberapa kelas tertentu yang ingin dimunculkan pada slide. Kosongkan jika ingin memuat seluruh kelas otomatis (yang memenuhi batas minimal siswa di atas).')
-                            ->columnSpanFull(),
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
+                            ->schema([
+                                Forms\Components\Select::make('slide_selected_teacher_ids')
+                                    ->label('Pilih Guru Spesifik Yang Ditampilkan')
+                                    ->options(fn() => \App\Models\User::where('role', 'Guru')->where('role', '!=', 'Test')->orderBy('name')->pluck('name', 'id'))
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->helperText('Kosongkan jika ingin memuat seluruh Dewan Guru.'),
+                                Forms\Components\Select::make('slide_selected_tu_ids')
+                                    ->label('Pilih Staff TU Spesifik Yang Ditampilkan')
+                                    ->options(fn() => \App\Models\User::where('role', 'TU')->where('role', '!=', 'Test')->orderBy('name')->pluck('name', 'id'))
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->helperText('Kosongkan jika ingin memuat seluruh Staff TU.'),
+                                Forms\Components\Select::make('slide_selected_class_ids')
+                                    ->label('Pilih Kelas Spesifik Yang Ditampilkan')
+                                    ->options(fn() => \App\Models\ClassRoom::where('kelas', '!=', 'Belum Ditentukan')->orderBy('kelas')->pluck('kelas', 'id'))
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->helperText('Kosongkan jika ingin memuat seluruh kelas otomatis.'),
+                            ]),
                     ]),
             ]);
     }

@@ -41,12 +41,22 @@ class LoginController extends Controller
         $tuGrid = [];
         $classSlides = [];
 
-        // 1. Dewan Guru (Jika Diaktifkan)
+        // 1. Dewan Guru (Jika Diaktifkan & Berdasarkan Pilihan Admin)
         if ($showGuru) {
-            $teachers = User::where('role', 'Guru')
+            $selectedTeacherIds = $setting->slide_selected_teacher_ids ?? [];
+            if (!is_array($selectedTeacherIds)) {
+                $selectedTeacherIds = json_decode($selectedTeacherIds, true) ?? [];
+            }
+
+            $teachersQuery = User::where('role', 'Guru')
                 ->whereNotIn('role', $excludedRolesArr)
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            if (!empty($selectedTeacherIds)) {
+                $teachersQuery->whereIn('id', $selectedTeacherIds);
+            }
+
+            $teachers = $teachersQuery->get();
 
             $teacherTaps = KehadiranGuruTu::whereDate('waktu_tap', $today)
                 ->get()
@@ -92,12 +102,22 @@ class LoginController extends Controller
             })->values()->toArray();
         }
 
-        // 2. Staff TU (Jika Diaktifkan)
+        // 2. Staff TU (Jika Diaktifkan & Berdasarkan Pilihan Admin)
         if ($showTu) {
-            $staffTu = User::where('role', 'TU')
+            $selectedTuIds = $setting->slide_selected_tu_ids ?? [];
+            if (!is_array($selectedTuIds)) {
+                $selectedTuIds = json_decode($selectedTuIds, true) ?? [];
+            }
+
+            $tuQuery = User::where('role', 'TU')
                 ->whereNotIn('role', $excludedRolesArr)
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            if (!empty($selectedTuIds)) {
+                $tuQuery->whereIn('id', $selectedTuIds);
+            }
+
+            $staffTu = $tuQuery->get();
 
             $teacherTaps = KehadiranGuruTu::whereDate('waktu_tap', $today)
                 ->get()
@@ -143,7 +163,7 @@ class LoginController extends Controller
             })->values()->toArray();
         }
 
-        // 3. Slide Kelas (Jika Diaktifkan & Berdasarkan Kelas Pilihan Admin)
+        // 3. Slide Kelas (Jika Diaktifkan & Berdasarkan Pilihan Admin)
         if ($showKelas) {
             $selectedClassIds = $setting->slide_selected_class_ids ?? [];
             if (!is_array($selectedClassIds)) {
@@ -156,7 +176,6 @@ class LoginController extends Controller
                 }])
                 ->orderBy('kelas');
 
-            // Jika Admin memilih kelas-kelas tertentu, filter hanya kelas tersebut
             if (!empty($selectedClassIds)) {
                 $classesQuery->whereIn('id', $selectedClassIds);
             }
@@ -164,7 +183,7 @@ class LoginController extends Controller
             $classes = $classesQuery->get()
                 ->filter(function ($c) use ($minStudents, $selectedClassIds) {
                     if (!empty($selectedClassIds)) {
-                        return true; // Jika kelas dipilih spesifik oleh Admin, tampilkan langsung
+                        return true;
                     }
                     return $c->students->count() > $minStudents;
                 })

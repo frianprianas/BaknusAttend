@@ -58,16 +58,26 @@ class PresensiHariIniSiswaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\Layout\Split::make([
-                    // Avatar / Foto
-                    Tables\Columns\ImageColumn::make('photo')
+                    // Badge Estetik Mesin RFID / Foto
+                    Tables\Columns\TextColumn::make('foto_rfid')
                         ->label('')
-                        ->getStateUsing(fn ($record) => $record->photo
-                            ? asset('storage/' . $record->photo)
-                            : null)
-                        ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->student?->name ?? $record->nis) . '&background=4f46e5&color=fff&bold=true&size=64')
-                        ->circular()
-                        ->width(48)
-                        ->height(48)
+                        ->html()
+                        ->getStateUsing(function ($record) {
+                            if (!empty($record->photo) && file_exists(public_path('storage/' . $record->photo))) {
+                                $imgUrl = asset('storage/' . $record->photo);
+                                return "<img src='{$imgUrl}' class='w-12 h-12 rounded-full object-cover border-2 border-indigo-500 shadow-sm' alt='Foto Absen'>";
+                            }
+                            
+                            // Badge Estetik Mesin RFID Kartu
+                            return "
+                                <div class='flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white shadow-md border border-indigo-300/40 p-1 text-center transition-transform duration-200 hover:scale-105' title='Presensi via Mesin RFID Kartu'>
+                                    <svg class='w-5 h-5 text-white mb-0.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'></path>
+                                    </svg>
+                                    <span class='text-[7.5px] font-black uppercase tracking-wider text-blue-100 leading-tight'>RFID</span>
+                                </div>
+                            ";
+                        })
                         ->grow(false),
 
                     // Nama + NIS + Kelas

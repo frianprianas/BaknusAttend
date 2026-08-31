@@ -29,13 +29,17 @@ class SchoolSetting extends Model
         'slide_excluded_roles',
         'slide_duration',
         'slide_selected_class_ids',
+        'slide_selected_teacher_ids',
+        'slide_selected_tu_ids',
     ];
 
     protected $casts = [
-        'slide_selected_class_ids' => 'array',
-        'slide_show_guru'          => 'boolean',
-        'slide_show_tu'            => 'boolean',
-        'slide_show_kelas'         => 'boolean',
+        'slide_selected_class_ids'   => 'array',
+        'slide_selected_teacher_ids' => 'array',
+        'slide_selected_tu_ids'      => 'array',
+        'slide_show_guru'            => 'boolean',
+        'slide_show_tu'              => 'boolean',
+        'slide_show_kelas'           => 'boolean',
     ];
 
     public static function getFirst()
