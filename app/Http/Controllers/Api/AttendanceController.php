@@ -93,7 +93,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        // Simpan kehadiran di tabel baru KehadiranSiswa
+        // Simpan kehadiran di tabel KehadiranSiswa
         KehadiranSiswa::create([
             'nis' => $student->nis,
             'rfid_uid' => $student->rfid,
@@ -104,7 +104,7 @@ class AttendanceController extends Controller
             'long' => $long,
         ]);
 
-        // Kirim ke API BaknusDrive
+        // Kirim ke API BaknusDrive (Non-blocking / timeout 2s)
         $this->syncToBaknusDrive($student->nis, $student->name, ($student->classRoom ? $student->classRoom->kelas : '-'), 'siswa', $now, $statusAbsen, $keteranganAbsen);
 
         return response()->json([
@@ -138,7 +138,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        // Simpan kehadiran di tabel baru KehadiranGuruTu
+        // Simpan kehadiran di tabel KehadiranGuruTu
         KehadiranGuruTu::create([
             'nipy' => $user->nipy,
             'rfid_uid' => $user->rfid,
@@ -149,7 +149,7 @@ class AttendanceController extends Controller
             'long' => $long,
         ]);
 
-        // Kirim ke API BaknusDrive
+        // Kirim ke API BaknusDrive (Non-blocking / timeout 2s)
         $roleInApi = strtolower($user->role) === 'tu' ? 'TU' : 'guru';
         $this->syncToBaknusDrive($user->nipy, $user->name, '-', $roleInApi, $now, $statusAbsen, $keteranganAbsen);
 
@@ -165,26 +165,27 @@ class AttendanceController extends Controller
     private function syncToBaknusDrive($id, $name, $kelas, $role, $now, $type, $desc)
     {
         try {
-            $driveUrl = env('BAKNUSDRIVE_URL') . '/api/attend/upload';
+            $driveBase = env('BAKNUSDRIVE_URL');
+            if (empty($driveBase)) return;
+
+            $driveUrl = rtrim($driveBase, '/') . '/api/attend/upload';
             $apiKey = env('BAKNUS_ATTEND_API_KEY');
 
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-Attend-API-Key' => $apiKey
-            ])->asForm()->post($driveUrl, [
-                'NIS' => $id,
-                'Nama' => $name,
-                'kelas' => $kelas,
-                'role' => $role,
-                'waktu_tap' => $now->format('H:i:s'),
-                'status' => $type,
-                'keterangan' => $desc,
-            ]);
-
-            if ($response->failed()) {
-                Log::error("API BaknusDrive error ({$role}): " . $response->body());
-            }
-        } catch (\Exception $e) {
-            Log::error("Gagal kirim ke BaknusDrive ({$role}): " . $e->getMessage());
+            // Set strict 2s timeout agar panggilan HTTP eksternal TIDAK memblokir tap RFID
+            \Illuminate\Support\Facades\Http::timeout(2)
+                ->withHeaders([
+                    'X-Attend-API-Key' => $apiKey
+                ])->asForm()->post($driveUrl, [
+                    'NIS' => $id,
+                    'Nama' => $name,
+                    'kelas' => $kelas,
+                    'role' => $role,
+                    'waktu_tap' => $now->format('H:i:s'),
+                    'status' => $type,
+                    'keterangan' => $desc,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning("Gagal/Timeout kirim ke BaknusDrive ({$role}): " . $e->getMessage());
         }
     }
 }
