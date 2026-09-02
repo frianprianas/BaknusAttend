@@ -57,28 +57,29 @@ class StudentResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Nama')
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('nis')
                     ->label('NIS')
                     ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Nama Siswa')
+                    ->searchable()
                     ->sortable()
-                    ->hiddenFrom('md'),
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('classRoom.kelas')
                     ->label('Kelas')
                     ->sortable()
                     ->badge()
                     ->color('primary'),
-                Tables\Columns\TextColumn::make('rfid')
-                    ->label('Kode RFID')
+                Tables\Columns\TextInputColumn::make('rfid')
+                    ->label('💳 Kode RFID (Edit Langsung)')
                     ->searchable()
                     ->sortable()
-                    ->placeholder('-')
-                    ->hiddenFrom('md'),
+                    ->placeholder('Tap / Ketik Kode RFID...')
+                    ->rules(['nullable', 'string', 'max:255']),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Tgl Dibuat')
+                    ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
