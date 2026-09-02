@@ -1,4 +1,4 @@
-const CACHE_NAME = 'baknus-attend-v3';
+const CACHE_NAME = 'baknus-attend-v4';
 const urlsToCache = [
   '/images/logo_BG.png',
   '/manifest.json'
@@ -28,6 +28,12 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // PWA CacheStorage HANYA mendukung request GET!
+  // Request POST, PUT, DELETE (seperti /livewire/update) harus langsung dikirim ke server tanpa di-cache.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   // Strategi NETWORK FIRST untuk file navigasi (HTML)
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -44,7 +50,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Strategi NETWORK FIRST juga untuk request Livewire/AJAX
+  // Strategi NETWORK FIRST untuk Livewire/AJAX
   if (event.request.url.includes('/livewire/') || event.request.headers.get('X-Livewire')) {
     event.respondWith(fetch(event.request));
     return;

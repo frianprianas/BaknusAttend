@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Validation\Rule;
 
 class StudentResource extends Resource
 {
@@ -76,7 +77,12 @@ class StudentResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->placeholder('Tap / Ketik Kode RFID...')
-                    ->rules(['nullable', 'string', 'max:255']),
+                    ->rules(fn ($record) => [
+                        'nullable',
+                        'string',
+                        'max:255',
+                        Rule::unique('students', 'rfid')->ignore($record?->id),
+                    ]),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tgl Dibuat')
                     ->dateTime('d M Y H:i')
