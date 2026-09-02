@@ -63,9 +63,9 @@ class PresensiHariIniSiswaResource extends Resource
                         ->label('')
                         ->html()
                         ->getStateUsing(function ($record) {
-                            if (!empty($record->photo) && file_exists(public_path('storage/' . $record->photo))) {
+                            if (!empty($record->photo) && $record->photo !== 'rfid_placeholder' && file_exists(public_path('storage/' . $record->photo))) {
                                 $imgUrl = asset('storage/' . $record->photo);
-                                return "<img src='{$imgUrl}' class='w-12 h-12 rounded-full object-cover border-2 border-indigo-500 shadow-sm' alt='Foto Absen'>";
+                                return "<img src='{$imgUrl}' style='width:48px; height:48px; min-width:48px; min-height:48px; max-width:48px; max-height:48px; object-fit:cover; border-radius:9999px;' class='border-2 border-indigo-500 shadow-sm' alt='Foto Absen'>";
                             }
                             
                             // Badge Estetik Mesin RFID Kartu
