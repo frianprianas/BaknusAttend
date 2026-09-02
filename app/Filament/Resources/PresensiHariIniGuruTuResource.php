@@ -60,19 +60,41 @@ class PresensiHariIniGuruTuResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\Layout\Split::make([
-                    // Avatar
-                    Tables\Columns\ImageColumn::make('photo')
+                    // Badge Estetik RFID Mesin / RFID HP / Foto Wajah
+                    Tables\Columns\TextColumn::make('foto_rfid')
                         ->label('')
-                        ->getStateUsing(fn ($record) => $record->photo
-                            ? asset('storage/' . $record->photo)
-                            : null)
-                        ->defaultImageUrl(function ($record) {
-                            $user = User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
-                            return 'https://ui-avatars.com/api/?name=' . urlencode($user?->name ?? $record->nipy) . '&background=059669&color=fff&bold=true&size=64';
+                        ->html()
+                        ->getStateUsing(function ($record) {
+                            if (!empty($record->photo) && $record->photo !== 'rfid_placeholder' && file_exists(public_path('storage/' . $record->photo))) {
+                                $imgUrl = asset('storage/' . $record->photo);
+                                return "<img src='{$imgUrl}' class='w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm' alt='Foto Absen'>";
+                            }
+
+                            $ketLower = strtolower($record->keterangan ?? '');
+                            $isNfcHp = str_contains($ketLower, 'nfc') || str_contains($ketLower, 'hp') || str_contains($ketLower, 'smartphone');
+
+                            if ($isNfcHp) {
+                                // Badge Estetik RFID HP
+                                return "
+                                    <div class='flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-md border border-teal-300/40 p-1 text-center transition-transform duration-200 hover:scale-105' title='Presensi via RFID / NFC Smartphone (HP)'>
+                                        <svg class='w-5 h-5 text-white mb-0.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                            <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z'></path>
+                                        </svg>
+                                        <span class='text-[7px] font-black uppercase tracking-wider text-teal-100 leading-tight whitespace-nowrap'>RFID HP</span>
+                                    </div>
+                                ";
+                            }
+
+                            // Default: Badge Estetik RFID Mesin
+                            return "
+                                <div class='flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white shadow-md border border-indigo-300/40 p-1 text-center transition-transform duration-200 hover:scale-105' title='Presensi via Mesin RFID Fisik'>
+                                    <svg class='w-5 h-5 text-white mb-0.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'></path>
+                                    </svg>
+                                    <span class='text-[7px] font-black uppercase tracking-wider text-blue-100 leading-tight whitespace-nowrap'>RFID MESIN</span>
+                                </div>
+                            ";
                         })
-                        ->circular()
-                        ->width(48)
-                        ->height(48)
                         ->grow(false),
 
                     // Nama + Role + NIPY
