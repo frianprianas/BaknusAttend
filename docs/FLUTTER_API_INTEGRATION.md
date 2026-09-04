@@ -21,6 +21,7 @@ Dokumen ini adalah referensi lengkap untuk tim pengembang aplikasi Flutter (piha
 | `GET` | `/auth/me` | Ya | Cek profil pengguna yang sedang login |
 | `GET` | `/presence/status` | Ya | Status presensi hari ini, info radius GPS, & riwayat tap |
 | `POST` | `/presence/selfie` | Ya | Submit absen selfie dengan pencocokan wajah & GPS |
+| `POST` | `/presence/card-tap` | Ya | Submit absen Tap Kartu NFC smartphone & GPS |
 | `POST` | `/presence/register-face` | Ya | Pendaftaran awal foto master wajah (jika belum ada) |
 
 ---
@@ -173,9 +174,54 @@ Mengirim foto selfie dari kamera depan beserta koordinat GPS perangkat.
 
 ---
 
+### D. Presensi Tap Kartu NFC (`POST /presence/card-tap`)
+Digunakan jika siswa atau guru/TU melakukan presensi dengan menempelkan kartu fisik (NFC) ke bagian belakang smartphone.
+
+* **Headers**:
+  - `Authorization: Bearer <token>`
+  - `Accept: application/json`
+  - `Content-Type: application/json`
+
+* **Request Body (JSON)**:
+```json
+{
+  "rfid_uid": "04A1B2C3D4",
+  "lat": -6.938812,
+  "long": 107.721245,
+  "is_dinas_luar": 0,
+  "lokasi_dinas_luar": null
+}
+```
+
+* **Fitur Cerdas di Server**:
+  1. **Anti-Joki**: Jika kartu sudah dimiliki oleh siswa/pegawai lain, request langsung ditolak dengan pesan: *"Kartu ID yang di-tap sudah terdaftar atas nama [Nama Pemilik]"*.
+  2. **Auto-Pairing**: Jika akun siswa/pegawai belum memiliki kartu terdaftar di database, kartu yang pertama kali di-tap otomatis disimpan dan ditautkan ke akunnya.
+  3. **Validasi Geofencing**: Tetap memeriksa apakah HP berada di dalam radius lingkungan sekolah.
+
+* **Response Sukses (200 OK)**:
+```json
+{
+  "status": "success",
+  "message": "Presensi Masuk (Tap NFC) Berhasil!",
+  "data": {
+    "id": 108,
+    "tipe": "Masuk",
+    "status_kehadiran": "Hadir",
+    "rfid_uid": "04A1B2C3D4",
+    "is_newly_linked": false,
+    "waktu": "2026-09-04 06:48:15",
+    "jam": "06:48",
+    "is_dinas_luar": false,
+    "lokasi_dinas_luar": null
+  }
+}
+```
+
+---
+
 ## 4. Contoh Implementasi di Flutter (Dart)
 
-Berikut contoh implementasi service presensi menggunakan package `dio`, `geolocator`, dan `image_picker`.
+Berikut contoh implementasi service presensi menggunakan package `dio`, `geolocator`, `image_picker`, dan `nfc_manager`.
 
 ### Dependencies `pubspec.yaml`
 ```yaml
@@ -185,6 +231,7 @@ dependencies:
   dio: ^5.4.0
   geolocator: ^11.0.0
   image_picker: ^1.0.7
+  nfc_manager: ^3.3.0
   flutter_secure_storage: ^9.0.0
 ```
 
@@ -266,6 +313,30 @@ class AttendanceService {
     } on DioException catch (e) {
       // Menangkap pesan error spesifik (Wajah tidak cocok, Diluar GPS, dll.)
       final errorMessage = e.response?.data['message'] ?? 'Gagal memproses presensi selfie';
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// 4. Kirim Presensi Tap Kartu NFC & GPS
+  Future<Map<String, dynamic>> submitCardTap({
+    required String rfidUid,
+    required double latitude,
+    required double longitude,
+    bool isDinasLuar = false,
+    String? lokasiDinasLuar,
+  }) async {
+    try {
+      final response = await _dio.post('/presence/card-tap', data: {
+        'rfid_uid': rfidUid,
+        'lat': latitude,
+        'long': longitude,
+        'is_dinas_luar': isDinasLuar ? 1 : 0,
+        if (isDinasLuar && lokasiDinasLuar != null)
+          'lokasi_dinas_luar': lokasiDinasLuar,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      final errorMessage = e.response?.data['message'] ?? 'Gagal memproses tap kartu';
       throw Exception(errorMessage);
     }
   }

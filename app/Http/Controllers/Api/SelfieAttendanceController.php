@@ -332,4 +332,122 @@ class SelfieAttendanceController extends Controller
             'photo_url' => $photoFullUrl,
         ]);
     }
+
+    /**
+     * Submit Presensi via Tap Kartu NFC / RFID Smartphone
+     * POST /api/presence/card-tap
+     */
+    public function submitCardTap(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // 1. Validasi Input
+        $request->validate([
+            'rfid_uid'          => 'required|string',
+            'lat'               => 'required|numeric',
+            'long'              => 'required|numeric',
+            'is_dinas_luar'     => 'nullable|boolean',
+            'lokasi_dinas_luar' => 'required_if:is_dinas_luar,1,true|nullable|string',
+            'client_public_ip'  => 'nullable|ip',
+        ], [
+            'rfid_uid.required'          => 'ID Kartu RFID / NFC wajib dikirim.',
+            'lat.required'               => 'Koordinat Latitude GPS wajib dikirim.',
+            'long.required'              => 'Koordinat Longitude GPS wajib dikirim.',
+            'lokasi_dinas_luar.required_if' => 'Tempat / Keterangan Dinas Luar wajib diisi jika mode dinas luar diaktifkan.',
+        ]);
+
+        $rawUid = $request->input('rfid_uid');
+        $lat = (float)$request->input('lat');
+        $long = (float)$request->input('long');
+        $isDinasLuar = $request->boolean('is_dinas_luar');
+        $lokasiDinasLuar = $request->input('lokasi_dinas_luar');
+
+        // 2. Cek Apakah Hari Ini Bisa Absen (Masuk / Pulang / Libur / Izin)
+        $statusInfo = $this->attendanceService->determinePresensiType($user);
+        if (!$statusInfo['can_attend']) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $statusInfo['reason'] ?? 'Absensi tidak diizinkan saat ini.',
+                'type'    => $statusInfo['type'],
+            ], 422);
+        }
+
+        $tipeAbsens = $statusInfo['type']; // 'Masuk' atau 'Pulang'
+
+        $setting = SchoolSetting::first();
+        if (!$setting) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Pengaturan GPS sekolah belum dikonfigurasi oleh administrator.',
+            ], 500);
+        }
+
+        // 3. Validasi Geofencing & IP (Kecuali Dinas Luar)
+        if (!$isDinasLuar) {
+            // Validasi Jarak Geofencing
+            $geoCheck = $this->attendanceService->validateGeofencing($lat, $long, $setting);
+            if (!$geoCheck['valid']) {
+                return response()->json([
+                    'status'         => 'error',
+                    'message'        => $geoCheck['message'],
+                    'distance'       => $geoCheck['distance'],
+                    'allowed_radius' => $geoCheck['allowed_radius'],
+                ], 422);
+            }
+
+            // Validasi IP Wifi Sekolah (Jika Aktif)
+            $ipCheck = $this->attendanceService->validateIp($request->input('client_public_ip'), $setting);
+            if (!$ipCheck['valid']) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $ipCheck['message'],
+                ], 403);
+            }
+        }
+
+        // 4. Verifikasi Kepemilikan Kartu RFID (dan auto-pairing jika baru)
+        $cardCheck = $this->attendanceService->verifyAndLinkCard($user, $rawUid);
+        if (!$cardCheck['success']) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $cardCheck['message'],
+            ], 422);
+        }
+
+        $cleanUid = $cardCheck['clean_uid'];
+        $currentTime = Carbon::now();
+
+        // 5. Simpan Record Kehadiran ke Database
+        $record = $this->attendanceService->recordCardAttendance(
+            $user,
+            $tipeAbsens,
+            $currentTime,
+            $lat,
+            $long,
+            $cleanUid,
+            $isDinasLuar,
+            $lokasiDinasLuar
+        );
+
+        $message = "Presensi {$tipeAbsens} (Tap NFC) Berhasil!";
+        if (!empty($cardCheck['is_newly_linked'])) {
+            $message .= " ID Kartu {$cleanUid} telah resmi ditautkan ke akun Anda.";
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $message,
+            'data'    => [
+                'id'                 => $record->id,
+                'tipe'               => $tipeAbsens,
+                'status_kehadiran'   => $record->status,
+                'rfid_uid'           => $cleanUid,
+                'is_newly_linked'    => (bool)($cardCheck['is_newly_linked'] ?? false),
+                'waktu'              => $currentTime->format('Y-m-d H:i:s'),
+                'jam'                => $currentTime->format('H:i'),
+                'is_dinas_luar'      => (bool)$record->is_dinas_luar,
+                'lokasi_dinas_luar'  => $record->lokasi_dinas_luar,
+            ],
+        ]);
+    }
 }

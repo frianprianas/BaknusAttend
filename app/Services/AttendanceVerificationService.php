@@ -458,6 +458,242 @@ class AttendanceVerificationService
         return $record;
     }
 
+    /**
+     * Membandingkan dua UID RFID/NFC secara fleksibel (Hex, Decimal, Leading Zero)
+     */
+    public function compareRfid(?string $rfid1, ?string $rfid2): bool
+    {
+        if (empty($rfid1) || empty($rfid2)) return false;
+
+        $clean1 = strtoupper(str_replace([':', ' ', '-'], '', trim($rfid1)));
+        $clean2 = strtoupper(str_replace([':', ' ', '-'], '', trim($rfid2)));
+
+        if ($clean1 === $clean2) {
+            return true;
+        }
+
+        if (ltrim($clean1, '0') === ltrim($clean2, '0')) {
+            return true;
+        }
+
+        try {
+            if (ctype_xdigit($clean1) && is_numeric($clean2)) {
+                if (hexdec($clean1) == $clean2) return true;
+            }
+            if (ctype_xdigit($clean2) && is_numeric($clean1)) {
+                if (hexdec($clean2) == $clean1) return true;
+            }
+        } catch (\Throwable $e) {}
+
+        return false;
+    }
+
+    /**
+     * Verifikasi kepemilikan kartu RFID dan auto-link jika kartu pertama kali
+     */
+    public function verifyAndLinkCard(User $user, string $rawRfidUid): array
+    {
+        $cleanUid = strtoupper(str_replace([':', ' ', '-'], '', trim($rawRfidUid)));
+        if (empty($cleanUid)) {
+            return [
+                'success' => false,
+                'message' => 'ID Kartu NFC/RFID kosong atau tidak valid.',
+            ];
+        }
+
+        if ($user->role === 'Siswa') {
+            $nis = $user->nipy ?? $user->email;
+            if (str_contains($nis, '@')) {
+                $nis = explode('@', $nis)[0];
+            }
+            $student = Student::where('nis', $nis)->first();
+            if (!$student) {
+                return [
+                    'success' => false,
+                    'message' => 'Data Siswa tidak ditemukan di sistem.',
+                ];
+            }
+
+            // A. Cek jika kartu ini sudah terdaftar atas nama siswa lain
+            $otherStudents = Student::whereNotNull('rfid')->where('id', '!=', $student->id)->get();
+            $otherOwnerStudent = $otherStudents->first(fn($s) => $this->compareRfid($s->rfid, $cleanUid));
+
+            // Cek jika kartu ini sudah terdaftar atas nama pegawai lain
+            $otherUsers = User::whereNotNull('rfid')->where('id', '!=', $user->id)->get();
+            $otherOwnerUser = $otherUsers->first(fn($u) => $this->compareRfid($u->rfid, $cleanUid));
+
+            $otherOwnerName = $otherOwnerStudent?->name ?? $otherOwnerUser?->name;
+            if ($otherOwnerName) {
+                return [
+                    'success' => false,
+                    'message' => "Kartu ID yang di-tap ({$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID resmi milik Anda sendiri.",
+                ];
+            }
+
+            // B. Jika siswa ini belum memiliki kartu terdaftar -> Auto-tautkan kartu pertama kali
+            if (empty($student->rfid)) {
+                $student->rfid = $cleanUid;
+                $student->save();
+
+                return [
+                    'success' => true,
+                    'clean_uid' => $cleanUid,
+                    'is_newly_linked' => true,
+                    'message' => "Kartu ID {$cleanUid} berhasil ditautkan ke akun Anda.",
+                ];
+            }
+
+            // C. Cek kecocokan kartu dengan kartu terdaftar
+            if (!$this->compareRfid($student->rfid, $cleanUid)) {
+                $registeredId = strtoupper(str_replace([':', ' ', '-'], '', trim($student->rfid)));
+                return [
+                    'success' => false,
+                    'message' => "Kartu ID yang di-scan ({$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$registeredId}). Silakan gunakan Kartu ID resmi milik Anda.",
+                ];
+            }
+
+            return [
+                'success' => true,
+                'clean_uid' => $cleanUid,
+                'is_newly_linked' => false,
+                'message' => 'Kartu cocok terverifikasi.',
+            ];
+        }
+
+        // Guru / TU
+        // A. Cek jika kartu sudah terdaftar atas nama pegawai lain
+        $otherUsers = User::whereNotNull('rfid')->where('id', '!=', $user->id)->get();
+        $otherOwnerUser = $otherUsers->first(fn($u) => $this->compareRfid($u->rfid, $cleanUid));
+
+        // Cek jika kartu sudah terdaftar atas nama siswa lain
+        $otherStudents = Student::whereNotNull('rfid')->get();
+        $otherOwnerStudent = $otherStudents->first(fn($s) => $this->compareRfid($s->rfid, $cleanUid));
+
+        $otherOwnerName = $otherOwnerUser?->name ?? $otherOwnerStudent?->name;
+        if ($otherOwnerName) {
+            return [
+                'success' => false,
+                'message' => "Kartu ID yang di-tap ({$cleanUid}) sudah terdaftar atas nama: {$otherOwnerName}. Mohon gunakan Kartu ID resmi milik Anda sendiri.",
+            ];
+        }
+
+        // B. Jika pegawai belum memiliki kartu terdaftar -> Auto-tautkan kartu pertama kali
+        if (empty($user->rfid)) {
+            $user->rfid = $cleanUid;
+            $user->save();
+
+            return [
+                'success' => true,
+                'clean_uid' => $cleanUid,
+                'is_newly_linked' => true,
+                'message' => "Kartu ID {$cleanUid} berhasil ditautkan ke akun Anda.",
+            ];
+        }
+
+        // C. Cek kecocokan kartu
+        if (!$this->compareRfid($user->rfid, $cleanUid)) {
+            $registeredId = strtoupper(str_replace([':', ' ', '-'], '', trim($user->rfid)));
+            return [
+                'success' => false,
+                'message' => "Kartu ID yang di-scan ({$cleanUid}) TIDAK COCOK dengan ID Kartu terdaftar milik Anda ({$registeredId}). Silakan gunakan Kartu ID resmi milik Anda.",
+            ];
+        }
+
+        return [
+            'success' => true,
+            'clean_uid' => $cleanUid,
+            'is_newly_linked' => false,
+            'message' => 'Kartu cocok terverifikasi.',
+        ];
+    }
+
+    /**
+     * Simpan rekaman presensi via Tap Kartu NFC ke database
+     */
+    public function recordCardAttendance(
+        User $user,
+        string $tipeAbsens,
+        Carbon $currentTime,
+        float $lat,
+        float $long,
+        string $cleanUid,
+        bool $isDinasLuar = false,
+        ?string $lokasiDinasLuar = null
+    ): object {
+        $status = $isDinasLuar ? 'Dinas Luar' : 'Hadir';
+        $keterangan = "{$tipeAbsens} - Tap NFC Smartphone";
+
+        if ($isDinasLuar && !empty($lokasiDinasLuar)) {
+            $keterangan .= " [Dinas Luar: {$lokasiDinasLuar}]";
+        }
+
+        if ($user->role === 'Siswa') {
+            $nis = $user->nipy ?? $user->email;
+            if (str_contains($nis, '@')) {
+                $nis = explode('@', $nis)[0];
+            }
+            $student = Student::where('nis', $nis)->first();
+
+            if ($tipeAbsens === 'Masuk' && $currentTime->format('H:i') > '07:05' && !$isDinasLuar) {
+                $status = 'Terlambat';
+            }
+
+            $record = KehadiranSiswa::create([
+                'nis' => $student ? $student->nis : $nis,
+                'rfid_uid' => $cleanUid,
+                'waktu_tap' => $currentTime,
+                'status' => $status,
+                'lat' => $lat,
+                'long' => $long,
+                'photo' => null,
+                'keterangan' => $keterangan,
+                'is_dinas_luar' => $isDinasLuar,
+                'lokasi_dinas_luar' => $lokasiDinasLuar,
+            ]);
+
+            $this->syncToBaknusDrive(
+                $student ? $student->nis : $nis,
+                $student ? $student->name : $user->name,
+                $student?->classRoom?->kelas ?? '-',
+                'siswa',
+                $currentTime,
+                $tipeAbsens,
+                $status
+            );
+
+            return $record;
+        }
+
+        // Guru / TU
+        $nipy = !empty($user->nipy) ? $user->nipy : $user->email;
+
+        $record = KehadiranGuruTu::create([
+            'nipy' => $nipy,
+            'rfid_uid' => $cleanUid,
+            'waktu_tap' => $currentTime,
+            'status' => $status,
+            'lat' => $lat,
+            'long' => $long,
+            'photo' => null,
+            'keterangan' => $keterangan,
+            'is_dinas_luar' => $isDinasLuar,
+            'lokasi_dinas_luar' => $lokasiDinasLuar,
+        ]);
+
+        $roleInApi = strtolower($user->role) === 'tu' ? 'TU' : 'guru';
+        $this->syncToBaknusDrive(
+            $nipy,
+            $user->name,
+            '-',
+            $roleInApi,
+            $currentTime,
+            $tipeAbsens,
+            $status
+        );
+
+        return $record;
+    }
+
     private function syncToBaknusDrive($id, $name, $kelas, $role, $now, $type, $desc): void
     {
         try {

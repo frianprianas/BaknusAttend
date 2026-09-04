@@ -18,6 +18,7 @@ Route::middleware('api.token')->group(function () {
     Route::prefix('presence')->group(function () {
         Route::get('/status', [SelfieAttendanceController::class, 'getTodayStatus']);
         Route::post('/selfie', [SelfieAttendanceController::class, 'submitSelfie']);
+        Route::post('/card-tap', [SelfieAttendanceController::class, 'submitCardTap']);
         Route::post('/register-face', [SelfieAttendanceController::class, 'registerMasterFace']);
     });
 });
