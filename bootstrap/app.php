@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'push/*',
         ]);
         $middleware->trustProxies(at: '*');
+        $middleware->alias([
+            'api.token' => \App\Http\Middleware\ApiTokenMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
