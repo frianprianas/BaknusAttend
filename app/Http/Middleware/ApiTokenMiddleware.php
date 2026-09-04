@@ -38,7 +38,7 @@ class ApiTokenMiddleware
             }
 
             // Cek masa berlaku token
-            if (isset($payload['expires_at']) && Carbon\Carbon::createFromTimestamp($payload['expires_at'])->isPast()) {
+            if (isset($payload['expires_at']) && Carbon::createFromTimestamp($payload['expires_at'])->isPast()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Sesi token telah kedaluwarsa. Silakan login kembali.',
