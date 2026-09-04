@@ -488,4 +488,12 @@ class PresenceController extends Controller
             'emails' => $allUnattendedEmails
         ]);
     }
+
+    /**
+     * Forwarder untuk card-tap jika diakses via PresenceController
+     */
+    public function cardTap(Request $request)
+    {
+        return app(\App\Http\Controllers\Api\SelfieAttendanceController::class)->submitCardTap($request);
+    }
 }

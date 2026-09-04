@@ -450,4 +450,12 @@ class SelfieAttendanceController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Alias method untuk submitCardTap (mendukung pemanggilan cardTap)
+     */
+    public function cardTap(Request $request): JsonResponse
+    {
+        return $this->submitCardTap($request);
+    }
 }
