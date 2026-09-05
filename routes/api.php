@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\ApiAuthController;
 use App\Http\Controllers\Api\SelfieAttendanceController;
+use App\Http\Controllers\Api\BluetoothAttendanceController;
 use Illuminate\Support\Facades\Route;
 
 // --- Public Auth Routes (Flutter) ---
@@ -20,6 +21,12 @@ Route::middleware('api.token')->group(function () {
         Route::post('/selfie', [SelfieAttendanceController::class, 'submitSelfie']);
         Route::post('/card-tap', [SelfieAttendanceController::class, 'submitCardTap']);
         Route::post('/register-face', [SelfieAttendanceController::class, 'registerMasterFace']);
+
+        // Presensi Bluetooth BLE Offline Hardware (Wemos ESP32)
+        Route::prefix('bluetooth')->group(function () {
+            Route::get('/challenge', [BluetoothAttendanceController::class, 'getChallenge']);
+            Route::post('/verify', [BluetoothAttendanceController::class, 'verifyAndSubmit']);
+        });
     });
 });
 

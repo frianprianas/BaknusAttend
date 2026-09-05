@@ -694,6 +694,93 @@ class AttendanceVerificationService
         return $record;
     }
 
+    /**
+     * Simpan rekaman presensi via Bluetooth BLE ke database
+     */
+    public function recordBluetoothAttendance(
+        User $user,
+        string $tipeAbsens,
+        Carbon $currentTime,
+        ?float $lat,
+        ?float $long,
+        string $deviceName,
+        bool $isDinasLuar = false,
+        ?string $lokasiDinasLuar = null
+    ): object {
+        $status = $isDinasLuar ? 'Dinas Luar' : 'Hadir';
+        $keterangan = "{$tipeAbsens} - Bluetooth BLE ({$deviceName})";
+
+        if ($isDinasLuar && !empty($lokasiDinasLuar)) {
+            $keterangan .= " [Dinas Luar: {$lokasiDinasLuar}]";
+        }
+
+        if ($user->role === 'Siswa') {
+            $nis = $user->nipy ?? $user->email;
+            if (str_contains($nis, '@')) {
+                $nis = explode('@', $nis)[0];
+            }
+            $student = Student::where('nis', $nis)->first();
+
+            if ($tipeAbsens === 'Masuk' && $currentTime->format('H:i') > '07:05' && !$isDinasLuar) {
+                $status = 'Terlambat';
+            }
+
+            $record = KehadiranSiswa::create([
+                'nis'               => $student ? $student->nis : $nis,
+                'rfid_uid'          => $student?->rfid,
+                'waktu_tap'         => $currentTime,
+                'status'            => $status,
+                'lat'               => $lat,
+                'long'              => $long,
+                'photo'             => null,
+                'keterangan'        => $keterangan,
+                'is_dinas_luar'     => $isDinasLuar,
+                'lokasi_dinas_luar' => $lokasiDinasLuar,
+            ]);
+
+            $this->syncToBaknusDrive(
+                $student ? $student->nis : $nis,
+                $student ? $student->name : $user->name,
+                $student?->classRoom?->kelas ?? '-',
+                'siswa',
+                $currentTime,
+                $tipeAbsens,
+                $status
+            );
+
+            return $record;
+        }
+
+        // Guru / TU
+        $nipy = !empty($user->nipy) ? $user->nipy : $user->email;
+
+        $record = KehadiranGuruTu::create([
+            'nipy'              => $nipy,
+            'rfid_uid'          => $user->rfid,
+            'waktu_tap'         => $currentTime,
+            'status'            => $status,
+            'lat'               => $lat,
+            'long'              => $long,
+            'photo'             => null,
+            'keterangan'        => $keterangan,
+            'is_dinas_luar'     => $isDinasLuar,
+            'lokasi_dinas_luar' => $lokasiDinasLuar,
+        ]);
+
+        $roleInApi = strtolower($user->role) === 'tu' ? 'TU' : 'guru';
+        $this->syncToBaknusDrive(
+            $nipy,
+            $user->name,
+            '-',
+            $roleInApi,
+            $currentTime,
+            $tipeAbsens,
+            $status
+        );
+
+        return $record;
+    }
+
     private function syncToBaknusDrive($id, $name, $kelas, $role, $now, $type, $desc): void
     {
         try {

@@ -22,6 +22,8 @@ Dokumen ini adalah referensi lengkap untuk tim pengembang aplikasi Flutter (piha
 | `GET` | `/presence/status` | Ya | Status presensi hari ini, info radius GPS, & riwayat tap |
 | `POST` | `/presence/selfie` | Ya | Submit absen selfie dengan pencocokan wajah & GPS |
 | `POST` | `/presence/card-tap` | Ya | Submit absen Tap Kartu NFC smartphone & GPS |
+| `GET` | `/presence/bluetooth/challenge` | Ya | Dapatkan kode challenge acak (60s) untuk dikirim ke ESP32 via BLE |
+| `POST` | `/presence/bluetooth/verify` | Ya | Verifikasi signature HMAC-SHA256 dari ESP32 & submit presensi |
 | `POST` | `/presence/register-face` | Ya | Pendaftaran awal foto master wajah (jika belum ada) |
 
 ---
@@ -219,9 +221,64 @@ Digunakan jika siswa atau guru/TU melakukan presensi dengan menempelkan kartu fi
 
 ---
 
+### E. Presensi Bluetooth BLE Offline Hardware (`Wemos D1 R32 ESP32`)
+Metode ini digunakan ketika siswa/guru presensi melalui alat hardware offline ESP32 di lokasi (contoh: gerbang / lorong kelas). HP bertindak sebagai jembatan (bridge) aman menggunakan protokol **Challenge-Response HMAC-SHA256**.
+
+#### Alur Kerja:
+1. **Langkah 1**: HP meminta kode challenge acak ke server:
+   - **Method**: `GET /presence/bluetooth/challenge`
+   - **Headers**: `Authorization: Bearer <token>`
+   - **Response**:
+     ```json
+     {
+       "status": "success",
+       "challenge_code": "A9F7B2C81D4E5678A9F7B2C81D4E5678",
+       "expires_in": 60,
+       "user_name": "Ahmad Fauzi",
+       "tipe": "Masuk"
+     }
+     ```
+2. **Langkah 2**: HP terhubung ke Wemos ESP32 via Bluetooth Low Energy (BLE), lalu mengirimkan `challenge_code` dan `user_name`.
+3. **Langkah 3**: Wemos ESP32 menghitung `signature = HMAC-SHA256(challenge_code, secret_key)`, membunyikan buzzer, menampilkan nama siswa di LCD 16x2, lalu membalas HP dengan `signature` dan `device_id`.
+4. **Langkah 4**: HP mengirimkan data verifikasi ke server:
+   - **Method**: `POST /presence/bluetooth/verify`
+   - **Headers**: `Authorization: Bearer <token>`, `Content-Type: application/json`
+   - **Body**:
+     ```json
+     {
+       "device_id": "WEMOS_GERBANG_01",
+       "challenge_code": "A9F7B2C81D4E5678A9F7B2C81D4E5678",
+       "signature": "c8f9...hasil_hmac_sha256_dari_wemos...",
+       "lat": -6.938812,
+       "long": 107.721245,
+       "is_dinas_luar": 0,
+       "lokasi_dinas_luar": null
+     }
+     ```
+   - **Response Sukses (200 OK)**:
+     ```json
+     {
+       "status": "success",
+       "message": "Presensi Masuk (Bluetooth BLE) Berhasil!",
+       "data": {
+         "id": 112,
+         "tipe": "Masuk",
+         "status_kehadiran": "Hadir",
+         "device_id": "WEMOS_GERBANG_01",
+         "device_name": "Gerbang Depan",
+         "waktu": "2026-09-05 06:47:30",
+         "jam": "06:47",
+         "is_dinas_luar": false,
+         "lokasi_dinas_luar": null
+       }
+     }
+     ```
+
+---
+
 ## 4. Contoh Implementasi di Flutter (Dart)
 
-Berikut contoh implementasi service presensi menggunakan package `dio`, `geolocator`, `image_picker`, dan `nfc_manager`.
+Berikut contoh implementasi service presensi menggunakan package `dio`, `geolocator`, `image_picker`, `nfc_manager`, dan `flutter_blue_plus`.
 
 ### Dependencies `pubspec.yaml`
 ```yaml
@@ -232,6 +289,7 @@ dependencies:
   geolocator: ^11.0.0
   image_picker: ^1.0.7
   nfc_manager: ^3.3.0
+  flutter_blue_plus: ^1.32.0
   flutter_secure_storage: ^9.0.0
 ```
 
@@ -337,6 +395,45 @@ class AttendanceService {
       return response.data;
     } on DioException catch (e) {
       final errorMessage = e.response?.data['message'] ?? 'Gagal memproses tap kartu';
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// 5. Request Challenge Token untuk Bluetooth BLE
+  Future<Map<String, dynamic>> getBluetoothChallenge() async {
+    try {
+      final response = await _dio.get('/presence/bluetooth/challenge');
+      return response.data;
+    } on DioException catch (e) {
+      final errorMessage = e.response?.data['message'] ?? 'Gagal meminta challenge token';
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// 6. Verifikasi Signature HMAC-SHA256 dari Wemos via Server
+  Future<Map<String, dynamic>> verifyBluetoothAttendance({
+    required String deviceId,
+    required String challengeCode,
+    required String signature,
+    double? latitude,
+    double? longitude,
+    bool isDinasLuar = false,
+    String? lokasiDinasLuar,
+  }) async {
+    try {
+      final response = await _dio.post('/presence/bluetooth/verify', data: {
+        'device_id': deviceId,
+        'challenge_code': challengeCode,
+        'signature': signature,
+        if (latitude != null) 'lat': latitude,
+        if (longitude != null) 'long': longitude,
+        'is_dinas_luar': isDinasLuar ? 1 : 0,
+        if (isDinasLuar && lokasiDinasLuar != null)
+          'lokasi_dinas_luar': lokasiDinasLuar,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      final errorMessage = e.response?.data['message'] ?? 'Verifikasi Bluetooth gagal';
       throw Exception(errorMessage);
     }
   }
