@@ -24,8 +24,8 @@ Route::middleware('api.token')->group(function () {
 
         // Presensi Bluetooth BLE Offline Hardware (Wemos ESP32)
         Route::prefix('bluetooth')->group(function () {
-            Route::get('/challenge', [BluetoothAttendanceController::class, 'getChallenge']);
-            Route::post('/verify', [BluetoothAttendanceController::class, 'verifyAndSubmit']);
+            Route::get('/challenge', [BluetoothAttendanceController::class, 'getBluetoothChallenge']);
+            Route::post('/verify', [BluetoothAttendanceController::class, 'verifyBluetoothAttendance']);
         });
     });
 });

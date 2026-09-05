@@ -496,4 +496,20 @@ class PresenceController extends Controller
     {
         return app(\App\Http\Controllers\Api\SelfieAttendanceController::class)->submitCardTap($request);
     }
+
+    /**
+     * Forwarder untuk bluetooth challenge jika diakses via PresenceController
+     */
+    public function getBluetoothChallenge(Request $request)
+    {
+        return app(\App\Http\Controllers\Api\BluetoothAttendanceController::class)->getBluetoothChallenge($request);
+    }
+
+    /**
+     * Forwarder untuk bluetooth verify jika diakses via PresenceController
+     */
+    public function verifyBluetoothAttendance(Request $request)
+    {
+        return app(\App\Http\Controllers\Api\BluetoothAttendanceController::class)->verifyBluetoothAttendance($request);
+    }
 }

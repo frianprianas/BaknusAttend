@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BluetoothAttendanceController extends Controller
 {
@@ -24,7 +25,7 @@ class BluetoothAttendanceController extends Controller
      * Request challenge token acak untuk dikirim ke Wemos via Bluetooth BLE
      * GET /api/presence/bluetooth/challenge
      */
-    public function getChallenge(Request $request): JsonResponse
+    public function getBluetoothChallenge(Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -38,11 +39,11 @@ class BluetoothAttendanceController extends Controller
             ], 422);
         }
 
-        // 2. Generate Nonce/Challenge acak 32 karakter hexadecimal (16 bytes)
-        $challengeCode = strtoupper(bin2hex(random_bytes(16)));
+        // 2. Generate Nonce/Challenge acak 32 karakter huruf kapital & angka
+        $challengeCode = strtoupper(Str::random(32));
         $expiresIn = 60; // 60 detik
 
-        // 3. Simpan ke Cache berdasar user_id
+        // 3. Simpan ke Cache berdasar user_id selama 60 detik
         Cache::put('ble_challenge_' . $user->id, $challengeCode, now()->addSeconds($expiresIn));
 
         // Dapatkan nama untuk ditampilkan di LCD Wemos (maks 16 karakter baris pertama)
@@ -59,10 +60,18 @@ class BluetoothAttendanceController extends Controller
     }
 
     /**
+     * Alias method untuk getBluetoothChallenge
+     */
+    public function getChallenge(Request $request): JsonResponse
+    {
+        return $this->getBluetoothChallenge($request);
+    }
+
+    /**
      * Verifikasi signature HMAC-SHA256 dari Wemos dan simpan presensi
      * POST /api/presence/bluetooth/verify
      */
-    public function verifyAndSubmit(Request $request): JsonResponse
+    public function verifyBluetoothAttendance(Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -71,22 +80,24 @@ class BluetoothAttendanceController extends Controller
             'device_id'         => 'required|string',
             'challenge_code'    => 'required|string',
             'signature'         => 'required|string',
-            'lat'               => 'nullable|numeric',
-            'long'              => 'nullable|numeric',
+            'lat'               => 'required',
+            'long'              => 'required',
             'is_dinas_luar'     => 'nullable|boolean',
             'lokasi_dinas_luar' => 'required_if:is_dinas_luar,1,true|nullable|string',
         ], [
             'device_id.required'      => 'Device ID Bluetooth Wemos wajib dikirim.',
             'challenge_code.required' => 'Challenge code wajib dikirim.',
             'signature.required'      => 'Signature HMAC-SHA256 dari Wemos wajib dikirim.',
+            'lat.required'            => 'Koordinat Latitude GPS wajib dikirim.',
+            'long.required'           => 'Koordinat Longitude GPS wajib dikirim.',
             'lokasi_dinas_luar.required_if' => 'Tempat / Keterangan Dinas Luar wajib diisi jika mode dinas luar diaktifkan.',
         ]);
 
         $deviceId = trim($request->input('device_id'));
         $clientChallenge = trim($request->input('challenge_code'));
         $clientSignature = trim($request->input('signature'));
-        $lat = $request->filled('lat') ? (float)$request->input('lat') : null;
-        $long = $request->filled('long') ? (float)$request->input('long') : null;
+        $lat = (float)$request->input('lat');
+        $long = (float)$request->input('long');
         $isDinasLuar = $request->boolean('is_dinas_luar');
         $lokasiDinasLuar = $request->input('lokasi_dinas_luar');
 
@@ -109,41 +120,34 @@ class BluetoothAttendanceController extends Controller
         if (empty($storedChallenge) || $storedChallenge !== $clientChallenge) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Kode challenge tidak valid atau telah kedaluwarsa (maks 60 detik). Silakan minta challenge baru.',
+                'message' => 'Token keamanan Bluetooth kadaluwarsa atau tidak valid. Silakan coba lagi.',
             ], 422);
         }
 
-        // 4. Cari Perangkat Bluetooth Wemos
+        // 4. Ambil data perangkat Wemos
         $device = BluetoothDevice::where('device_id', $deviceId)->active()->first();
 
         if (!$device) {
             return response()->json([
                 'status'  => 'error',
-                'message' => "Perangkat Bluetooth dengan ID '{$deviceId}' tidak terdaftar atau sedang dinonaktifkan.",
+                'message' => 'Perangkat Bluetooth Wemos tidak terdaftar di sistem.',
             ], 404);
         }
 
-        // 5. Hitung Ulang Signature HMAC-SHA256 di Server
-        $expectedSignature = hash_hmac('sha256', $storedChallenge, $device->secret_key);
+        // 5. Verifikasi Signature Kriptografi (HMAC-SHA256)
+        $expectedSignature = hash_hmac('sha256', $clientChallenge, $device->secret_key);
 
         if (!hash_equals(strtolower($expectedSignature), strtolower($clientSignature))) {
             Log::warning("BLE Signature Mismatch - User ID: {$user->id}, Device: {$deviceId}, Expected: {$expectedSignature}, Received: {$clientSignature}");
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Signature Bluetooth tidak valid! Sinyal palsu atau secret key alat tidak cocok.',
-            ], 422);
+                'message' => 'Signature perangkat Wemos tidak valid / sinyal palsu.',
+            ], 403);
         }
 
         // 6. Validasi Geofencing GPS terhadap koordinat alat (jika alat memiliki GPS terdaftar)
         if (!$isDinasLuar && !empty($device->latitude) && !empty($device->longitude)) {
-            if ($lat === null || $long === null) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Koordinat GPS ponsel diperlukan untuk memvalidasi radius perangkat.',
-                ], 422);
-            }
-
             $distance = $this->attendanceService->haversineGreatCircleDistance(
                 $lat,
                 $long,
@@ -163,12 +167,12 @@ class BluetoothAttendanceController extends Controller
             }
         }
 
-        // 7. Hapus challenge dari cache setelah berhasil (Anti-Replay Attack)
+        // 7. Hapus token dari Cache (Anti-Replay Attack)
         Cache::forget($cacheKey);
 
         $currentTime = Carbon::now();
 
-        // 8. Simpan Record Kehadiran ke Database
+        // 8. Simpan Presensi ke Database
         $record = $this->attendanceService->recordBluetoothAttendance(
             $user,
             $tipeAbsens,
@@ -191,9 +195,15 @@ class BluetoothAttendanceController extends Controller
                 'device_name'        => $device->device_name,
                 'waktu'              => $currentTime->format('Y-m-d H:i:s'),
                 'jam'                => $currentTime->format('H:i'),
-                'is_dinas_luar'      => (bool)$record->is_dinas_luar,
-                'lokasi_dinas_luar'  => $record->lokasi_dinas_luar,
             ],
         ]);
+    }
+
+    /**
+     * Alias method untuk verifyBluetoothAttendance
+     */
+    public function verifyAndSubmit(Request $request): JsonResponse
+    {
+        return $this->verifyBluetoothAttendance($request);
     }
 }

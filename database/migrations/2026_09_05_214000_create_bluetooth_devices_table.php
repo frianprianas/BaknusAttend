@@ -22,6 +22,17 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->comment('Status aktif alat');
             $table->timestamps();
         });
+
+        // Insert data default perangkat Wemos D1 R32 Gerbang Depan
+        \Illuminate\Support\Facades\DB::table('bluetooth_devices')->insertOrIgnore([
+            'device_id'     => 'WEMOS_GERBANG_01',
+            'device_name'   => 'Gerbang Depan',
+            'secret_key'    => 'kunciRahasiaBaknus2026!#',
+            'radius_meters' => 50,
+            'is_active'     => true,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
     }
 
     /**
