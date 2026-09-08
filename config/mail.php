@@ -25,7 +25,7 @@ return [
             'host' => (env('MAIL_HOST') && env('MAIL_HOST') !== '127.0.0.1') ? env('MAIL_HOST') : 'mail.smk.baktinusantara666.sch.id',
             'port' => env('MAIL_PORT') ?: 465,
             'username' => env('MAIL_USERNAME') ?: 'admin@smk.baktinusantara666.sch.id',
-            'password' => env('MAIL_PASSWORD') ?: 'Buhun666',
+            'password' => env('MAIL_PASSWORD') ?: 'buhun666',
             'encryption' => env('MAIL_ENCRYPTION') ?: 'ssl',
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
