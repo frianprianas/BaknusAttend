@@ -45,7 +45,7 @@ class PresensiHariIniGuruTuResource extends Resource
                 DB::raw('MAX(waktu_tap) as waktu_pulang'),
                 DB::raw('COUNT(*) as jumlah_tap'),
                 DB::raw('MAX(status) as status'),
-                DB::raw('MAX(keterangan) as keterangan'),
+                DB::raw("GROUP_CONCAT(keterangan SEPARATOR ' | ') as keterangan"),
                 DB::raw('MAX(photo) as photo'),
                 DB::raw('MAX(is_dinas_luar) as is_dinas_luar'),
                 DB::raw('MAX(lokasi_dinas_luar) as lokasi_dinas_luar'),
@@ -60,7 +60,7 @@ class PresensiHariIniGuruTuResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\Layout\Split::make([
-                    // Badge Estetik RFID Mesin / RFID HP / Foto Wajah
+                    // Badge Estetik BLE Wemos / RFID Mesin / RFID HP / Foto Wajah
                     Tables\Columns\TextColumn::make('foto_rfid')
                         ->label('')
                         ->html()
@@ -71,7 +71,20 @@ class PresensiHariIniGuruTuResource extends Resource
                             }
 
                             $ketLower = strtolower($record->keterangan ?? '');
+                            $isBle = str_contains($ketLower, 'bluetooth') || str_contains($ketLower, 'ble');
                             $isNfcHp = str_contains($ketLower, 'nfc') || str_contains($ketLower, 'hp') || str_contains($ketLower, 'smartphone');
+
+                            if ($isBle) {
+                                // Badge Estetik Bluetooth BLE Wemos
+                                return "
+                                    <div class='flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 text-white shadow-md border border-sky-300/40 p-1 text-center transition-transform duration-200 hover:scale-105' title='Presensi via Bluetooth BLE (Wemos ESP32)'>
+                                        <svg class='w-5 h-5 text-white mb-0.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                            <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11'></path>
+                                        </svg>
+                                        <span class='text-[7px] font-black uppercase tracking-wider text-sky-100 leading-tight whitespace-nowrap'>BLE WEMOS</span>
+                                    </div>
+                                ";
+                            }
 
                             if ($isNfcHp) {
                                 // Badge Estetik RFID HP
@@ -85,7 +98,7 @@ class PresensiHariIniGuruTuResource extends Resource
                                 ";
                             }
 
-                            // Default: Badge Estetik RFID Mesin
+                            // Default: Badge Estetik RFID Mesin Fisik
                             return "
                                 <div class='flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white shadow-md border border-indigo-300/40 p-1 text-center transition-transform duration-200 hover:scale-105' title='Presensi via Mesin RFID Fisik'>
                                     <svg class='w-5 h-5 text-white mb-0.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -163,6 +176,41 @@ class PresensiHariIniGuruTuResource extends Resource
                         if (empty($data['value'])) return $query;
                         $nipys = User::where('role', $data['value'])->pluck('nipy');
                         return $query->whereIn('nipy', $nipys);
+                    }),
+
+                Tables\Filters\SelectFilter::make('metode')
+                    ->label('Metode Presensi')
+                    ->options([
+                        'ble'    => 'Bluetooth BLE (Wemos)',
+                        'selfie' => 'Selfie Wajah (GPS)',
+                        'nfc_hp' => 'RFID / NFC HP',
+                        'rfid'   => 'Mesin RFID Fisik',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) return $query;
+                        return match ($data['value']) {
+                            'ble' => $query->where(function($q) {
+                                $q->where('keterangan', 'like', '%bluetooth%')
+                                  ->orWhere('keterangan', 'like', '%ble%');
+                            }),
+                            'selfie' => $query->where(function($q) {
+                                $q->whereNotNull('photo')
+                                  ->where('photo', '!=', 'rfid_placeholder')
+                                  ->orWhere('keterangan', 'like', '%selfie%')
+                                  ->orWhere('keterangan', 'like', '%mandiri%');
+                            }),
+                            'nfc_hp' => $query->where(function($q) {
+                                $q->where('keterangan', 'like', '%nfc%')
+                                  ->orWhere('keterangan', 'like', '%hp%')
+                                  ->orWhere('keterangan', 'like', '%smartphone%');
+                            }),
+                            'rfid' => $query->where(function($q) {
+                                $q->where('keterangan', 'like', '%rfid%')
+                                  ->where('keterangan', 'not like', '%hp%')
+                                  ->where('keterangan', 'not like', '%nfc%');
+                            }),
+                            default => $query,
+                        };
                     }),
 
                 Tables\Filters\TernaryFilter::make('is_dinas_luar')

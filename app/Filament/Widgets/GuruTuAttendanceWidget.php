@@ -68,13 +68,21 @@ class GuruTuAttendanceWidget extends BaseWidget
                     ->disk('public')
                     ->size(35)
                     ->getStateUsing(function ($record) {
-                        $isRfid = str_contains(strtolower($record->keterangan ?? ''), 'rfid');
-                        if ($record->photo === 'rfid_placeholder' || ($isRfid && empty($record->photo))) {
+                        $ketLower = strtolower($record->keterangan ?? '');
+                        $isBle = str_contains($ketLower, 'bluetooth') || str_contains($ketLower, 'ble');
+                        $isRfid = str_contains($ketLower, 'rfid');
+                        if ($isBle || $record->photo === 'rfid_placeholder' || ($isRfid && empty($record->photo))) {
                             return null; // Gunakan defaultImageUrl
                         }
                         return $record->photo;
                     })
-                    ->defaultImageUrl(asset('images/rfid_placeholder.png'))
+                    ->defaultImageUrl(function ($record) {
+                        $ketLower = strtolower($record->keterangan ?? '');
+                        if (str_contains($ketLower, 'bluetooth') || str_contains($ketLower, 'ble')) {
+                            return asset('images/ble_placeholder.png');
+                        }
+                        return asset('images/rfid_placeholder.png');
+                    })
                     ->visibility(fn () => true),
 
                 Tables\Columns\TextColumn::make('user_name')
@@ -135,7 +143,11 @@ class GuruTuAttendanceWidget extends BaseWidget
                     ->label('Alat Presensi')
                     ->getStateUsing(function ($record) {
                         $keterangan = strtolower($record->keterangan ?? '');
-                        if (str_contains($keterangan, 'mandiri')) {
+                        if (str_contains($keterangan, 'bluetooth') || str_contains($keterangan, 'ble')) {
+                            return 'Bluetooth BLE';
+                        } elseif (str_contains($keterangan, 'nfc') || str_contains($keterangan, 'hp') || str_contains($keterangan, 'smartphone')) {
+                            return 'RFID / NFC HP';
+                        } elseif (str_contains($keterangan, 'mandiri') || (!empty($record->photo) && $record->photo !== 'rfid_placeholder')) {
                             return 'HP / GPS';
                         } elseif (str_contains($keterangan, 'rfid')) {
                             return 'Mesin RFID';
@@ -144,14 +156,17 @@ class GuruTuAttendanceWidget extends BaseWidget
                     })
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
-                        'HP / GPS' => 'success',
-                        'Mesin RFID' => 'info',
-                        default => 'gray',
+                        'Bluetooth BLE' => 'info',
+                        'RFID / NFC HP' => 'success',
+                        'HP / GPS'      => 'success',
+                        'Mesin RFID'    => 'primary',
+                        default         => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('keterangan')
                     ->label('Ket')
                     ->default('–')
-                    ->limit(15)
+                    ->limit(20)
+                    ->tooltip(fn($record) => $record->keterangan)
                     ->searchable()
                     ->hiddenFrom('md'),
             ])
@@ -184,7 +199,7 @@ class GuruTuAttendanceWidget extends BaseWidget
             ->defaultPaginationPageOption(25)
             ->striped()
             ->emptyStateHeading('Belum ada kehadiran hari ini')
-            ->emptyStateDescription('Data akan muncul setelah guru/TU melakukan tap RFID.')
+            ->emptyStateDescription('Data akan muncul setelah guru/TU melakukan presensi.')
             ->emptyStateIcon('heroicon-o-clock');
     }
 }
