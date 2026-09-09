@@ -521,127 +521,177 @@ class PresenceController extends Controller
      */
     public function getTeachersToday(Request $request)
     {
-        $user = $request->user();
+        try {
+            // 1. Tentukan tanggal (support query param ?date=YYYY-MM-DD atau default hari ini)
+            $today = $request->query('date') ?? $request->input('date') ?? Carbon::today('Asia/Jakarta')->toDateString();
 
-        // 1. Validasi Hak Akses: hanya guru, tu, staff, admin
-        if (!$user) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Token otentikasi tidak ditemukan atau sesi telah berakhir.',
-            ], 401);
-        }
+            // 2. Ambil seluruh User yang terdaftar sebagai Guru, TU, Staff, atau Admin
+            $allowedRoleKeywords = ['guru', 'tu', 'staff', 'admin', 'administrator', 'kepsek', 'kepala sekolah'];
+            $allStaffUsers = User::all()->filter(function ($u) use ($allowedRoleKeywords) {
+                $role = strtolower(trim($u->role ?? ''));
+                return in_array($role, $allowedRoleKeywords, true) && $role !== 'siswa';
+            });
 
-        $userRole = strtolower(trim($user->role ?? ''));
-        $allowedRoles = ['guru', 'tu', 'staff', 'admin', 'administrator', 'kepsek', 'kepala sekolah'];
-        if (!in_array($userRole, $allowedRoles, true)) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Akses ditolak: Data kehadiran hanya dapat diakses oleh Guru dan Staf TU.',
-            ], 403);
-        }
+            // Buat index pencarian user berdasarkan ID, NIPY, dan Email
+            $staffById = $allStaffUsers->keyBy('id');
+            $staffByNipy = $allStaffUsers->filter(fn($u) => !empty($u->nipy))->keyBy('nipy');
+            $staffByEmail = $allStaffUsers->filter(fn($u) => !empty($u->email))->keyBy('email');
 
-        // 2. Ambil tanggal hari ini menggunakan timezone lokal Asia/Jakarta
-        $today = Carbon::today('Asia/Jakarta');
+            // Kumpulan NIPY dan Email staf untuk query presensi
+            $validIdentifiers = $allStaffUsers->pluck('nipy')->merge($allStaffUsers->pluck('email'))->filter()->unique()->toArray();
+            $validUserIds = $allStaffUsers->pluck('id')->toArray();
 
-        // 3. Query record kehadiran Guru & TU hari ini
-        $records = KehadiranGuruTu::whereDate('waktu_tap', $today)
-            ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
-            ->orderBy('waktu_tap', 'asc')
-            ->get();
+            // 3. Query Kehadiran dari tabel kehadiran_guru_tus (Model KehadiranGuruTu)
+            $guruTuRecords = KehadiranGuruTu::where(function ($q) use ($today) {
+                    $q->whereDate('waktu_tap', $today)
+                      ->orWhereDate('created_at', $today);
+                })
+                ->where(function ($q) use ($validIdentifiers) {
+                    if (!empty($validIdentifiers)) {
+                        $q->whereIn('nipy', $validIdentifiers);
+                    }
+                })
+                ->orderBy('waktu_tap', 'asc')
+                ->get();
 
-        if ($records->isEmpty()) {
-            return response()->json([
-                'status'      => 'success',
-                'message'     => 'Data kehadiran guru hari ini berhasil dimuat',
-                'date'        => $today->format('Y-m-d'),
-                'total_hadir' => 0,
-                'data'        => [],
-            ], 200);
-        }
+            // 4. Query Kehadiran dari tabel attendances (Model Attendance) sebagai fallback/pelengkap
+            $attendanceRecords = collect();
+            try {
+                $attendanceRecords = \App\Models\Attendance::where(function ($q) use ($today) {
+                        $q->whereDate('date', $today)
+                          ->orWhereDate('created_at', $today);
+                    })
+                    ->where('attendable_type', User::class)
+                    ->whereIn('attendable_id', $validUserIds)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+            } catch (\Throwable $ex) {
+                // Abaikan jika tabel/model Attendance tidak aktif
+            }
 
-        // 4. Ambil data User terkait berdasarkan nipy / email (mengabaikan siswa)
-        $nipys = $records->pluck('nipy')->filter()->unique()->toArray();
-        $teachers = User::whereIn('nipy', $nipys)
-            ->orWhereIn('email', $nipys)
-            ->get();
+            // 5. Query Kehadiran dari tabel kehadiran_guru (Model KehadiranGuru) jika ada
+            $legacyRecords = collect();
+            try {
+                $legacyRecords = \App\Models\KehadiranGuru::where(function ($q) use ($today) {
+                        $q->whereDate('waktu_tap', $today)
+                          ->orWhereDate('created_at', $today);
+                    })
+                    ->whereIn('nipy', $validIdentifiers)
+                    ->orderBy('waktu_tap', 'asc')
+                    ->get();
+            } catch (\Throwable $ex) {
+                // Abaikan jika tabel tidak dipakai
+            }
 
-        $teacherByNipy = $teachers->keyBy('nipy');
-        $teacherByEmail = $teachers->keyBy('email');
+            // 6. Satukan dan Kelompokkan presensi per Guru/Staf (ambil tap pertama / jam masuk)
+            $groupedTeachers = [];
 
-        // 5. Group record per guru (ambil tap pertama pada hari tersebut sebagai waktu masuk)
-        $groupedByTeacher = [];
+            // A. Proses dari KehadiranGuruTu
+            foreach ($guruTuRecords as $rec) {
+                $matchedUser = $staffByNipy->get($rec->nipy) ?? $staffByEmail->get($rec->nipy);
+                if (!$matchedUser) continue;
 
-        foreach ($records as $rec) {
-            $matchedUser = $teacherByNipy->get($rec->nipy) ?? $teacherByEmail->get($rec->nipy);
-
-            // Pastikan bukan siswa
-            if ($matchedUser) {
-                $roleCheck = strtolower(trim($matchedUser->role ?? ''));
-                if ($roleCheck === 'siswa') {
-                    continue;
+                $userId = $matchedUser->id;
+                if (!isset($groupedTeachers[$userId])) {
+                    $groupedTeachers[$userId] = [
+                        'user'        => $matchedUser,
+                        'waktu_masuk' => $rec->waktu_tap ?? $rec->created_at,
+                        'status'      => $rec->status,
+                        'keterangan'  => $rec->keterangan,
+                        'photo'       => $rec->photo,
+                        'is_dinas'    => (bool)$rec->is_dinas_luar,
+                    ];
                 }
             }
 
-            $identifier = $matchedUser ? $matchedUser->id : $rec->nipy;
+            // B. Proses dari Attendance
+            foreach ($attendanceRecords as $att) {
+                $userId = $att->attendable_id;
+                $matchedUser = $staffById->get($userId);
+                if (!$matchedUser) continue;
 
-            // Simpan record pertama hari ini sebagai waktu masuk
-            if (!isset($groupedByTeacher[$identifier])) {
-                $groupedByTeacher[$identifier] = [
-                    'record' => $rec,
-                    'user'   => $matchedUser,
-                ];
-            }
-        }
-
-        // 6. Petakan data ke format JSON response yang diharapkan
-        $data = [];
-
-        foreach ($groupedByTeacher as $item) {
-            $rec = $item['record'];
-            $u = $item['user'];
-
-            $hasPhoto = !empty($rec->photo) && $rec->photo !== 'rfid_placeholder';
-            $keteranganLower = strtolower($rec->keterangan ?? '');
-
-            // Deteksi metode presensi
-            if ($hasPhoto || str_contains($keteranganLower, 'selfie') || str_contains($keteranganLower, 'mandiri')) {
-                $metode = 'Selfie GPS';
-            } elseif (str_contains($keteranganLower, 'bluetooth') || str_contains($keteranganLower, 'ble')) {
-                $metode = 'Bluetooth';
-            } elseif (str_contains($keteranganLower, 'nfc')) {
-                $metode = 'NFC Tap';
-            } elseif (str_contains($keteranganLower, 'rfid')) {
-                $metode = 'NFC Tap';
-            } elseif ($rec->is_dinas_luar || str_contains(strtolower($rec->status), 'dinas')) {
-                $metode = 'Dinas Luar';
-            } else {
-                $metode = $hasPhoto ? 'Selfie GPS' : 'NFC Tap';
+                if (!isset($groupedTeachers[$userId])) {
+                    $groupedTeachers[$userId] = [
+                        'user'        => $matchedUser,
+                        'waktu_masuk' => $att->created_at ?? $att->date,
+                        'status'      => $att->status,
+                        'keterangan'  => $att->remarks,
+                        'photo'       => null,
+                        'is_dinas'    => false,
+                    ];
+                }
             }
 
-            // Normalisasi status display
-            $statusRaw = trim($rec->status ?? 'Hadir');
-            if (strcasecmp($statusRaw, 'Hadir') === 0 || str_contains(strtolower($statusRaw), 'tepat')) {
-                $statusDisplay = 'Tepat Waktu';
-            } elseif (strcasecmp($statusRaw, 'Terlambat') === 0) {
-                $statusDisplay = 'Terlambat';
-            } elseif (strcasecmp($statusRaw, 'Dinas Luar') === 0) {
-                $statusDisplay = 'Dinas Luar';
-            } else {
-                $statusDisplay = $statusRaw ?: 'Tepat Waktu';
+            // C. Proses dari Legacy KehadiranGuru
+            foreach ($legacyRecords as $leg) {
+                $matchedUser = $staffByNipy->get($leg->nipy) ?? $staffByEmail->get($leg->nipy);
+                if (!$matchedUser) continue;
+
+                $userId = $matchedUser->id;
+                if (!isset($groupedTeachers[$userId])) {
+                    $groupedTeachers[$userId] = [
+                        'user'        => $matchedUser,
+                        'waktu_masuk' => $leg->waktu_tap ?? $leg->created_at,
+                        'status'      => $leg->status,
+                        'keterangan'  => $leg->keterangan,
+                        'photo'       => null,
+                        'is_dinas'    => false,
+                    ];
+                }
             }
 
-            // Foto URL jika ada
-            $fotoUrl = null;
-            if ($hasPhoto) {
-                $cleanPhoto = ltrim(str_replace('public/', '', $rec->photo), '/');
-                $fotoUrl = url('storage/' . $cleanPhoto);
-            }
+            // 7. Mapping data ke format response yang diharapkan
+            $data = [];
 
-            // Jabatan
-            $roleName = $u ? $u->role : 'Guru';
-            $jabatan = 'Guru';
-            if ($u) {
-                if ($u->is_kepsek) {
+            foreach ($groupedTeachers as $item) {
+                $u = $item['user'];
+                $waktuRaw = $item['waktu_masuk'];
+                $statusRaw = trim($item['status'] ?? 'Hadir');
+                $keterangan = strtolower($item['keterangan'] ?? '');
+                $photo = $item['photo'];
+                $hasPhoto = !empty($photo) && $photo !== 'rfid_placeholder';
+
+                // Format Jam Masuk: HH:mm
+                $waktuMasuk = Carbon::parse($waktuRaw)->timezone('Asia/Jakarta')->format('H:i');
+
+                // Deteksi Metode Presensi
+                if ($hasPhoto || str_contains($keterangan, 'selfie') || str_contains($keterangan, 'mandiri')) {
+                    $metode = 'Selfie GPS';
+                } elseif (str_contains($keterangan, 'bluetooth') || str_contains($keterangan, 'ble')) {
+                    $metode = 'Bluetooth';
+                } elseif (str_contains($keterangan, 'nfc')) {
+                    $metode = 'NFC Tap';
+                } elseif (str_contains($keterangan, 'rfid')) {
+                    $metode = 'NFC Tap';
+                } elseif ($item['is_dinas'] || str_contains(strtolower($statusRaw), 'dinas')) {
+                    $metode = 'Dinas Luar';
+                } else {
+                    $metode = $hasPhoto ? 'Selfie GPS' : 'NFC Tap';
+                }
+
+                // Normalisasi Status: Tepat Waktu / Terlambat / Dinas Luar
+                if (strcasecmp($statusRaw, 'Hadir') === 0 || strcasecmp($statusRaw, 'Masuk') === 0 || str_contains(strtolower($statusRaw), 'tepat')) {
+                    $statusDisplay = 'Tepat Waktu';
+                } elseif (strcasecmp($statusRaw, 'Terlambat') === 0) {
+                    $statusDisplay = 'Terlambat';
+                } elseif (strcasecmp($statusRaw, 'Dinas Luar') === 0 || $item['is_dinas']) {
+                    $statusDisplay = 'Dinas Luar';
+                } else {
+                    $statusDisplay = $statusRaw ?: 'Tepat Waktu';
+                }
+
+                // Foto URL
+                $fotoUrl = null;
+                if ($hasPhoto) {
+                    $cleanPhoto = ltrim(str_replace('public/', '', $photo), '/');
+                    $fotoUrl = url('storage/' . $cleanPhoto);
+                }
+
+                // Jabatan
+                $jabatan = 'Tenaga Pendidik';
+                if (!empty($u->jabatan)) {
+                    $jabatan = $u->jabatan;
+                } elseif ($u->is_kepsek) {
                     $jabatan = 'Kepala Sekolah';
                 } elseif (strcasecmp($u->role, 'TU') === 0) {
                     $jabatan = 'Staf Tata Usaha';
@@ -649,36 +699,42 @@ class PresenceController extends Controller
                     $jabatan = 'Administrator Sistem';
                 } elseif (strcasecmp($u->role, 'Guru') === 0) {
                     $jabatan = $u->isWaliKelas() ? 'Guru / Wali Kelas' : 'Guru Mata Pelajaran';
-                } else {
-                    $jabatan = $u->role;
                 }
 
-                if (!empty($u->jabatan)) {
-                    $jabatan = $u->jabatan;
-                }
+                $data[] = [
+                    'nip'         => (string)($u->nip ?? $u->nipy ?? $u->email ?? '-'),
+                    'nama'        => $u->name ?? $u->nama ?? 'Guru',
+                    'role'        => $u->role ?? 'Guru',
+                    'jabatan'     => $jabatan,
+                    'waktu_masuk' => $waktuMasuk,
+                    'metode'      => $metode,
+                    'status'      => $statusDisplay,
+                    'foto_url'    => $fotoUrl,
+                ];
             }
 
-            $nipValue = (string)($u->nipy ?? $u->email ?? $rec->nipy);
-            $namaValue = $u ? $u->name : $rec->nipy;
+            // Urutkan berdasarkan waktu kehadiran paling awal (waktu_masuk ASC)
+            usort($data, fn($a, $b) => strcmp($a['waktu_masuk'], $b['waktu_masuk']));
 
-            $data[] = [
-                'nip'         => $nipValue,
-                'nama'        => $namaValue,
-                'role'        => $roleName,
-                'jabatan'     => $jabatan,
-                'waktu_masuk' => Carbon::parse($rec->waktu_tap)->timezone('Asia/Jakarta')->format('H:i'),
-                'metode'      => $metode,
-                'status'      => $statusDisplay,
-                'foto_url'    => $fotoUrl,
-            ];
+            return response()->json([
+                'status'      => 'success',
+                'message'     => 'Data kehadiran guru hari ini berhasil dimuat',
+                'date'        => $today,
+                'total_hadir' => count($data),
+                'data'        => $data,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            \Log::error('Error getTeachersToday: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal memuat presensi guru: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'status'      => 'success',
-            'message'     => 'Data kehadiran guru hari ini berhasil dimuat',
-            'date'        => $today->format('Y-m-d'),
-            'total_hadir' => count($data),
-            'data'        => $data,
-        ], 200);
     }
 }

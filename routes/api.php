@@ -36,6 +36,11 @@ Route::middleware('api.token')->group(function () {
             Route::get('/teachers-today', [PresenceController::class, 'getTeachersToday']);
         });
     });
+
+    // Alias langsung jika diakses tanpa prefix 'presence'
+    Route::middleware('api.staff')->group(function () {
+        Route::get('/teachers-today', [PresenceController::class, 'getTeachersToday']);
+    });
 });
 
 // --- Existing System Endpoints ---
