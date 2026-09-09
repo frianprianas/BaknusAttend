@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->alias([
             'api.token' => \App\Http\Middleware\ApiTokenMiddleware::class,
+            'api.staff' => \App\Http\Middleware\CheckStaffRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\ApiAuthController;
 use App\Http\Controllers\Api\SelfieAttendanceController;
 use App\Http\Controllers\Api\BluetoothAttendanceController;
+use App\Http\Controllers\Api\ClassAttendanceController;
 use Illuminate\Support\Facades\Route;
 
 // --- Public Auth Routes (Flutter) ---
@@ -27,6 +28,12 @@ Route::middleware('api.token')->group(function () {
             Route::get('/challenge', [BluetoothAttendanceController::class, 'getBluetoothChallenge']);
             Route::post('/verify', [BluetoothAttendanceController::class, 'verifyBluetoothAttendance']);
         });
+
+        // --- Integrasi Bot Chat @presensi BaknusChat (Khusus Guru & Staf TU) ---
+        Route::middleware('api.staff')->group(function () {
+            Route::get('/classes', [ClassAttendanceController::class, 'getClasses']);
+            Route::get('/today-by-class', [ClassAttendanceController::class, 'getTodayByClass']);
+        });
     });
 });
 
@@ -45,4 +52,3 @@ Route::post('/attendance/tap', [AttendanceController::class, 'tap']);
 Route::get('/status', function() {
     return response()->json(['status' => 'OK', 'timestamp' => now()]);
 });
-
