@@ -269,4 +269,13 @@ class ClassAttendanceController extends Controller
             'belum_hadir_list' => $belumHadirList,
         ], 200);
     }
+
+    /**
+     * 3. Endpoint Rekap Guru & Staf TU yang Sudah Hadir Hari Ini
+     * GET /api/presence/teachers-today
+     */
+    public function getTeachersToday(Request $request): JsonResponse
+    {
+        return app(\App\Http\Controllers\Api\PresenceController::class)->getTeachersToday($request);
+    }
 }

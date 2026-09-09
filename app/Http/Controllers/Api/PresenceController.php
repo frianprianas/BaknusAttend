@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -511,5 +511,174 @@ class PresenceController extends Controller
     public function verifyBluetoothAttendance(Request $request)
     {
         return app(\App\Http\Controllers\Api\BluetoothAttendanceController::class)->verifyBluetoothAttendance($request);
+    }
+
+
+    /**
+     * Mengambil daftar Guru dan Tenaga Kependidikan (Staf TU) yang SUDAH hadir/presensi hari ini.
+     * Fitur Chat Bot "@hadir" BaknusMail
+     * GET /api/presence/teachers-today
+     */
+    public function getTeachersToday(Request $request)
+    {
+        $user = $request->user();
+
+        // 1. Validasi Hak Akses: hanya guru, tu, staff, admin
+        if (!$user) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Token otentikasi tidak ditemukan atau sesi telah berakhir.',
+            ], 401);
+        }
+
+        $userRole = strtolower(trim($user->role ?? ''));
+        $allowedRoles = ['guru', 'tu', 'staff', 'admin', 'administrator', 'kepsek', 'kepala sekolah'];
+        if (!in_array($userRole, $allowedRoles, true)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Akses ditolak: Data kehadiran hanya dapat diakses oleh Guru dan Staf TU.',
+            ], 403);
+        }
+
+        // 2. Ambil tanggal hari ini menggunakan timezone lokal Asia/Jakarta
+        $today = Carbon::today('Asia/Jakarta');
+
+        // 3. Query record kehadiran Guru & TU hari ini
+        $records = KehadiranGuruTu::whereDate('waktu_tap', $today)
+            ->whereIn('status', ['Hadir', 'Terlambat', 'Dinas Luar'])
+            ->orderBy('waktu_tap', 'asc')
+            ->get();
+
+        if ($records->isEmpty()) {
+            return response()->json([
+                'status'      => 'success',
+                'message'     => 'Data kehadiran guru hari ini berhasil dimuat',
+                'date'        => $today->format('Y-m-d'),
+                'total_hadir' => 0,
+                'data'        => [],
+            ], 200);
+        }
+
+        // 4. Ambil data User terkait berdasarkan nipy / email (mengabaikan siswa)
+        $nipys = $records->pluck('nipy')->filter()->unique()->toArray();
+        $teachers = User::whereIn('nipy', $nipys)
+            ->orWhereIn('email', $nipys)
+            ->get();
+
+        $teacherByNipy = $teachers->keyBy('nipy');
+        $teacherByEmail = $teachers->keyBy('email');
+
+        // 5. Group record per guru (ambil tap pertama pada hari tersebut sebagai waktu masuk)
+        $groupedByTeacher = [];
+
+        foreach ($records as $rec) {
+            $matchedUser = $teacherByNipy->get($rec->nipy) ?? $teacherByEmail->get($rec->nipy);
+
+            // Pastikan bukan siswa
+            if ($matchedUser) {
+                $roleCheck = strtolower(trim($matchedUser->role ?? ''));
+                if ($roleCheck === 'siswa') {
+                    continue;
+                }
+            }
+
+            $identifier = $matchedUser ? $matchedUser->id : $rec->nipy;
+
+            // Simpan record pertama hari ini sebagai waktu masuk
+            if (!isset($groupedByTeacher[$identifier])) {
+                $groupedByTeacher[$identifier] = [
+                    'record' => $rec,
+                    'user'   => $matchedUser,
+                ];
+            }
+        }
+
+        // 6. Petakan data ke format JSON response yang diharapkan
+        $data = [];
+
+        foreach ($groupedByTeacher as $item) {
+            $rec = $item['record'];
+            $u = $item['user'];
+
+            $hasPhoto = !empty($rec->photo) && $rec->photo !== 'rfid_placeholder';
+            $keteranganLower = strtolower($rec->keterangan ?? '');
+
+            // Deteksi metode presensi
+            if ($hasPhoto || str_contains($keteranganLower, 'selfie') || str_contains($keteranganLower, 'mandiri')) {
+                $metode = 'Selfie GPS';
+            } elseif (str_contains($keteranganLower, 'bluetooth') || str_contains($keteranganLower, 'ble')) {
+                $metode = 'Bluetooth';
+            } elseif (str_contains($keteranganLower, 'nfc')) {
+                $metode = 'NFC Tap';
+            } elseif (str_contains($keteranganLower, 'rfid')) {
+                $metode = 'NFC Tap';
+            } elseif ($rec->is_dinas_luar || str_contains(strtolower($rec->status), 'dinas')) {
+                $metode = 'Dinas Luar';
+            } else {
+                $metode = $hasPhoto ? 'Selfie GPS' : 'NFC Tap';
+            }
+
+            // Normalisasi status display
+            $statusRaw = trim($rec->status ?? 'Hadir');
+            if (strcasecmp($statusRaw, 'Hadir') === 0 || str_contains(strtolower($statusRaw), 'tepat')) {
+                $statusDisplay = 'Tepat Waktu';
+            } elseif (strcasecmp($statusRaw, 'Terlambat') === 0) {
+                $statusDisplay = 'Terlambat';
+            } elseif (strcasecmp($statusRaw, 'Dinas Luar') === 0) {
+                $statusDisplay = 'Dinas Luar';
+            } else {
+                $statusDisplay = $statusRaw ?: 'Tepat Waktu';
+            }
+
+            // Foto URL jika ada
+            $fotoUrl = null;
+            if ($hasPhoto) {
+                $cleanPhoto = ltrim(str_replace('public/', '', $rec->photo), '/');
+                $fotoUrl = url('storage/' . $cleanPhoto);
+            }
+
+            // Jabatan
+            $roleName = $u ? $u->role : 'Guru';
+            $jabatan = 'Guru';
+            if ($u) {
+                if ($u->is_kepsek) {
+                    $jabatan = 'Kepala Sekolah';
+                } elseif (strcasecmp($u->role, 'TU') === 0) {
+                    $jabatan = 'Staf Tata Usaha';
+                } elseif (strcasecmp($u->role, 'Admin') === 0) {
+                    $jabatan = 'Administrator Sistem';
+                } elseif (strcasecmp($u->role, 'Guru') === 0) {
+                    $jabatan = $u->isWaliKelas() ? 'Guru / Wali Kelas' : 'Guru Mata Pelajaran';
+                } else {
+                    $jabatan = $u->role;
+                }
+
+                if (!empty($u->jabatan)) {
+                    $jabatan = $u->jabatan;
+                }
+            }
+
+            $nipValue = (string)($u->nipy ?? $u->email ?? $rec->nipy);
+            $namaValue = $u ? $u->name : $rec->nipy;
+
+            $data[] = [
+                'nip'         => $nipValue,
+                'nama'        => $namaValue,
+                'role'        => $roleName,
+                'jabatan'     => $jabatan,
+                'waktu_masuk' => Carbon::parse($rec->waktu_tap)->timezone('Asia/Jakarta')->format('H:i'),
+                'metode'      => $metode,
+                'status'      => $statusDisplay,
+                'foto_url'    => $fotoUrl,
+            ];
+        }
+
+        return response()->json([
+            'status'      => 'success',
+            'message'     => 'Data kehadiran guru hari ini berhasil dimuat',
+            'date'        => $today->format('Y-m-d'),
+            'total_hadir' => count($data),
+            'data'        => $data,
+        ], 200);
     }
 }

@@ -19,8 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->trustProxies(at: '*');
         $middleware->alias([
-            'api.token' => \App\Http\Middleware\ApiTokenMiddleware::class,
-            'api.staff' => \App\Http\Middleware\CheckStaffRole::class,
+            'api.token'    => \App\Http\Middleware\ApiTokenMiddleware::class,
+            'api.staff'    => \App\Http\Middleware\CheckStaffRole::class,
+            'auth:sanctum' => \App\Http\Middleware\ApiTokenMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

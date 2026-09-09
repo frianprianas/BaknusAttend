@@ -29,10 +29,11 @@ Route::middleware('api.token')->group(function () {
             Route::post('/verify', [BluetoothAttendanceController::class, 'verifyBluetoothAttendance']);
         });
 
-        // --- Integrasi Bot Chat @presensi BaknusChat (Khusus Guru & Staf TU) ---
+        // --- Integrasi Bot Chat @presensi & @hadir (Khusus Guru & Staf TU) ---
         Route::middleware('api.staff')->group(function () {
             Route::get('/classes', [ClassAttendanceController::class, 'getClasses']);
             Route::get('/today-by-class', [ClassAttendanceController::class, 'getTodayByClass']);
+            Route::get('/teachers-today', [PresenceController::class, 'getTeachersToday']);
         });
     });
 });
