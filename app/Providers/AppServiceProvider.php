@@ -28,6 +28,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $sendStudentNotification = function ($model) {
+            $cacheKey = "presensi_mail_sent_{$model->getTable()}_{$model->id}";
+            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addMinutes(10));
+
             $user = null;
             $nis = trim($model->nis ?? '');
 
@@ -78,9 +84,14 @@ class AppServiceProvider extends ServiceProvider
         };
 
         \App\Models\KehadiranSiswa::created($sendStudentNotification);
-        \App\Models\KehadiranSiswa::updated($sendStudentNotification);
 
         $sendGuruTuNotification = function ($model) {
+            $cacheKey = "presensi_mail_sent_{$model->getTable()}_{$model->id}";
+            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addMinutes(10));
+
             $user = null;
             $nipy = trim($model->nipy ?? '');
 
@@ -105,6 +116,8 @@ class AppServiceProvider extends ServiceProvider
                 $email = $user->email;
             } elseif (!empty($nipy) && filter_var($nipy, FILTER_VALIDATE_EMAIL)) {
                 $email = $nipy;
+            } elseif (!empty($nipy) && !str_contains($nipy, '@')) {
+                $email = $nipy . '@smk.baktinusantara666.sch.id';
             }
 
             if (!$email) {
@@ -139,7 +152,6 @@ class AppServiceProvider extends ServiceProvider
         };
 
         \App\Models\KehadiranGuruTu::created($sendGuruTuNotification);
-        \App\Models\KehadiranGuruTu::updated($sendGuruTuNotification);
 
 
         // Event listener for Guru/TU permissions (Izin/Sakit)

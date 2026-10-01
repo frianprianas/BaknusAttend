@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Services\MailService;
 
 class PresensiMandiriWidget extends Widget implements HasForms
@@ -520,7 +521,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 $status = 'Terlambat';
             }
 
-            KehadiranSiswa::create([
+            $kehadiran = KehadiranSiswa::create([
                 'nis' => $student->nis,
                 'rfid_uid' => $student->rfid,
                 'waktu_tap' => $currentTime,
@@ -534,7 +535,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ]);
         } else {
             // Guru / TU
-            KehadiranGuruTu::create([
+            $kehadiran = KehadiranGuruTu::create([
                 'nipy' => !empty($user->nipy) ? $user->nipy : $user->email,
                 'rfid_uid' => $user->rfid,
                 'waktu_tap' => $currentTime,
@@ -546,6 +547,11 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'is_dinas_luar' => $formData['is_dinas_luar'] ?? false,
                 'lokasi_dinas_luar' => $formData['lokasi_dinas_luar'] ?? null,
             ]);
+        }
+
+        // Kirim email notifikasi presensi langsung ke pengguna (Dashboard Kamera)
+        if (isset($kehadiran)) {
+            $this->sendPresensiEmailNotification($user, $kehadiran, $tipeAbsens, $currentTime, $status, $keterangan, 'Kamera');
         }
 
         Notification::make()
@@ -832,7 +838,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 $status = 'Terlambat';
             }
 
-            KehadiranSiswa::create([
+            $kehadiran = KehadiranSiswa::create([
                 'nis' => $student->nis,
                 'rfid_uid' => $cleanUid,
                 'waktu_tap' => $currentTime,
@@ -846,7 +852,7 @@ class PresensiMandiriWidget extends Widget implements HasForms
             ]);
         } else {
             // Guru / TU
-            KehadiranGuruTu::create([
+            $kehadiran = KehadiranGuruTu::create([
                 'nipy' => !empty($user->nipy) ? $user->nipy : $user->email,
                 'rfid_uid' => $cleanUid,
                 'waktu_tap' => $currentTime,
@@ -858,6 +864,11 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 'is_dinas_luar' => $isDinasLuar,
                 'lokasi_dinas_luar' => $lokasiDinasLuar,
             ]);
+        }
+
+        // Kirim email notifikasi presensi langsung ke pengguna (Dashboard Tap NFC)
+        if (isset($kehadiran)) {
+            $this->sendPresensiEmailNotification($user, $kehadiran, $tipeAbsens, $currentTime, $status, $keterangan, 'NFC');
         }
 
         Notification::make()
@@ -1079,6 +1090,56 @@ class PresensiMandiriWidget extends Widget implements HasForms
                 
                 $this->dispatch('kehadiran-updated');
             }
+        }
+    }
+
+    /**
+     * Kirim email notifikasi presensi ke pengguna dengan deduplikasi cache
+     */
+    private function sendPresensiEmailNotification($user, $kehadiran, string $tipeAbsens, Carbon $currentTime, string $status, string $keterangan, string $metode = 'Dashboard'): void
+    {
+        $userEmail = filter_var($user->email ?? '', FILTER_VALIDATE_EMAIL) ? $user->email : null;
+        if (!$userEmail && !empty($user->nipy) && filter_var($user->nipy, FILTER_VALIDATE_EMAIL)) {
+            $userEmail = $user->nipy;
+        } elseif (!$userEmail && !empty($user->nipy) && !str_contains($user->nipy, '@')) {
+            $userEmail = $user->nipy . '@smk.baktinusantara666.sch.id';
+        }
+
+        if (!$userEmail || !$kehadiran) {
+            return;
+        }
+
+        // Tandai di cache agar AppServiceProvider observer tidak mengirim email duplikat
+        $cacheKey = "presensi_mail_sent_{$kehadiran->getTable()}_{$kehadiran->id}";
+        Cache::put($cacheKey, true, now()->addMinutes(10));
+
+        $isPulang = str_contains(strtolower($keterangan), 'pulang');
+        $tipeLabel = $isPulang ? 'Pulang' : 'Masuk';
+        $nowTime = $currentTime->format('H:i:s');
+        $waktuFormatted = $currentTime->format('d-m-Y H:i:s');
+        $uniqueSubject = "[BaknusAttend] Presensi {$tipeLabel} ({$nowTime})";
+        $userName = $user->name ?? 'Pengguna';
+
+        $metodeBadge = $metode === 'NFC'
+            ? "<span style='background-color: #f3e8ff; color: #6b21a8; padding: 2px 6px; border-radius: 4px; font-size: 13px;'>NFC Smartphone</span>"
+            : "<span style='background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 13px;'>Kamera & GPS</span>";
+
+        $emailBody = "<p>Halo <b>{$userName}</b>,</p>
+             <p>Aktivitas presensi kehadiran Anda telah tercatat dengan detail berikut:</p>
+             <table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>
+                 <tr><td style='padding: 6px 0; font-weight: bold; width: 120px;'>Tipe Absen:</td><td><span style='background-color: " . ($tipeLabel === 'Masuk' ? '#dcfce7; color: #166534' : '#fef3c7; color: #92400e') . "; padding: 2px 8px; border-radius: 4px; font-size: 13px;'>{$tipeLabel}</span></td></tr>
+                 <tr><td style='padding: 6px 0; font-weight: bold;'>Waktu:</td><td>{$waktuFormatted} WIB</td></tr>
+                 <tr><td style='padding: 6px 0; font-weight: bold;'>Metode:</td><td>{$metodeBadge}</td></tr>
+                 <tr><td style='padding: 6px 0; font-weight: bold;'>Status:</td><td><span style='background-color: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 13px;'>{$status}</span></td></tr>
+                 <tr><td style='padding: 6px 0; font-weight: bold;'>Keterangan:</td><td>{$keterangan}</td></tr>
+             </table>
+             <p style='margin-top: 15px;'>Terima kasih.</p>";
+
+        try {
+            Log::info("[PresensiMandiri] Mengirim email presensi {$tipeLabel} ({$metode}) ke '{$userEmail}'");
+            MailService::sendNotification($userEmail, $uniqueSubject, "Presensi {$tipeLabel} Berhasil", $emailBody);
+        } catch (\Throwable $e) {
+            Log::error("[PresensiMandiri] Gagal kirim email presensi: " . $e->getMessage());
         }
     }
 }

@@ -52,7 +52,10 @@ class MailService
                         ->to($email)
                         ->subject($subject);
 
-                // Set unique Message-ID via Symfony Mailer headers
+                // Set unique Message-ID via Symfony Mailer headers safely
+                if ($message->getHeaders()->has('Message-ID')) {
+                    $message->getHeaders()->remove('Message-ID');
+                }
                 $message->getHeaders()
                     ->addIdHeader('Message-ID', $uniqueId . '@' . $domain);
             });
