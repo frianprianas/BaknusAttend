@@ -10,3 +10,10 @@
 2. **Sinkronisasi via Git**:
    - Semua perubahan kode dan update aplikasi disinkronkan ke server melalui Git (`git commit`, `git push` ke remote repository).
    - Server yang bertanggung jawab untuk menjalankan container/service dan production runtime.
+
+## Identitas Git Pengembang
+3. **Akun & Identitas Git**:
+   - Username: `frianprianas`
+   - Email: `freeyhan87@hotmail.com`
+   - Remote: `https://github.com/frianprianas/BaknusAttend.git`
+   - Agent AI harus selalu menggunakan dan mengingat identitas ini untuk setiap operasi Git di workstation ini tanpa perlu ditanyakan kembali.
