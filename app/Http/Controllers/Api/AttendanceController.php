@@ -53,12 +53,22 @@ class AttendanceController extends Controller
 
         // 1. Cek apakah Siswa
         $student = Student::where('rfid', $rfid)->first();
+        if (!$student && is_numeric($rfid)) {
+            $student = Student::where('rfid', strtoupper(dechex((int)$rfid)))->first();
+        } elseif (!$student && ctype_xdigit($rfid)) {
+            $student = Student::where('rfid', (string)hexdec($rfid))->first();
+        }
         if ($student) {
             return $this->processStudentAttendance($student, $today, $now, $statusHadir, $machineId, $lat, $long);
         }
 
         // 2. Cek apakah Guru / TU
         $user = User::where('rfid', $rfid)->first();
+        if (!$user && is_numeric($rfid)) {
+            $user = User::where('rfid', strtoupper(dechex((int)$rfid)))->first();
+        } elseif (!$user && ctype_xdigit($rfid)) {
+            $user = User::where('rfid', (string)hexdec($rfid))->first();
+        }
         if ($user) {
             return $this->processGuruTuAttendance($user, $today, $now, $statusHadir, $machineId, $lat, $long);
         }

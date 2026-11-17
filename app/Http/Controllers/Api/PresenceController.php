@@ -24,12 +24,22 @@ class PresenceController extends Controller
 
         // Cari di tabel Students
         $student = Student::where('rfid', $rfid)->first();
+        if (!$student && is_numeric($rfid)) {
+            $student = Student::where('rfid', strtoupper(dechex((int)$rfid)))->first();
+        } elseif (!$student && ctype_xdigit($rfid)) {
+            $student = Student::where('rfid', (string)hexdec($rfid))->first();
+        }
         if ($student) {
             return $this->handleStudentPresence($student, $rfid, $mode);
         }
 
         // Cari di tabel Users (Guru/TU)
         $user = User::where('rfid', $rfid)->first();
+        if (!$user && is_numeric($rfid)) {
+            $user = User::where('rfid', strtoupper(dechex((int)$rfid)))->first();
+        } elseif (!$user && ctype_xdigit($rfid)) {
+            $user = User::where('rfid', (string)hexdec($rfid))->first();
+        }
         if ($user) {
             return $this->handleUserPresence($user, $rfid, $mode);
         }
