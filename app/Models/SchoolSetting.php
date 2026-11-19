@@ -22,6 +22,10 @@ class SchoolSetting extends Model
         'allowed_ip_5',
         'allowed_ip_6',
         'default_target_hari_kerja',
+        'is_wa_kepsek_active',
+        'wa_kepsek_time',
+        'wa_kepsek_numbers',
+        'fonnte_token',
         'slide_show_guru',
         'slide_show_tu',
         'slide_show_kelas',
@@ -40,6 +44,7 @@ class SchoolSetting extends Model
         'slide_show_guru'            => 'boolean',
         'slide_show_tu'              => 'boolean',
         'slide_show_kelas'           => 'boolean',
+        'is_wa_kepsek_active'        => 'boolean',
     ];
 
     public static function getFirst()

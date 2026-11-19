@@ -12,3 +12,4 @@ Artisan::command('inspire', function () {
 // Schedule::command('app:sync-mailcow')->hourly();
 
 Schedule::command('app:send-attendance-reminders')->everyMinute();
+Schedule::command('app:send-kepsek-attendance-wa')->everyMinute();

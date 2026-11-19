@@ -114,6 +114,34 @@ class SchoolSettingResource extends Resource
                             ]),
                     ]),
 
+                Forms\Components\Section::make('💬 Notifikasi WhatsApp Rekap Kehadiran (Kepala Sekolah)')
+                    ->description('Kirim ringkasan otomatis kehadiran Guru & TU setiap hari kerja ke WhatsApp Kepala Sekolah / Manajemen via Fonnte Gateway.')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_wa_kepsek_active')
+                            ->label('Aktifkan Notifikasi WhatsApp Otomatis')
+                            ->helperText('Jika aktif, sistem akan mengirimkan rekap presensi Guru & TU setiap hari kerja.')
+                            ->default(true),
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
+                            ->schema([
+                                Forms\Components\TimePicker::make('wa_kepsek_time')
+                                    ->label('Jam Pengiriman Otomatis')
+                                    ->default('10:30:00')
+                                    ->required()
+                                    ->helperText('Contoh: 10:30:00 (WIB)'),
+                                Forms\Components\TextInput::make('wa_kepsek_numbers')
+                                    ->label('Nomor WhatsApp Kepsek / Penerima')
+                                    ->placeholder('Contoh: 081234567890')
+                                    ->helperText('Bisa lebih dari 1 nomor, pisahkan dengan koma (misal: 0812..., 0857...).')
+                                    ->columnSpan(['md' => 2]),
+                            ]),
+                        Forms\Components\TextInput::make('fonnte_token')
+                            ->label('Token API Fonnte (Opsional Override)')
+                            ->placeholder('Usvoj9vdqX1jrrQr8zPq')
+                            ->password()
+                            ->revealable()
+                            ->helperText('Biarkan kosong jika ingin memakai token server dari .env (Usvoj9vdqX1jrrQr8zPq).'),
+                    ]),
+
                 Forms\Components\Section::make('🔒 Keamanan: Validasi IP Publik Sekolah')
                     ->description('Jika diaktifkan, user hanya bisa absen dari koneksi internet sekolah (WiFi sekolah). IP publik sekolah harus diisi. Validasi ini berjalan SEBELUM pengecekan AWS sehingga menghemat biaya dan mencegah Fake GPS.')
                     ->schema([
@@ -293,6 +321,8 @@ class SchoolSettingResource extends Resource
                 Tables\Columns\IconColumn::make('is_reminder_active')->boolean()->label('Pengingat Aktif'),
                 Tables\Columns\TextColumn::make('reminder_masuk')->label('Jam Masuk'),
                 Tables\Columns\TextColumn::make('reminder_pulang')->label('Jam Pulang'),
+                Tables\Columns\IconColumn::make('is_wa_kepsek_active')->boolean()->label('WA Kepsek Aktif'),
+                Tables\Columns\TextColumn::make('wa_kepsek_time')->label('Jam WA'),
             ])
             ->filters([])
             ->actions([

@@ -51,4 +51,9 @@ return [
         'endpoint' => env('COMPREFACE_ENDPOINT', 'http://compreface-api:8080'),
     ],
 
+    'fonnte' => [
+        'token' => env('FONNTE_TOKEN', 'Usvoj9vdqX1jrrQr8zPq'),
+        'url' => env('FONNTE_URL', 'https://api.fonnte.com/send'),
+    ],
+
 ];
