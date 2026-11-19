@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 use App\Models\SchoolSetting;
 use App\Models\User;
 use App\Models\KehadiranGuruTu;
-use App\Models\IzinGuruTu;
 use App\Services\FonnteService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -85,15 +84,7 @@ class SendKepsekAttendanceWa extends Command
             ->get()
             ->keyBy('nipy');
 
-        // 5. Ambil Data Izin / Sakit Hari Ini
-        $izinMap = IzinGuruTu::whereDate('tanggal', $today)
-            ->whereIn('status', ['Diajukan', 'Disetujui'])
-            ->get()
-            ->keyBy('nipy');
-
         $listHadir = [];
-        $listIzin = [];
-        $listBelumHadir = [];
 
         foreach ($users as $user) {
             $nipy = $user->nipy ?: $user->email;
@@ -121,29 +112,12 @@ class SendKepsekAttendanceWa extends Command
                     'jam'    => $waktuMasuk,
                     'metode' => $metode,
                 ];
-            } else {
-                $izin = $izinMap->get($nipy) ?? $izinMap->get($user->email) ?? $izinMap->get($user->nipy);
-                if ($izin) {
-                    $listIzin[] = [
-                        'name'     => $user->name,
-                        'role'     => $user->role,
-                        'kategori' => $izin->kategori ?? 'Izin',
-                        'alasan'   => $izin->keterangan ?? '-',
-                    ];
-                } else {
-                    $listBelumHadir[] = [
-                        'name' => $user->name,
-                        'role' => $user->role,
-                    ];
-                }
             }
         }
 
-        // 6. Kalkulasi Statistik
+        // 5. Kalkulasi Statistik
         $totalPersonel = $users->count();
         $totalHadir = count($listHadir);
-        $totalIzin = count($listIzin);
-        $totalBelum = count($listBelumHadir);
         $persenHadir = $totalPersonel > 0 ? round(($totalHadir / $totalPersonel) * 100, 1) : 0;
 
         $countRfid  = count(array_filter($listHadir, fn($i) => $i['metode'] === 'Mesin RFID'));
@@ -169,7 +143,7 @@ class SendKepsekAttendanceWa extends Command
         $jamStr = Carbon::now()->format('H:i');
         $schoolName = $setting?->name ?: 'SMK BAKTI NUSANTARA 666';
 
-        // 7. Susun Pesan WhatsApp
+        // 7. Susun Pesan WhatsApp (Hanya Kehadiran Saja)
         $msg = "📊 *LAPORAN KEHADIRAN GURU & TU*\n";
         $msg .= "🏛 *{$schoolName}*\n";
         $msg .= "📅 {$tanggalStr}\n";
@@ -177,42 +151,23 @@ class SendKepsekAttendanceWa extends Command
         $msg .= "━━━━━━━━━━━━━━━━━━━━\n\n";
 
         $msg .= "👥 *RINGKASAN KEHADIRAN:*\n";
-        $msg .= "• Total Personel : *{$totalPersonel}* orang\n";
-        $msg .= "• Sudah Hadir    : *{$totalHadir}* orang ({$persenHadir}%)\n";
+        $msg .= "• Guru & TU Hadir : *{$totalHadir}* dari *{$totalPersonel}* orang ({$persenHadir}%)\n";
         if ($countRfid > 0)  $msg .= "  ├ 🏷️ Mesin RFID   : {$countRfid} orang\n";
         if ($countFoto > 0)  $msg .= "  ├ 📱 Foto/Aplikasi: {$countFoto} orang\n";
         if ($countBle > 0)   $msg .= "  ├ 📶 BLE Wemos    : {$countBle} orang\n";
         if ($countNfc > 0)   $msg .= "  ├ 📲 RFID HP      : {$countNfc} orang\n";
         if ($countDinas > 0) $msg .= "  └ 🚗 Dinas Luar   : {$countDinas} orang\n";
-        $msg .= "• Izin / Sakit   : *{$totalIzin}* orang\n";
-        $msg .= "• Belum Absen    : *{$totalBelum}* orang\n\n";
+        $msg .= "\n";
 
         if ($totalHadir > 0) {
-            $msg .= "✅ *DAFTAR HADIR ({$totalHadir}):*\n";
+            $msg .= "✅ *DAFTAR GURU & TU HADIR ({$totalHadir}):*\n";
             foreach ($listHadir as $idx => $item) {
                 $num = $idx + 1;
                 $msg .= "{$num}. *{$item['name']}* ({$item['jam']} - {$item['metode']})\n";
             }
             $msg .= "\n";
-        }
-
-        if ($totalIzin > 0) {
-            $msg .= "📋 *DAFTAR IZIN / SAKIT ({$totalIzin}):*\n";
-            foreach ($listIzin as $idx => $item) {
-                $num = $idx + 1;
-                $alasanStr = ($item['alasan'] && $item['alasan'] !== '-') ? " ({$item['alasan']})" : "";
-                $msg .= "{$num}. *{$item['name']}* [{$item['kategori']}{$alasanStr}]\n";
-            }
-            $msg .= "\n";
-        }
-
-        if ($totalBelum > 0) {
-            $msg .= "⚠️ *BELUM HADIR / BELUM ABSEN ({$totalBelum}):*\n";
-            foreach ($listBelumHadir as $idx => $item) {
-                $num = $idx + 1;
-                $msg .= "{$num}. {$item['name']} [{$item['role']}]\n";
-            }
-            $msg .= "\n";
+        } else {
+            $msg .= "ℹ️ _Belum ada Guru/TU yang melakukan presensi hingga pukul {$jamStr} WIB._\n\n";
         }
 
         $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
