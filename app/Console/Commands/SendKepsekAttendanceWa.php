@@ -150,6 +150,10 @@ class SendKepsekAttendanceWa extends Command
         $msg .= "⏰ Rekap Pukul: *{$jamStr} WIB*\n";
         $msg .= "━━━━━━━━━━━━━━━━━━━━\n\n";
 
+        $msg .= "📢 *Catatan Presensi:*\n";
+        $msg .= "Jika Guru/TU tidak menggunakan mesin Tap Kartu, maka Bapak/Ibu Guru dan TU bisa mengakses https://baknusattend.smkbn666.sch.id kemudian akses presensi melalui kamera selfie atau Tap NFC (untuk Android yang support).\n\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━\n\n";
+
         $msg .= "👥 *RINGKASAN KEHADIRAN:*\n";
         $msg .= "• Guru & TU Hadir : *{$totalHadir}* dari *{$totalPersonel}* orang ({$persenHadir}%)\n";
         if ($countRfid > 0)  $msg .= "  ├ 🏷️ Mesin RFID   : {$countRfid} orang\n";
