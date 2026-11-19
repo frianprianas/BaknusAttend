@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class SendWaliKelasAttendanceWa extends Command
 {
-    protected $signature = 'app:send-wali-kelas-attendance-wa {--force : Paksa kirim pesan tanpa mengecek jam atau hari kerja} {--class= : Kirim hanya untuk ID kelas tertentu}';
+    protected $signature = 'app:send-wali-kelas-attendance-wa {--force : Paksa kirim pesan tanpa mengecek jam atau hari kerja} {--class= : Kirim hanya untuk ID kelas tertentu} {--wa= : Nomor WhatsApp tujuan khusus/override untuk testing}';
     protected $description = 'Kirim laporan ringkasan kehadiran siswa ke WhatsApp Wali Kelas masing-masing secara bertahap dan acak (anti-spam)';
 
     public function handle()
@@ -23,10 +23,11 @@ class SendWaliKelasAttendanceWa extends Command
         set_time_limit(0); // Mencegah timeout jika banyak kelas dengan jeda acak
         $force = $this->option('force');
         $targetClassId = $this->option('class');
+        $overrideWa = $this->option('wa');
         $setting = SchoolSetting::first();
 
         // 1. Cek Hari Kerja & Jam Mulai (Senin - Jumat) jika tidak dipaksa
-        if (!$force && !$targetClassId) {
+        if (!$force && !$targetClassId && !$overrideWa) {
             if (Carbon::now()->isWeekend()) {
                 $this->info('Hari ini akhir pekan (weekend). Pengiriman dibatalkan.');
                 return 0;
@@ -50,6 +51,8 @@ class SendWaliKelasAttendanceWa extends Command
         $query = ClassRoom::query();
         if ($targetClassId) {
             $query->where('id', $targetClassId);
+        } elseif ($overrideWa) {
+            $query->where('is_wa_active', true);
         } else {
             $query->where('is_wa_active', true)
                 ->whereNotNull('wa_wali_kelas')
@@ -97,7 +100,7 @@ class SendWaliKelasAttendanceWa extends Command
         $failedCount = 0;
 
         foreach ($classes as $index => $classRoom) {
-            $waTarget = trim($classRoom->wa_wali_kelas ?? '');
+            $waTarget = $overrideWa ?: trim($classRoom->wa_wali_kelas ?? '');
             if (empty($waTarget)) {
                 $this->warn("Kelas {$classRoom->kelas}: Nomor WA Wali Kelas kosong, dilewati.");
                 continue;
@@ -108,7 +111,7 @@ class SendWaliKelasAttendanceWa extends Command
             if ($classRoom->nipy) {
                 $waliUser = User::where('nipy', $classRoom->nipy)->orWhere('email', $classRoom->nipy)->first();
             }
-            $namaWali = $waliUser?->name ?: 'Bapak/Ibu Wali Kelas';
+            $namaWali = $waliUser?->name ?: ('Bapak/Ibu Wali Kelas ' . $classRoom->kelas);
 
             // Ambil siswa dalam kelas ini
             $students = Student::where('class_room_id', $classRoom->id)->orderBy('name', 'asc')->get();

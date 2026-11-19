@@ -74,14 +74,18 @@ class ClassRoomResource extends Resource
                     ->badge()
                     ->color('info')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('wali_kelas_nama')
-                    ->label('Wali Kelas')
-                    ->getStateUsing(function ($record) {
-                        if (!$record->nipy) return '-';
-                        $user = \App\Models\User::where('nipy', $record->nipy)->orWhere('email', $record->nipy)->first();
-                        return $user?->name ?: $record->nipy;
-                    })
-                    ->searchable(),
+                Tables\Columns\SelectColumn::make('nipy')
+                    ->label('Pilih Wali Kelas')
+                    ->options(fn () => \App\Models\User::whereIn('role', ['Guru', 'TU'])
+                        ->where('role', '!=', 'Test')
+                        ->orderBy('name')
+                        ->get()
+                        ->mapWithKeys(fn ($u) => [($u->nipy ?: $u->email) => $u->name])
+                        ->toArray()
+                    )
+                    ->placeholder('Pilih Wali Kelas')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\CheckboxColumn::make('is_wa_active')
                     ->label('Kirim WA?')
                     ->sortable(),
