@@ -142,6 +142,37 @@ class SchoolSettingResource extends Resource
                             ->helperText('Biarkan kosong jika ingin memakai token server dari .env (Usvoj9vdqX1jrrQr8zPq).'),
                     ]),
 
+                Forms\Components\Section::make('📱 Notifikasi WhatsApp Presensi Siswa ke Wali Kelas')
+                    ->description('Atur pengiriman rekap presensi siswa otomatis ke masing-masing Wali Kelas. Setiap pesan menggunakan variasi kalimat acak dan jeda waktu acak (anti-spam WA).')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_wa_wali_kelas_active')
+                            ->label('Aktifkan Notifikasi WhatsApp ke Seluruh Wali Kelas')
+                            ->helperText('Jika aktif, seluruh kelas yang checkbutton WA-nya aktif akan dikirimi rekap presensi setiap pagi.')
+                            ->default(true),
+                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
+                            ->schema([
+                                Forms\Components\TimePicker::make('wa_wali_kelas_time')
+                                    ->label('Jam Mulai Pengiriman')
+                                    ->default('08:00:00')
+                                    ->required()
+                                    ->helperText('Khusus kelas dikirim mulai jam 08:00 WIB.'),
+                                Forms\Components\TextInput::make('wa_delay_min_seconds')
+                                    ->label('Jeda Acak Minimal')
+                                    ->numeric()
+                                    ->default(15)
+                                    ->suffix('Detik')
+                                    ->helperText('Waktu jeda minimal antar-kelas')
+                                    ->required(),
+                                Forms\Components\TextInput::make('wa_delay_max_seconds')
+                                    ->label('Jeda Acak Maksimal')
+                                    ->numeric()
+                                    ->default(40)
+                                    ->suffix('Detik')
+                                    ->helperText('Waktu jeda maksimal antar-kelas')
+                                    ->required(),
+                            ]),
+                    ]),
+
                 Forms\Components\Section::make('🔒 Keamanan: Validasi IP Publik Sekolah')
                     ->description('Jika diaktifkan, user hanya bisa absen dari koneksi internet sekolah (WiFi sekolah). IP publik sekolah harus diisi. Validasi ini berjalan SEBELUM pengecekan AWS sehingga menghemat biaya dan mencegah Fake GPS.')
                     ->schema([

@@ -26,6 +26,10 @@ class SchoolSetting extends Model
         'wa_kepsek_time',
         'wa_kepsek_numbers',
         'fonnte_token',
+        'is_wa_wali_kelas_active',
+        'wa_wali_kelas_time',
+        'wa_delay_min_seconds',
+        'wa_delay_max_seconds',
         'slide_show_guru',
         'slide_show_tu',
         'slide_show_kelas',
@@ -45,6 +49,7 @@ class SchoolSetting extends Model
         'slide_show_tu'              => 'boolean',
         'slide_show_kelas'           => 'boolean',
         'is_wa_kepsek_active'        => 'boolean',
+        'is_wa_wali_kelas_active'    => 'boolean',
     ];
 
     public static function getFirst()

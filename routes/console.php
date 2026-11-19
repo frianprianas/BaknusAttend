@@ -13,3 +13,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('app:send-attendance-reminders')->everyMinute();
 Schedule::command('app:send-kepsek-attendance-wa')->everyMinute();
+Schedule::command('app:send-wali-kelas-attendance-wa')->everyMinute();
