@@ -26,28 +26,20 @@ class SendWaliKelasAttendanceWa extends Command
         $overrideWa = $this->option('wa');
         $setting = SchoolSetting::first();
 
-        // 1. Cek Hari Kerja & Jam Mulai (Senin - Jumat) jika tidak dipaksa
+        $currentTime = Carbon::now()->format('H:i');
+
+        // 1. Cek Hari Kerja & Status Pengaturan
         if (!$force && !$targetClassId && !$overrideWa) {
             if (Carbon::now()->isWeekend()) {
-                $this->info('Hari ini akhir pekan (weekend). Pengiriman dibatalkan.');
                 return 0;
             }
 
             if (!$setting || !$setting->is_wa_wali_kelas_active) {
-                $this->info('Fitur notifikasi WA Wali Kelas sedang dinonaktifkan di pengaturan.');
-                return 0;
-            }
-
-            $nowTime = Carbon::now()->format('H:i');
-            $targetTime = Carbon::parse($setting->wa_wali_kelas_time ?? '08:00:00')->format('H:i');
-
-            if ($nowTime !== $targetTime) {
-                // Belum waktunya kirim (khusus kelas dikirim mulai jam 8)
                 return 0;
             }
         }
 
-        // 2. Ambil Kelas yang Aktif Notifikasi WA dan Memiliki Nomor WA Wali Kelas
+        // 2. Ambil Kelas yang Aktif Notifikasi WA
         $query = ClassRoom::query();
         if ($targetClassId) {
             $query->where('id', $targetClassId);
@@ -57,12 +49,26 @@ class SendWaliKelasAttendanceWa extends Command
             $query->where('is_wa_active', true)
                 ->whereNotNull('wa_wali_kelas')
                 ->where('wa_wali_kelas', '!=', '');
+
+            // Jika berjalan otomatis via scheduler rutin (tanpa force),
+            // kirim hanya untuk kelas yang Jam & Menit kirimnya cocok dengan menit saat ini!
+            if (!$force) {
+                $query->where(function ($q) use ($currentTime) {
+                    $q->whereRaw("TIME_FORMAT(jam_kirim_wa, '%H:%i') = ?", [$currentTime])
+                      ->orWhere(function ($sub) use ($currentTime) {
+                          $sub->whereNull('jam_kirim_wa')
+                              ->whereRaw("? = '08:00'", [$currentTime]);
+                      });
+                });
+            }
         }
 
         $classes = $query->get();
 
         if ($classes->isEmpty()) {
-            $this->warn('Tidak ada kelas aktif dengan nomor WA Wali Kelas yang terdaftar.');
+            if ($force || $targetClassId || $overrideWa) {
+                $this->warn('Tidak ada kelas aktif dengan nomor WA Wali Kelas yang terdaftar.');
+            }
             return 0;
         }
 

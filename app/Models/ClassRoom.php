@@ -14,6 +14,7 @@ class ClassRoom extends Model
         'wkm',
         'is_wa_active',
         'wa_wali_kelas',
+        'jam_kirim_wa',
     ];
 
     protected $casts = [

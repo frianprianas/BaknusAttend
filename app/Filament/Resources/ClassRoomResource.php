@@ -50,10 +50,16 @@ class ClassRoomResource extends Resource
                     ->label('Nomor WhatsApp Wali Kelas')
                     ->placeholder('Contoh: 081234567890')
                     ->tel()
-                    ->helperText('Nomor WhatsApp aktif Wali Kelas untuk menerima rekap presensi siswa setiap pagi jam 08:00 WIB.'),
+                    ->helperText('Nomor WhatsApp aktif Wali Kelas untuk menerima rekap presensi siswa setiap pagi.'),
+                Forms\Components\TimePicker::make('jam_kirim_wa')
+                    ->label('Jam & Menit Pengiriman WA')
+                    ->seconds(false)
+                    ->default('08:00')
+                    ->required()
+                    ->helperText('Atur waktu Jam:Menit (contoh: 08:05, 08:12). Beri selisih waktu antarkelas agar natural dan bebas blokir WA.'),
                 Forms\Components\Checkbox::make('is_wa_active')
-                    ->label('Centang untuk Kirim Laporan WA ke Wali Kelas ini (Jam 08:00 WIB)')
-                    ->helperText('Centang checkbox ini agar kelas ini otomatis dikirimi rekap presensi siswa harian ke nomor WA di atas.')
+                    ->label('Centang untuk Kirim Laporan WA ke Wali Kelas ini')
+                    ->helperText('Centang checkbox ini agar kelas ini otomatis dikirimi rekap presensi siswa harian pada Jam:Menit yang ditentukan.')
                     ->default(true),
                 Forms\Components\TextInput::make('km')
                     ->label('Ketua Murid (KM)')
@@ -94,6 +100,11 @@ class ClassRoomResource extends Resource
                     ->placeholder('0812xxxxxx')
                     ->rules(['nullable', 'string', 'max:25'])
                     ->searchable(),
+                Tables\Columns\TextInputColumn::make('jam_kirim_wa')
+                    ->label('Jam:Menit Kirim')
+                    ->placeholder('08:00')
+                    ->rules(['nullable', 'string', 'max:8'])
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('programStudi.program_studi')
                     ->label('Program Studi')
                     ->sortable()

@@ -42,6 +42,7 @@ class SetupWaliKelas extends Command
         $teacherIndex = 0;
         $totalTeachers = $teachers->count();
         $updated = 0;
+        $startMinute = 0; // Mulai jam 08:00 WIB
 
         foreach ($classes as $class) {
             if ($auto && (empty($class->nipy) || $class->nipy === '-')) {
@@ -52,6 +53,14 @@ class SetupWaliKelas extends Command
 
             if (!empty($wa)) {
                 $class->wa_wali_kelas = $wa;
+            }
+
+            // Beri jadwal jam dan menit kirim berjenjang alami (misal 08:00, 08:04, 08:09, dst.)
+            if ($auto || empty($class->jam_kirim_wa)) {
+                $hour = 8 + intdiv($startMinute, 60);
+                $min = $startMinute % 60;
+                $class->jam_kirim_wa = sprintf('%02d:%02d:00', $hour, $min);
+                $startMinute += rand(3, 7); // Selisih 3 sampai 7 menit antarkelas
             }
 
             $class->is_wa_active = true;
@@ -65,15 +74,17 @@ class SetupWaliKelas extends Command
         $rows = [];
         foreach (ClassRoom::orderBy('kelas')->get() as $c) {
             $u = User::where('nipy', $c->nipy)->orWhere('email', $c->nipy)->first();
+            $jamKirim = $c->jam_kirim_wa ? substr($c->jam_kirim_wa, 0, 5) : '08:00';
             $rows[] = [
                 'ID'         => $c->id,
                 'Kelas'      => $c->kelas,
                 'Wali Kelas' => $u ? $u->name : ($c->nipy ?: '(Belum Diset)'),
                 'No. WA'     => $c->wa_wali_kelas ?: '-',
-                'WA Aktif'   => $c->is_wa_active ? '✅ Aktif' : '❌ Nonaktif',
+                'Jam Kirim'  => "{$jamKirim} WIB",
+                'Status WA'  => $c->is_wa_active ? '✅ Aktif' : '❌ Nonaktif',
             ];
         }
-        $this->table(['ID', 'Kelas', 'Wali Kelas', 'No. WA', 'Status WA'], $rows);
+        $this->table(['ID', 'Kelas', 'Wali Kelas', 'No. WA', 'Jam Kirim', 'Status WA'], $rows);
 
         $this->info("Sekarang Anda bisa menjalankan pengiriman: php artisan app:send-wali-kelas-attendance-wa --force");
         return 0;

@@ -105,11 +105,13 @@ class SchoolSettingResource extends Resource
                             ->schema([
                                 Forms\Components\TimePicker::make('reminder_masuk')
                                     ->label('Pengingat Masuk')
-                                    ->default('08:00:00')
+                                    ->seconds(false)
+                                    ->default('08:00')
                                     ->required(),
                                 Forms\Components\TimePicker::make('reminder_pulang')
                                     ->label('Pengingat Pulang')
-                                    ->default('15:00:00')
+                                    ->seconds(false)
+                                    ->default('15:00')
                                     ->required(),
                             ]),
                     ]),
@@ -125,9 +127,10 @@ class SchoolSettingResource extends Resource
                             ->schema([
                                 Forms\Components\TimePicker::make('wa_kepsek_time')
                                     ->label('Jam Pengiriman Otomatis')
-                                    ->default('10:30:00')
+                                    ->seconds(false)
+                                    ->default('10:30')
                                     ->required()
-                                    ->helperText('Contoh: 10:30:00 (WIB)'),
+                                    ->helperText('Contoh: 10:30 (WIB)'),
                                 Forms\Components\TextInput::make('wa_kepsek_numbers')
                                     ->label('Nomor WhatsApp Kepsek / Penerima')
                                     ->placeholder('Contoh: 081234567890')
@@ -153,7 +156,8 @@ class SchoolSettingResource extends Resource
                             ->schema([
                                 Forms\Components\TimePicker::make('wa_wali_kelas_time')
                                     ->label('Jam Mulai Pengiriman')
-                                    ->default('08:00:00')
+                                    ->seconds(false)
+                                    ->default('08:00')
                                     ->required()
                                     ->helperText('Khusus kelas dikirim mulai jam 08:00 WIB.'),
                                 Forms\Components\TextInput::make('wa_delay_min_seconds')
