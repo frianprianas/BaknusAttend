@@ -215,6 +215,8 @@ class SendWaliKelasAttendanceWa extends Command
             $msg .= "━━━━━━━━━━━━━━━━━━━━\n\n";
 
             $msg .= "{$salam}\n\n";
+            $msg .= "📢 *Catatan:*\n";
+            $msg .= "Mohon Bapak/Ibu untuk selalu mengingatkan siswanya melakukan presensi.\n\n";
             $msg .= "{$intro}\n\n";
 
             $msg .= "👥 *RINGKASAN KEHADIRAN:*\n";
