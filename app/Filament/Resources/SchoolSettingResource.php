@@ -146,39 +146,26 @@ class SchoolSettingResource extends Resource
                     ]),
 
                 Forms\Components\Section::make('📱 Notifikasi WhatsApp Presensi Siswa ke Wali Kelas')
-                    ->description('Atur pengiriman rekap presensi siswa otomatis ke masing-masing Wali Kelas. Setiap pesan menggunakan variasi kalimat acak dan jeda waktu acak (anti-spam WA). Otomatis dilompati pada akhir pekan dan hari libur (Kalender Libur).')
+                    ->description('Atur pengiriman rekap presensi siswa otomatis ke masing-masing Wali Kelas. Setiap pesan menggunakan variasi kalimat acak (anti-spam WA). Otomatis dilompati pada akhir pekan dan hari libur (Kalender Libur).')
                     ->schema([
                         Forms\Components\Toggle::make('is_wa_wali_kelas_active')
                             ->label('Aktifkan Notifikasi WhatsApp ke Seluruh Wali Kelas')
-                            ->helperText('Jika aktif, seluruh kelas yang checkbutton WA-nya aktif akan dikirimi rekap presensi setiap hari kerja (tidak dikirim saat hari libur / akhir pekan).')
+                            ->helperText('Saklar utama: Jika aktif, kelas-kelas yang status "Kirim WA"-nya dicentang akan dikirimi rekap presensi harian sesuai jam kirim masing-masing.')
                             ->default(true),
-                        Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
-                            ->schema([
-                                Forms\Components\TimePicker::make('wa_wali_kelas_time')
-                                    ->label('Jam Mulai Pengiriman')
-                                    ->seconds(false)
-                                    ->default('08:00')
-                                    ->required()
-                                    ->helperText('Khusus kelas dikirim mulai jam 08:00 WIB.'),
-                                Forms\Components\TextInput::make('wa_delay_min_minutes')
-                                    ->label('Jeda Acak Minimal')
-                                    ->numeric()
-                                    ->minValue(1)
-                                    ->maxValue(9999)
-                                    ->default(2)
-                                    ->suffix('Menit')
-                                    ->helperText('Waktu jeda minimal antar-kelas (dalam menit, bisa diisi ratusan menit)')
-                                    ->required(),
-                                Forms\Components\TextInput::make('wa_delay_max_minutes')
-                                    ->label('Jeda Acak Maksimal')
-                                    ->numeric()
-                                    ->minValue(1)
-                                    ->maxValue(9999)
-                                    ->default(5)
-                                    ->suffix('Menit')
-                                    ->helperText('Waktu jeda maksimal antar-kelas (dalam menit, bisa diisi ratusan menit)')
-                                    ->required(),
-                            ]),
+                        Forms\Components\Placeholder::make('info_jadwal_per_kelas')
+                            ->label('⏰ Jadwal Jam Kirim Diatur per Kelas')
+                            ->content(new \Illuminate\Support\HtmlString('
+                                <div style="font-size: 0.85rem; color: #1e293b; background: #f0f9ff; padding: 12px 14px; border-radius: 8px; border: 1px solid #bae6fd; line-height: 1.5;">
+                                    <strong>Sistem Berjalan dengan Opsi 1 (Jadwal Mandiri per Kelas):</strong>
+                                    <p style="margin: 4px 0 8px; color: #475569;">
+                                        Setiap kelas memiliki jam & menit kirim masing-masing di menu <strong>Class Room</strong>. Ini memastikan pengiriman tersebar alami dan aman dari pemblokiran WA, serta sangat fleksibel saat hari sekolah normal maupun saat pekan ujian dengan perbedaan jam shift masuk (08:00, 09:00, 10:00).
+                                    </p>
+                                    <a href="/admin/class-rooms" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #0284c7; color: #fff; font-weight: 700; border-radius: 6px; text-decoration: none; font-size: 0.82rem;">
+                                        👉 Buka Menu Class Room untuk Mengatur Jam Kelas / Jadwal Ujian
+                                    </a>
+                                </div>
+                            '))
+                            ->columnSpanFull(),
                         Forms\Components\Placeholder::make('info_libur_sekolah')
                             ->label('🛡️ Ketentuan Pengiriman Hari Libur')
                             ->content(new \Illuminate\Support\HtmlString('
