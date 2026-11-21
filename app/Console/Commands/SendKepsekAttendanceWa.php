@@ -33,8 +33,9 @@ class SendKepsekAttendanceWa extends Command
             $today = Carbon::today()->toDateString();
             $holiday = Holiday::whereDate('holiday_date', $today)->first();
             if ($holiday) {
-                $holidayName = $holiday->name ? " ({$holiday->name})" : '';
-                $this->info("Hari ini hari libur{$holidayName}. Pengiriman WA Kepala Sekolah dibatalkan.");
+                $tipe = $holiday->tipe ? "[{$holiday->tipe}] " : '';
+                $holidayName = $holiday->name ? "({$holiday->name})" : '';
+                $this->info("Hari ini hari libur {$tipe}{$holidayName}. Pengiriman WA Kepala Sekolah dibatalkan.");
                 return 0;
             }
 

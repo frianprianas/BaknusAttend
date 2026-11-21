@@ -37,12 +37,13 @@ class SendWaliKelasAttendanceWa extends Command
                 return 0;
             }
 
-            // Cek apakah hari ini terdaftar di Kalender Libur
+            // Cek apakah hari ini terdaftar di Kalender Libur (Nasional atau Internal Sekolah)
             $today = Carbon::today()->toDateString();
             $holiday = Holiday::whereDate('holiday_date', $today)->first();
             if ($holiday) {
-                $holidayName = $holiday->name ? " ({$holiday->name})" : '';
-                $this->info("Hari ini hari libur{$holidayName}. Pengiriman WA Wali Kelas dibatalkan.");
+                $tipe = $holiday->tipe ? "[{$holiday->tipe}] " : '';
+                $holidayName = $holiday->name ? "({$holiday->name})" : '';
+                $this->info("Hari ini hari libur {$tipe}{$holidayName}. Pengiriman WA Wali Kelas dibatalkan.");
                 return 0;
             }
 

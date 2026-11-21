@@ -175,6 +175,22 @@ class SchoolSettingResource extends Resource
                                     ->helperText('Waktu jeda maksimal antar-kelas')
                                     ->required(),
                             ]),
+                        Forms\Components\Placeholder::make('info_libur_sekolah')
+                            ->label('🛡️ Ketentuan Pengiriman Hari Libur')
+                            ->content(new \Illuminate\Support\HtmlString('
+                                <div style="font-size: 0.85rem; color: #475569; background: #f8fafc; padding: 12px 14px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.5;">
+                                    <strong>Pesan WhatsApp otomatis TIDAK AKAN DIKIRIM pada:</strong>
+                                    <ul style="list-style-type: disc; padding-left: 18px; margin-top: 4px;">
+                                        <li><strong>Akhir Pekan:</strong> Setiap Sabtu & Minggu otomatis dilewati.</li>
+                                        <li><strong>Hari Libur Nasional:</strong> Tanggal merah resmi nasional.</li>
+                                        <li><strong>Hari Libur Internal Sekolah:</strong> Tanggal libur khusus sekolah (seperti Libur Akhir Semester, Classmeeting, Ujian Selesai, dsb.) yang Anda tetapkan.</li>
+                                    </ul>
+                                    <div style="margin-top: 8px;">
+                                        👉 Anda dapat menambah atau mengelola tanggal libur internal & nasional di menu <a href="/admin/holidays" style="color: #2563eb; font-weight: bold; text-decoration: underline;">Sistem &rarr; Kalender Libur</a>.
+                                    </div>
+                                </div>
+                            '))
+                            ->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('🔒 Keamanan: Validasi IP Publik Sekolah')

@@ -27,6 +27,15 @@ class HolidayResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('tipe')
+                    ->label('Jenis / Kategori Libur')
+                    ->options([
+                        'Internal Sekolah' => 'Libur Internal Sekolah',
+                        'Nasional' => 'Libur Nasional / Tanggal Merah',
+                    ])
+                    ->default('Internal Sekolah')
+                    ->required()
+                    ->helperText('Pilih apakah ini hari libur internal sekolah atau libur nasional.'),
                 Forms\Components\DatePicker::make('holiday_date')
                     ->label('Tanggal Libur')
                     ->required()
@@ -35,9 +44,11 @@ class HolidayResource extends Resource
                     ->displayFormat('d/m/Y')
                     ->placeholder('Pilih tanggal...'),
                 Forms\Components\TextInput::make('name')
-                    ->label('Keterangan')
-                    ->placeholder('Contoh: Idul Fitri, Cuti Bersama')
-                    ->maxLength(255),
+                    ->label('Keterangan Libur')
+                    ->placeholder('Contoh: Libur Akhir Semester, Classmeeting, Libur Awal Ramadhan, Cuti Bersama')
+                    ->required()
+                    ->maxLength(255)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -51,11 +62,31 @@ class HolidayResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Keterangan')
+                    ->searchable()
                     ->placeholder('Libur Sekolah'),
+                Tables\Columns\TextColumn::make('tipe')
+                    ->label('Jenis Libur')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'Nasional' => 'info',
+                        'Internal Sekolah' => 'warning',
+                        default => 'gray',
+                    })
+                    ->default('Internal Sekolah')
+                    ->sortable(),
             ])
             ->defaultSort('holiday_date', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('tipe')
+                    ->label('Jenis Libur')
+                    ->options([
+                        'Internal Sekolah' => 'Libur Internal Sekolah',
+                        'Nasional' => 'Libur Nasional',
+                    ]),
+                Tables\Filters\Filter::make('tahun_ini')
+                    ->label('Tahun Ini (' . now()->year . ')')
+                    ->query(fn ($query) => $query->whereYear('holiday_date', now()->year))
+                    ->default(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
