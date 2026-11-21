@@ -94,9 +94,12 @@ class SendWaliKelasAttendanceWa extends Command
         $totalClasses = $classes->count();
         $this->info("Menyiapkan pengiriman laporan presensi siswa ke {$totalClasses} kelas...");
 
-        $minDelay = $setting?->wa_delay_min_seconds ?? 15;
-        $maxDelay = $setting?->wa_delay_max_seconds ?? 40;
-        if ($minDelay > $maxDelay) $maxDelay = $minDelay + 10;
+        $minDelayMin = $setting?->wa_delay_min_minutes ?? (isset($setting?->wa_delay_min_seconds) ? max(1, (int) round($setting->wa_delay_min_seconds / 60)) : 2);
+        $maxDelayMin = $setting?->wa_delay_max_minutes ?? (isset($setting?->wa_delay_max_seconds) ? max(2, (int) round($setting->wa_delay_max_seconds / 60)) : 5);
+        if ($minDelayMin > $maxDelayMin) $maxDelayMin = $minDelayMin + 1;
+
+        $minDelaySec = $minDelayMin * 60;
+        $maxDelaySec = $maxDelayMin * 60;
 
         // Tanggal dan Jam
         $namaHari = [
@@ -266,11 +269,12 @@ class SendWaliKelasAttendanceWa extends Command
                 $failedCount++;
             }
 
-            // Jeda Acak (Random Delay) antara 15 - 40 detik jika masih ada kelas berikutnya (Anti-Spam WA)
+            // Jeda Acak (Random Delay) dalam satuan menit jika masih ada kelas berikutnya (Anti-Spam WA)
             if ($index < $totalClasses - 1 && !$targetClassId) {
-                $randomWait = rand($minDelay, $maxDelay);
-                $this->comment("  Menunggu jeda natural {$randomWait} detik sebelum kelas berikutnya...");
-                sleep($randomWait);
+                $randomWaitSec = rand($minDelaySec, $maxDelaySec);
+                $randomWaitMin = round($randomWaitSec / 60, 1);
+                $this->comment("  Menunggu jeda natural {$randomWaitMin} menit ({$randomWaitSec} detik) sebelum kelas berikutnya...");
+                sleep($randomWaitSec);
             }
         }
 

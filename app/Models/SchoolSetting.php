@@ -28,6 +28,8 @@ class SchoolSetting extends Model
         'fonnte_token',
         'is_wa_wali_kelas_active',
         'wa_wali_kelas_time',
+        'wa_delay_min_minutes',
+        'wa_delay_max_minutes',
         'wa_delay_min_seconds',
         'wa_delay_max_seconds',
         'slide_show_guru',
@@ -55,5 +57,39 @@ class SchoolSetting extends Model
     public static function getFirst()
     {
         return self::first();
+    }
+
+    protected static function booted()
+    {
+        static::saving(function ($setting) {
+            if (isset($setting->wa_delay_min_minutes)) {
+                $setting->wa_delay_min_seconds = (int)$setting->wa_delay_min_minutes * 60;
+            }
+            if (isset($setting->wa_delay_max_minutes)) {
+                $setting->wa_delay_max_seconds = (int)$setting->wa_delay_max_minutes * 60;
+            }
+        });
+    }
+
+    public function getWaDelayMinMinutesAttribute($value)
+    {
+        if ($value !== null) {
+            return (int) $value;
+        }
+        if (!empty($this->attributes['wa_delay_min_seconds'])) {
+            return max(1, (int) round($this->attributes['wa_delay_min_seconds'] / 60));
+        }
+        return 2;
+    }
+
+    public function getWaDelayMaxMinutesAttribute($value)
+    {
+        if ($value !== null) {
+            return (int) $value;
+        }
+        if (!empty($this->attributes['wa_delay_max_seconds'])) {
+            return max(2, (int) round($this->attributes['wa_delay_max_seconds'] / 60));
+        }
+        return 5;
     }
 }
