@@ -7,6 +7,7 @@ use App\Models\SchoolSetting;
 use App\Models\User;
 use App\Models\KehadiranGuruTu;
 use App\Models\IzinGuruTu;
+use App\Models\Holiday;
 use App\Notifications\PushBroadcastNotification;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
@@ -18,8 +19,14 @@ class SendAttendanceReminder extends Command
 
     public function handle()
     {
-        // 1. Pastikan hari ini Senin - Jumat
+        // 1. Pastikan hari ini Senin - Jumat dan bukan hari libur
         if (Carbon::now()->isWeekend()) {
+            return;
+        }
+
+        // Cek Kalender Libur Sekolah / Nasional
+        $today = Carbon::today()->toDateString();
+        if (Holiday::whereDate('holiday_date', $today)->exists()) {
             return;
         }
 

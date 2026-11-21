@@ -117,11 +117,11 @@ class SchoolSettingResource extends Resource
                     ]),
 
                 Forms\Components\Section::make('💬 Notifikasi WhatsApp Rekap Kehadiran (Kepala Sekolah)')
-                    ->description('Kirim ringkasan otomatis kehadiran Guru & TU setiap hari kerja ke WhatsApp Kepala Sekolah / Manajemen via Fonnte Gateway.')
+                    ->description('Kirim ringkasan otomatis kehadiran Guru & TU setiap hari kerja ke WhatsApp Kepala Sekolah / Manajemen via Fonnte Gateway. Otomatis dilompati pada akhir pekan dan hari libur (Kalender Libur).')
                     ->schema([
                         Forms\Components\Toggle::make('is_wa_kepsek_active')
                             ->label('Aktifkan Notifikasi WhatsApp Otomatis')
-                            ->helperText('Jika aktif, sistem akan mengirimkan rekap presensi Guru & TU setiap hari kerja.')
+                            ->helperText('Jika aktif, sistem akan mengirimkan rekap presensi Guru & TU setiap hari kerja (tidak dikirim saat hari libur / akhir pekan).')
                             ->default(true),
                         Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
                             ->schema([
@@ -146,11 +146,11 @@ class SchoolSettingResource extends Resource
                     ]),
 
                 Forms\Components\Section::make('📱 Notifikasi WhatsApp Presensi Siswa ke Wali Kelas')
-                    ->description('Atur pengiriman rekap presensi siswa otomatis ke masing-masing Wali Kelas. Setiap pesan menggunakan variasi kalimat acak dan jeda waktu acak (anti-spam WA).')
+                    ->description('Atur pengiriman rekap presensi siswa otomatis ke masing-masing Wali Kelas. Setiap pesan menggunakan variasi kalimat acak dan jeda waktu acak (anti-spam WA). Otomatis dilompati pada akhir pekan dan hari libur (Kalender Libur).')
                     ->schema([
                         Forms\Components\Toggle::make('is_wa_wali_kelas_active')
                             ->label('Aktifkan Notifikasi WhatsApp ke Seluruh Wali Kelas')
-                            ->helperText('Jika aktif, seluruh kelas yang checkbutton WA-nya aktif akan dikirimi rekap presensi setiap pagi.')
+                            ->helperText('Jika aktif, seluruh kelas yang checkbutton WA-nya aktif akan dikirimi rekap presensi setiap hari kerja (tidak dikirim saat hari libur / akhir pekan).')
                             ->default(true),
                         Forms\Components\Grid::make()->columns(['default' => 1, 'md' => 3])
                             ->schema([

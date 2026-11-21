@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\SchoolSetting;
 use App\Models\User;
 use App\Models\KehadiranGuruTu;
+use App\Models\Holiday;
 use App\Services\FonnteService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,10 +22,19 @@ class SendKepsekAttendanceWa extends Command
         $force = $this->option('force');
         $setting = SchoolSetting::first();
 
-        // 1. Cek Hari Kerja (Senin - Jumat) jika tidak dipaksa
+        // 1. Cek Hari Kerja (Senin - Jumat & Bukan Hari Libur) jika tidak dipaksa
         if (!$force) {
             if (Carbon::now()->isWeekend()) {
                 $this->info('Hari ini akhir pekan (weekend). Pengiriman dibatalkan.');
+                return 0;
+            }
+
+            // Cek Kalender Libur Sekolah / Nasional
+            $today = Carbon::today()->toDateString();
+            $holiday = Holiday::whereDate('holiday_date', $today)->first();
+            if ($holiday) {
+                $holidayName = $holiday->name ? " ({$holiday->name})" : '';
+                $this->info("Hari ini hari libur{$holidayName}. Pengiriman WA Kepala Sekolah dibatalkan.");
                 return 0;
             }
 

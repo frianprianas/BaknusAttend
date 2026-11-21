@@ -8,6 +8,7 @@ use App\Models\ClassRoom;
 use App\Models\Student;
 use App\Models\KehadiranSiswa;
 use App\Models\User;
+use App\Models\Holiday;
 use App\Services\FonnteService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -28,9 +29,20 @@ class SendWaliKelasAttendanceWa extends Command
 
         $currentTime = Carbon::now()->format('H:i');
 
-        // 1. Cek Hari Kerja & Status Pengaturan
+        // 1. Cek Hari Kerja, Akhir Pekan, dan Kalender Libur
         if (!$force && !$targetClassId && !$overrideWa) {
+            // Cek apakah hari ini akhir pekan (Sabtu / Minggu)
             if (Carbon::now()->isWeekend()) {
+                $this->info('Hari ini akhir pekan (Sabtu/Minggu). Pengiriman WA Wali Kelas dibatalkan.');
+                return 0;
+            }
+
+            // Cek apakah hari ini terdaftar di Kalender Libur
+            $today = Carbon::today()->toDateString();
+            $holiday = Holiday::whereDate('holiday_date', $today)->first();
+            if ($holiday) {
+                $holidayName = $holiday->name ? " ({$holiday->name})" : '';
+                $this->info("Hari ini hari libur{$holidayName}. Pengiriman WA Wali Kelas dibatalkan.");
                 return 0;
             }
 
