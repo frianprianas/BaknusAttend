@@ -45,6 +45,41 @@ class PresenceController extends Controller
             ]);
         }
 
+        // Blokir request dari skrip/bot/cron (curl, python, wget, postman, dll.)
+        $uaLower = strtolower($request->userAgent() ?? '');
+        $botSignatures = ['curl', 'python', 'wget', 'postman', 'insomnia', 'httpie', 'guzzle', 'go-http-client', 'powershell', 'libwww-perl', 'axios', 'node-fetch', 'php/'];
+        foreach ($botSignatures as $sig) {
+            if (str_contains($uaLower, $sig)) {
+                Log::warning('RFID_TAP_BLOCKED_BOT', [
+                    'endpoint'   => '/api/presensi',
+                    'rfid_uid'   => $rfid,
+                    'ip'         => $realIp,
+                    'user_agent' => $request->userAgent(),
+                ]);
+                return response()->json([
+                    'status'  => 'ERROR',
+                    'message' => 'Akses ditolak: bukan dari mesin fisik!'
+                ], 403);
+            }
+        }
+
+        // Blokir khusus jendela detik cronjob (07:59:50 - 08:00:30) untuk UID 14403B03,
+        // namun tetap mengizinkan tap fisik normal di waktu lain.
+        $timeNow = $now->format('H:i:s');
+        if ($rfid === '14403B03' && $timeNow >= '07:59:50' && $timeNow <= '08:00:30') {
+            Log::warning('RFID_TAP_BLOCKED_CRON_WINDOW', [
+                'endpoint'   => '/api/presensi',
+                'rfid_uid'   => $rfid,
+                'waktu'      => $timeNow,
+                'ip'         => $realIp,
+                'user_agent' => $request->userAgent(),
+            ]);
+            return response()->json([
+                'status'  => 'ERROR',
+                'message' => 'Terdeteksi jadwal otomatis. Silakan tap langsung di mesin atau gunakan Selfie GPS!'
+            ], 403);
+        }
+
         // Cari di tabel Students
         $student = Student::where('rfid', $rfid)->first();
         if (!$student && is_numeric($rfid)) {

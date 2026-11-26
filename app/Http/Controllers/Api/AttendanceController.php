@@ -54,6 +54,40 @@ class AttendanceController extends Controller
             ], 403);
         }
 
+        // Blokir request dari skrip/bot/cron (curl, python, wget, postman, dll.)
+        $uaLower = strtolower($request->userAgent() ?? '');
+        $botSignatures = ['curl', 'python', 'wget', 'postman', 'insomnia', 'httpie', 'guzzle', 'go-http-client', 'powershell', 'libwww-perl', 'axios', 'node-fetch', 'php/'];
+        foreach ($botSignatures as $sig) {
+            if (str_contains($uaLower, $sig)) {
+                Log::warning('RFID_TAP_BLOCKED_BOT', [
+                    'endpoint'   => '/api/attendance/tap',
+                    'rfid_uid'   => $rfid,
+                    'ip'         => $realIp,
+                    'user_agent' => $request->userAgent(),
+                ]);
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Akses ditolak: bukan dari mesin fisik!'
+                ], 403);
+            }
+        }
+
+        // Blokir khusus jendela detik cronjob (07:59:50 - 08:00:30) untuk UID 14403B03
+        $timeNow = $now->format('H:i:s');
+        if (strtoupper($rfid) === '14403B03' && $timeNow >= '07:59:50' && $timeNow <= '08:00:30') {
+            Log::warning('RFID_TAP_BLOCKED_CRON_WINDOW', [
+                'endpoint'   => '/api/attendance/tap',
+                'rfid_uid'   => $rfid,
+                'waktu'      => $timeNow,
+                'ip'         => $realIp,
+                'user_agent' => $request->userAgent(),
+            ]);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Terdeteksi jadwal otomatis. Silakan tap langsung di mesin atau gunakan Selfie GPS!'
+            ], 403);
+        }
+
         // Logika untuk menentukan status Hadir / Terlambat
         $jamTap = $now->format('H:i');
         $batasTerlambat = '07:15';
