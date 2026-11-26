@@ -185,28 +185,39 @@ class AttendanceVerificationService
             return ['valid' => true];
         }
 
-        $clientIp = trim($clientIp ?? '');
-        if (empty($clientIp)) {
-            $clientIp = request()->header('CF-Connecting-IP')
-                ?? request()->header('X-Real-IP')
-                ?? request()->header('X-Forwarded-For')
-                ?? request()->ip();
+        // Prioritaskan IP asli yang dideteksi oleh server/proxy agar tidak bisa dipalsukan oleh client
+        $serverIp = request()->header('CF-Connecting-IP')
+            ?? request()->header('X-Real-IP')
+            ?? request()->header('X-Forwarded-For')
+            ?? request()->ip();
 
-            if (str_contains($clientIp, ',')) {
-                $clientIp = trim(explode(',', $clientIp)[0]);
+        if (!empty($serverIp) && str_contains($serverIp, ',')) {
+            $ips = array_map('trim', explode(',', $serverIp));
+            $serverIp = $ips[0];
+            foreach ($ips as $ip) {
+                if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                    $serverIp = $ip;
+                    break;
+                }
             }
         }
 
+        $serverIp = trim($serverIp ?? '');
+        $isServerIpPublic = !empty($serverIp) && filter_var($serverIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+
+        // Hanya gunakan client_public_ip dari request jika server berada di belakang NAT/Docker lokal tanpa IP publik
+        $effectiveIp = $isServerIpPublic ? $serverIp : trim($clientIp ?? $serverIp);
+
         foreach ($allowedIps as $pattern) {
-            if ($this->ipMatches($clientIp, $pattern)) {
-                return ['valid' => true, 'ip' => $clientIp];
+            if ($this->ipMatches($effectiveIp, $pattern)) {
+                return ['valid' => true, 'ip' => $effectiveIp];
             }
         }
 
         return [
             'valid' => false,
-            'ip' => $clientIp,
-            'message' => "Akses Ditolak. Harap gunakan koneksi Wifi Sekolah. IP terdeteksi: {$clientIp}",
+            'ip' => $effectiveIp,
+            'message' => "Akses Ditolak. Harap gunakan koneksi Wifi Sekolah. IP terdeteksi: {$effectiveIp}",
         ];
     }
 

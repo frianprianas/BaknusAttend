@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
 use App\Models\IzinGuruTu;
+use App\Models\Holiday;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
@@ -21,6 +22,28 @@ class PresenceController extends Controller
         // Arduino mengirim "rfid_uid" dan "status" (MASUK atau PULANG)
         $rfid = str_replace(' ', '', strtoupper($request->rfid_uid));
         $mode = strtoupper($request->status); // Tombol Fisik: MASUK / PULANG
+
+        $realIp = $request->header('CF-Connecting-IP')
+            ?? $request->header('X-Real-IP')
+            ?? $request->header('X-Forwarded-For')
+            ?? $request->ip();
+
+        Log::info('RFID_TAP_AUDIT', [
+            'endpoint'   => '/api/presensi',
+            'rfid_uid'   => $rfid,
+            'status'     => $mode,
+            'ip'         => $realIp,
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        // Tolak presensi RFID pada hari Minggu & Hari Libur (mencegah cron/bot harian)
+        $now = Carbon::now();
+        if ($now->isSunday() || Holiday::whereDate('holiday_date', $now->toDateString())->exists()) {
+            return response()->json([
+                'status'  => 'ERROR',
+                'message' => 'Hari Libur / Akhir Pekan!'
+            ]);
+        }
 
         // Cari di tabel Students
         $student = Student::where('rfid', $rfid)->first();

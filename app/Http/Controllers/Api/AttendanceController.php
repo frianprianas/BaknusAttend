@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\KehadiranGuruTu;
 use App\Models\KehadiranSiswa;
+use App\Models\Holiday;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -32,6 +33,26 @@ class AttendanceController extends Controller
 
         $now = Carbon::now();
         $today = Carbon::today();
+
+        $realIp = $request->header('CF-Connecting-IP')
+            ?? $request->header('X-Real-IP')
+            ?? $request->header('X-Forwarded-For')
+            ?? $request->ip();
+
+        Log::info('RFID_TAP_AUDIT', [
+            'endpoint'   => '/api/attendance/tap',
+            'rfid_uid'   => $rfid,
+            'machine_id' => $machineId,
+            'ip'         => $realIp,
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        if ($now->isSunday() || Holiday::whereDate('holiday_date', $today->toDateString())->exists()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Hari Libur / Akhir Pekan!'
+            ], 403);
+        }
 
         // Logika untuk menentukan status Hadir / Terlambat
         $jamTap = $now->format('H:i');
